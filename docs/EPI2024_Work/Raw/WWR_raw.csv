@@ -1,0 +1,221 @@
+"code","iso","country","WWR.raw.2015"
+4,"AFG","Afghanistan",0
+8,"ALB","Albania",0.0953
+12,"DZA","Algeria",0.0796
+20,"AND","Andorra",0.4811
+24,"AGO","Angola",0
+660,"AIA","Anguilla",-8888
+28,"ATG","Antigua and Barbuda",0.444
+32,"ARG","Argentina",0.0296
+51,"ARM","Armenia",0.0083
+533,"ABW","Aruba",0.6292
+36,"AUS","Australia",0.4895
+40,"AUT","Austria",0.0012
+31,"AZE","Azerbaijan",0.1039
+44,"BHS","Bahamas",0.4011
+48,"BHR","Bahrain",0.2316
+50,"BGD","Bangladesh",0
+52,"BRB","Barbados",0.4682
+112,"BLR","Belarus",0.0078
+56,"BEL","Belgium",0.3855
+84,"BLZ","Belize",0
+204,"BEN","Benin",0
+60,"BMU","Bermuda",0.582
+64,"BTN","Bhutan",0
+68,"BOL","Bolivia",0
+70,"BIH","Bosnia and Herzegovina",0
+72,"BWA","Botswana",0.171
+76,"BRA","Brazil",0.0067
+92,"VGB","British Virgin Islands",0.7058
+96,"BRN","Brunei Darussalam",0
+100,"BGR","Bulgaria",0.1276
+854,"BFA","Burkina Faso",0.0199
+108,"BDI","Burundi",0
+132,"CPV","Cabo Verde",0.1647
+116,"KHM","Cambodia",0
+120,"CMR","Cameroon",0
+124,"CAN","Canada",0.0347
+136,"CYM","Cayman Islands",0.7811
+140,"CAF","Central African Republic",0
+148,"TCD","Chad",0
+152,"CHL","Chile",0.0349
+156,"CHN","China",0.135
+170,"COL","Colombia",0
+174,"COM","Comoros",0
+184,"COK","Cook Islands",-8888
+188,"CRI","Costa Rica",0
+384,"CIV","Cote d'Ivoire",0
+191,"HRV","Croatia",0
+192,"CUB","Cuba",0.0121
+531,"CUW","Curacao",0.6166
+196,"CYP","Cyprus",0.625
+203,"CZE","Czech Republic",0.1268
+180,"COD","Dem. Rep. Congo",0
+208,"DNK","Denmark",0.1623
+262,"DJI","Djibouti",0.0093
+212,"DMA","Dominica",0.05
+214,"DOM","Dominican Republic",0
+218,"ECU","Ecuador",0
+818,"EGY","Egypt",0.2344
+222,"SLV","El Salvador",0
+226,"GNQ","Equatorial Guinea",0.1521
+232,"ERI","Eritrea",0
+233,"EST","Estonia",0.0319
+748,"SWZ","Eswatini",0
+231,"ETH","Ethiopia",0
+234,"FRO","Faeroe Islands",0.1331
+238,"FLK","Falkland Islands",-8888
+242,"FJI","Fiji",0.0707
+246,"FIN","Finland",0
+250,"FRA","France",0.0945
+258,"PYF","French Polynesia",0.1617
+266,"GAB","Gabon",0
+270,"GMB","Gambia",0
+268,"GEO","Georgia",0.0053
+276,"DEU","Germany",0.2498
+288,"GHA","Ghana",0
+300,"GRC","Greece",0.3912
+304,"GRL","Greenland",-8888
+308,"GRD","Grenada",0.2222
+320,"GTM","Guatemala",0.034
+831,"GGY","Guernsey",-8888
+324,"GIN","Guinea",0
+624,"GNB","Guinea-Bissau",0
+328,"GUY","Guyana",0
+332,"HTI","Haiti",0
+336,"VAT","Holy See",-8888
+340,"HND","Honduras",0
+344,"HKG","Hong Kong",0.1555
+348,"HUN","Hungary",0.0758
+352,"ISL","Iceland",0.1447
+356,"IND","India",0.028
+360,"IDN","Indonesia",0.0456
+364,"IRN","Iran",0.1952
+368,"IRQ","Iraq",0.0046
+372,"IRL","Ireland",0.0174
+833,"IMN","Isle of Man",0.1493
+376,"ISR","Israel",0.923
+380,"ITA","Italy",0.3168
+388,"JAM","Jamaica",0
+392,"JPN","Japan",0.008
+832,"JEY","Jersey",-8888
+400,"JOR","Jordan",0.3832
+398,"KAZ","Kazakhstan",0.1238
+404,"KEN","Kenya",0
+296,"KIR","Kiribati",0
+689,"XKX","Kosovo",-8888
+414,"KWT","Kuwait",0.887
+417,"KGZ","Kyrgyzstan",0
+418,"LAO","Laos",0
+428,"LVA","Latvia",0.0587
+422,"LBN","Lebanon",0.2508
+426,"LSO","Lesotho",0
+430,"LBR","Liberia",0
+434,"LBY","Libya",0.1755
+438,"LIE","Liechtenstein",0.0686
+440,"LTU","Lithuania",0.119
+442,"LUX","Luxembourg",0.2906
+446,"MAC","Macao",0.1587
+450,"MDG","Madagascar",0
+454,"MWI","Malawi",0
+458,"MYS","Malaysia",0
+462,"MDV","Maldives",0.3014
+466,"MLI","Mali",0
+470,"MLT","Malta",0.6719
+584,"MHL","Marshall Islands",0.2022
+478,"MRT","Mauritania",0
+480,"MUS","Mauritius",0.1018
+484,"MEX","Mexico",0.2006
+583,"FSM","Micronesia",0
+498,"MDA","Moldova",0
+492,"MCO","Monaco",0.1922
+496,"MNG","Mongolia",0.0734
+499,"MNE","Montenegro",0
+504,"MAR","Morocco",0.1504
+508,"MOZ","Mozambique",0
+104,"MMR","Myanmar",0
+516,"NAM","Namibia",0.207
+520,"NRU","Nauru",0.3183
+524,"NPL","Nepal",0
+528,"NLD","Netherlands",0.1941
+540,"NCL","New Caledonia",0.1034
+554,"NZL","New Zealand",0
+558,"NIC","Nicaragua",0
+562,"NER","Niger",0
+566,"NGA","Nigeria",0
+570,"NIU","Niue",-8888
+408,"PRK","North Korea",0.0222
+807,"MKD","North Macedonia",0.0716
+578,"NOR","Norway",0
+512,"OMN","Oman",0.3192
+586,"PAK","Pakistan",3e-04
+585,"PLW","Palau",0.1339
+591,"PAN","Panama",0
+598,"PNG","Papua New Guinea",0
+600,"PRY","Paraguay",0
+604,"PER","Peru",0.0272
+608,"PHL","Philippines",0
+616,"POL","Poland",0.0951
+620,"PRT","Portugal",0.2904
+634,"QAT","Qatar",0.893
+178,"COG","Republic of Congo",0
+642,"ROU","Romania",0.0746
+643,"RUS","Russia",0.059
+646,"RWA","Rwanda",0
+652,"BLM","Saint Barthelemy",-8888
+659,"KNA","Saint Kitts and Nevis",0.0663
+662,"LCA","Saint Lucia",0.0912
+670,"VCT","Saint Vincent and the Grenadines",0.2085
+882,"WSM","Samoa",0.0178
+674,"SMR","San Marino",0.4214
+678,"STP","Sao Tome and Principe",0
+682,"SAU","Saudi Arabia",0.3279
+686,"SEN","Senegal",0
+688,"SRB","Serbia",0
+690,"SYC","Seychelles",0.4261
+694,"SLE","Sierra Leone",0
+702,"SGP","Singapore",0.4444
+534,"SXM","Sint Maarten",0.6633
+703,"SVK","Slovakia",0.004
+705,"SVN","Slovenia",0
+90,"SLB","Solomon Islands",0
+706,"SOM","Somalia",0
+710,"ZAF","South Africa",0.423
+410,"KOR","South Korea",0.1212
+728,"SSD","South Sudan",0
+724,"ESP","Spain",0.2444
+144,"LKA","Sri Lanka",0
+275,"PSE","State of Palestine",0.0868
+729,"SDN","Sudan",0
+740,"SUR","Suriname",0
+752,"SWE","Sweden",0.0062
+756,"CHE","Switzerland",0.0583
+760,"SYR","Syria",0
+158,"TWN","Taiwan",0.0243
+762,"TJK","Tajikistan",0
+834,"TZA","Tanzania",0
+764,"THA","Thailand",0.0378
+626,"TLS","Timor-Leste",0
+768,"TGO","Togo",0
+776,"TON","Tonga",0.0444
+780,"TTO","Trinidad and Tobago",0.042
+788,"TUN","Tunisia",0.737
+792,"TUR","Turkiye",0.2663
+795,"TKM","Turkmenistan",0.2045
+796,"TCA","Turks and Caicos Islands",0.45
+798,"TUV","Tuvalu",0.0255
+800,"UGA","Uganda",0
+804,"UKR","Ukraine",0.028
+784,"ARE","United Arab Emirates",0.939
+826,"GBR","United Kingdom",0.0364
+840,"USA","United States of America",0.1306
+858,"URY","Uruguay",0
+860,"UZB","Uzbekistan",0.0781
+548,"VUT","Vanuatu",0
+862,"VEN","Venezuela",0.0647
+704,"VNM","Viet Nam",0
+876,"WLF","Wallis and Futuna Islands",-8888
+732,"ESH","Western Sahara",-8888
+887,"YEM","Yemen",0
+894,"ZMB","Zambia",0
+716,"ZWE","Zimbabwe",0
