@@ -1,0 +1,1455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EPI Proxy Discovery Pipeline</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* ===========================================
+           CSS CUSTOM PROPERTIES (TERMINAL THEME)
+           =========================================== */
+        :root {
+            --bg-primary: #0a0e14;
+            --bg-secondary: #0d1117;
+            --bg-card: #131920;
+            --bg-card-hover: #1a2230;
+            --border: #1e2a3a;
+
+            --green: #00ff88;
+            --green-dim: #00cc6a;
+            --green-faint: rgba(0, 255, 136, 0.08);
+            --cyan: #00d4ff;
+            --amber: #ffb800;
+            --red: #ff4466;
+            --purple: #b48ead;
+            --text-primary: #c5cdd8;
+            --text-muted: #5c6b7f;
+            --text-bright: #e8edf3;
+
+            --font-mono: 'JetBrains Mono', monospace;
+            --font-display: 'Space Grotesk', sans-serif;
+
+            --title-size: clamp(1.8rem, 5vw, 3.5rem);
+            --h2-size: clamp(1.3rem, 3.5vw, 2.2rem);
+            --h3-size: clamp(1rem, 2.5vw, 1.4rem);
+            --body-size: clamp(0.7rem, 1.3vw, 1rem);
+            --small-size: clamp(0.6rem, 1vw, 0.85rem);
+            --code-size: clamp(0.6rem, 1.1vw, 0.85rem);
+
+            --slide-padding: clamp(1.5rem, 4vw, 4rem);
+            --content-gap: clamp(0.75rem, 2vw, 1.5rem);
+            --element-gap: clamp(0.3rem, 1vw, 0.75rem);
+
+            --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+            --duration: 0.6s;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html {
+            height: 100%;
+            overflow-x: hidden;
+            scroll-snap-type: y mandatory;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-mono);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100%;
+            overflow-x: hidden;
+            font-size: var(--body-size);
+            line-height: 1.6;
+        }
+
+        /* Scanlines */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none;
+            z-index: 9999;
+            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+        }
+
+        /* ===========================================
+           SLIDE CONTAINER
+           =========================================== */
+        .slide {
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+            scroll-snap-align: start;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            padding: var(--slide-padding);
+        }
+        .slide-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            max-height: 100%;
+            overflow: hidden;
+        }
+
+        /* ===========================================
+           PROGRESS / NAV
+           =========================================== */
+        .progress-bar {
+            position: fixed; top: 0; left: 0; height: 2px;
+            background: var(--green);
+            box-shadow: 0 0 10px var(--green), 0 0 20px rgba(0,255,136,0.3);
+            z-index: 1000; transition: width 0.3s ease;
+        }
+        .slide-counter {
+            position: fixed;
+            bottom: clamp(0.75rem, 2vw, 1.5rem);
+            right: clamp(0.75rem, 2vw, 1.5rem);
+            font-family: var(--font-mono);
+            font-size: var(--small-size);
+            color: var(--text-muted); z-index: 100;
+        }
+        .slide-counter .current { color: var(--green); }
+        .nav-dots {
+            position: fixed; right: clamp(0.4rem, 1vw, 0.8rem);
+            top: 50%; transform: translateY(-50%);
+            display: flex; flex-direction: column; gap: 6px; z-index: 100;
+        }
+        .nav-dot {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: var(--border); cursor: pointer;
+            transition: all 0.3s; border: none; padding: 0;
+        }
+        .nav-dot.active { background: var(--green); box-shadow: 0 0 6px var(--green); transform: scale(1.4); }
+        .nav-dot:hover { background: var(--green-dim); }
+
+        /* ===========================================
+           TYPOGRAPHY
+           =========================================== */
+        h1 { font-family: var(--font-display); font-size: var(--title-size); font-weight: 700; color: var(--text-bright); letter-spacing: -0.02em; line-height: 1.1; }
+        h2 { font-family: var(--font-display); font-size: var(--h2-size); font-weight: 600; color: var(--text-bright); line-height: 1.2; margin-bottom: var(--content-gap); }
+        h3 { font-family: var(--font-display); font-size: var(--h3-size); font-weight: 500; color: var(--green); }
+
+        .prompt { color: var(--green); }
+        .comment { color: var(--text-muted); font-style: italic; }
+        .keyword { color: var(--cyan); }
+        .string { color: var(--amber); }
+        .error { color: var(--red); }
+
+        .section-label { font-family: var(--font-mono); font-size: var(--small-size); color: var(--text-muted); margin-bottom: var(--element-gap); letter-spacing: 0.05em; }
+        .section-label .prompt { color: var(--green); }
+
+        /* ===========================================
+           CODE BLOCKS
+           =========================================== */
+        .code-block {
+            background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 6px;
+            padding: clamp(0.5rem, 1.5vw, 1rem); font-family: var(--font-mono);
+            font-size: var(--code-size); line-height: 1.5; overflow: hidden; white-space: pre-wrap; word-break: break-word;
+        }
+        .code-block .line-num { color: var(--text-muted); user-select: none; display: inline-block; width: 2.5em; text-align: right; margin-right: 1em; }
+
+        /* Inline code */
+        code {
+            background: var(--bg-secondary); padding: 0.1em 0.4em; border-radius: 3px;
+            font-family: var(--font-mono); font-size: 0.9em; color: var(--cyan); border: 1px solid var(--border);
+        }
+
+        /* ===========================================
+           CARDS
+           =========================================== */
+        .card {
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px;
+            padding: clamp(0.6rem, 1.5vw, 1.2rem); transition: border-color 0.3s, background 0.3s, box-shadow 0.3s;
+        }
+        .card:hover { border-color: var(--green-dim); background: var(--bg-card-hover); box-shadow: 0 0 20px rgba(0,255,136,0.05); }
+        .card-title { font-family: var(--font-mono); font-size: var(--body-size); color: var(--green); font-weight: 500; margin-bottom: 0.3em; }
+        .card-body { font-size: var(--small-size); color: var(--text-primary); line-height: 1.5; }
+
+        .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: clamp(0.5rem, 1.5vw, 1rem); }
+
+        /* ===========================================
+           HOVERABLE TYPE/FUNCTION REFERENCES
+           =========================================== */
+        .tref {
+            position: relative;
+            display: inline;
+            cursor: help;
+            border-bottom: 1px dashed var(--cyan);
+            color: var(--cyan);
+            font-family: var(--font-mono);
+            font-size: inherit;
+        }
+        .tref.fn-ref {
+            color: var(--amber);
+            border-bottom-color: var(--amber);
+        }
+        .tref .tref-tip {
+            display: none;
+            position: absolute;
+            bottom: calc(100% + 6px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-secondary);
+            border: 1px solid var(--cyan);
+            border-radius: 6px;
+            padding: 0.6rem 0.8rem;
+            font-size: clamp(0.55rem, 0.85vw, 0.72rem);
+            color: var(--text-primary);
+            width: max-content;
+            max-width: min(400px, 80vw);
+            z-index: 500;
+            white-space: pre-wrap;
+            box-shadow: 0 4px 25px rgba(0,0,0,0.6);
+            line-height: 1.45;
+            text-align: left;
+            font-family: var(--font-mono);
+            pointer-events: none;
+        }
+        .tref.fn-ref .tref-tip { border-color: var(--amber); }
+        .tref .tref-tip::after {
+            content: '';
+            position: absolute; top: 100%; left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: var(--cyan);
+        }
+        .tref.fn-ref .tref-tip::after { border-top-color: var(--amber); }
+        .tref:hover .tref-tip { display: block; }
+        .tref .tref-tip .tip-title { color: var(--green); font-weight: 600; margin-bottom: 0.3em; display: block; }
+        .tref .tref-tip .tip-field { color: var(--text-primary); }
+        .tref .tref-tip .tip-field .fname { color: var(--cyan); }
+        .tref .tref-tip .tip-field .ftype { color: var(--text-muted); }
+        .tref .tref-tip .tip-sig { color: var(--amber); font-weight: 500; margin-bottom: 0.3em; display: block; }
+        .tref .tref-tip .tip-desc { color: var(--text-muted); font-style: italic; }
+
+        /* ===========================================
+           HORIZONTAL PIPELINE SCHEMATIC
+           =========================================== */
+        .hpipe {
+            display: flex;
+            align-items: stretch;
+            gap: clamp(0.3rem, 0.6vw, 0.5rem);
+            width: 100%;
+            justify-content: center;
+        }
+        .hpipe-input {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 0.3rem;
+            flex-shrink: 0;
+        }
+        .hpipe-arrow {
+            display: flex;
+            align-items: center;
+            color: var(--text-muted);
+            font-size: clamp(0.8rem, 1.5vw, 1.2rem);
+            flex-shrink: 0;
+            padding: 0 clamp(0.1rem, 0.3vw, 0.3rem);
+        }
+        .hpipe-stage {
+            border: 1px dashed;
+            border-radius: 8px;
+            padding: clamp(0.5rem, 1vw, 0.8rem);
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: clamp(0.2rem, 0.5vw, 0.4rem);
+        }
+        .hpipe-stage.s1 { border-color: var(--cyan); }
+        .hpipe-stage.s2 { border-color: var(--amber); }
+        .hpipe-stage-label {
+            position: absolute;
+            top: -0.65em; left: 0.8em;
+            background: var(--bg-primary);
+            padding: 0 0.4em;
+            font-size: clamp(0.5rem, 0.8vw, 0.7rem);
+            font-weight: 600; letter-spacing: 0.05em;
+        }
+        .hpipe-stage.s1 .hpipe-stage-label { color: var(--cyan); }
+        .hpipe-stage.s2 .hpipe-stage-label { color: var(--amber); }
+
+        .hpipe-node {
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: 4px;
+            padding: clamp(0.25rem, 0.6vw, 0.4rem) clamp(0.4rem, 0.8vw, 0.6rem);
+            text-align: center; cursor: pointer; transition: all 0.3s; position: relative; flex-shrink: 0;
+        }
+        .hpipe-node:hover { border-color: var(--green); box-shadow: 0 0 15px rgba(0,255,136,0.1); transform: translateY(-2px); }
+        .hpipe-node .n-label { font-weight: 500; color: var(--text-bright); font-size: var(--small-size); white-space: nowrap; }
+        .hpipe-node .n-sub { font-size: clamp(0.45rem, 0.7vw, 0.6rem); color: var(--text-muted); margin-top: 0.1em; white-space: nowrap; }
+        .hpipe-node .n-tip {
+            display: none; position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%);
+            background: var(--bg-secondary); border: 1px solid var(--green-dim); border-radius: 6px;
+            padding: 0.5rem 0.7rem; font-size: clamp(0.5rem, 0.8vw, 0.68rem); color: var(--text-primary);
+            width: max-content; max-width: 260px; z-index: 50; white-space: pre-wrap;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5); line-height: 1.4;
+        }
+        .hpipe-node .n-tip::after { content:''; position:absolute; top:100%; left:50%; transform:translateX(-50%); border:5px solid transparent; border-top-color: var(--green-dim); }
+        .hpipe-node:hover .n-tip { display: block; }
+
+        .hpipe-data {
+            background: var(--green-faint); border: 1px solid rgba(0,255,136,0.2); border-radius: 4px;
+            padding: clamp(0.1rem, 0.3vw, 0.2rem) clamp(0.3rem, 0.6vw, 0.5rem);
+            font-size: clamp(0.45rem, 0.7vw, 0.6rem); color: var(--green-dim);
+            font-family: var(--font-mono); white-space: nowrap; text-align: center;
+        }
+        .hpipe-inner-arrow { color: var(--text-muted); font-size: clamp(0.6rem, 1vw, 0.9rem); flex-shrink: 0; }
+        .hpipe-verifiers {
+            display: flex; flex-direction: column; gap: 0.2rem;
+        }
+        .hpipe-verifiers .hpipe-node { padding: clamp(0.15rem, 0.4vw, 0.3rem) clamp(0.3rem, 0.6vw, 0.5rem); }
+
+        /* ===========================================
+           BADGES
+           =========================================== */
+        .badge { display: inline-block; padding: 0.15em 0.5em; border-radius: 3px; font-size: var(--small-size); font-family: var(--font-mono); font-weight: 500; }
+        .badge-confirmed { background: rgba(0,255,136,0.15); color: var(--green); border: 1px solid rgba(0,255,136,0.3); }
+        .badge-partial { background: rgba(255,184,0,0.15); color: var(--amber); border: 1px solid rgba(255,184,0,0.3); }
+        .badge-inconclusive { background: rgba(92,107,127,0.2); color: var(--text-muted); border: 1px solid var(--border); }
+        .badge-rejected { background: rgba(255,68,102,0.15); color: var(--red); border: 1px solid rgba(255,68,102,0.3); }
+
+        /* ===========================================
+           TABLES
+           =========================================== */
+        .data-table { width: 100%; border-collapse: collapse; font-size: var(--small-size); }
+        .data-table th { text-align: left; padding: clamp(0.2rem,0.5vw,0.4rem) clamp(0.3rem,0.8vw,0.6rem); border-bottom: 1px solid var(--green-dim); color: var(--green); font-weight: 500; white-space: nowrap; }
+        .data-table td { padding: clamp(0.2rem,0.5vw,0.4rem) clamp(0.3rem,0.8vw,0.6rem); border-bottom: 1px solid var(--border); color: var(--text-primary); }
+        .data-table tr:hover td { background: var(--green-faint); }
+
+        /* ===========================================
+           BULLET LISTS
+           =========================================== */
+        .terminal-list { list-style: none; display: flex; flex-direction: column; gap: var(--element-gap); }
+        .terminal-list li { font-size: var(--body-size); line-height: 1.5; padding-left: 1.5em; position: relative; }
+        .terminal-list li::before { content: '>'; position: absolute; left: 0; color: var(--green); font-weight: 700; }
+
+        /* ===========================================
+           FIX CARDS
+           =========================================== */
+        .fix-card {
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px;
+            padding: clamp(0.6rem, 1.5vw, 1.2rem); border-left: 3px solid var(--red);
+        }
+        .fix-card.resolved { border-left-color: var(--green); }
+        .fix-card .problem { color: var(--red); font-weight: 500; font-size: var(--body-size); margin-bottom: 0.4em; }
+        .fix-card.resolved .problem { color: var(--green); }
+        .fix-card .fix-detail { font-size: var(--small-size); color: var(--text-primary); line-height: 1.5; }
+        .file-ref { color: var(--cyan); font-family: var(--font-mono); }
+
+        /* ===========================================
+           DECISION TREE
+           =========================================== */
+        .decision-tree { display: flex; flex-direction: column; gap: clamp(0.2rem,0.5vw,0.4rem); font-size: var(--small-size); font-family: var(--font-mono); }
+        .decision-tree .branch { padding-left: 1.5em; border-left: 1px solid var(--border); margin-left: 0.5em; }
+        .decision-tree .condition { color: var(--cyan); }
+
+        /* ===========================================
+           TWO-COL
+           =========================================== */
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(0.75rem, 2vw, 1.5rem); align-items: start; }
+
+        /* ===========================================
+           KNOWLEDGE GRAPH
+           =========================================== */
+        .kg-canvas { position: relative; width: 100%; max-width: min(90vw, 700px); height: min(45vh, 300px); margin: 0 auto; }
+        .kg-node {
+            position: absolute; background: var(--bg-card); border: 1px solid var(--border); border-radius: 50%;
+            width: clamp(50px, 8vw, 80px); height: clamp(50px, 8vw, 80px);
+            display: flex; align-items: center; justify-content: center;
+            font-size: var(--small-size); font-weight: 600; color: var(--text-bright); text-align: center;
+            transition: all 0.3s; z-index: 2;
+        }
+        .kg-node:hover { border-color: var(--green); box-shadow: 0 0 20px rgba(0,255,136,0.2); }
+        .kg-edge-label { position: absolute; font-size: clamp(0.5rem, 0.8vw, 0.7rem); z-index: 3; background: var(--bg-primary); padding: 0 0.3em; }
+        .kg-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        .kg-svg line { stroke: var(--border); stroke-width: 1.5; }
+        .kg-svg line.positive { stroke: var(--green-dim); }
+        .kg-svg line.negative { stroke: var(--red); }
+        .kg-svg line.flagged { stroke: var(--amber); stroke-dasharray: 6 4; }
+
+        /* ===========================================
+           FUTURE LIST
+           =========================================== */
+        .future-list { list-style: none; counter-reset: future; display: flex; flex-direction: column; gap: var(--element-gap); }
+        .future-list li { counter-increment: future; font-size: var(--body-size); padding-left: 2.5em; position: relative; line-height: 1.5; }
+        .future-list li::before { content: '0' counter(future); position: absolute; left: 0; color: var(--text-muted); font-weight: 600; font-family: var(--font-mono); }
+
+        /* ===========================================
+           TITLE ASCII
+           =========================================== */
+        .title-ascii { font-family: var(--font-mono); font-size: clamp(0.4rem, 0.7vw, 0.6rem); color: var(--green-dim); line-height: 1.15; white-space: pre; opacity: 0.6; margin-bottom: clamp(0.5rem, 1.5vw, 1.5rem); }
+        .title-meta { font-size: var(--small-size); color: var(--text-muted); margin-top: clamp(0.5rem, 1.5vw, 1rem); }
+        .title-meta span { color: var(--green); }
+
+        /* ===========================================
+           ANIMATIONS
+           =========================================== */
+        .reveal { opacity: 0; transform: translateY(20px); transition: opacity var(--duration) var(--ease-out-expo), transform var(--duration) var(--ease-out-expo); }
+        .slide.visible .reveal { opacity: 1; transform: translateY(0); }
+        .reveal:nth-child(1) { transition-delay: 0.05s; }
+        .reveal:nth-child(2) { transition-delay: 0.12s; }
+        .reveal:nth-child(3) { transition-delay: 0.19s; }
+        .reveal:nth-child(4) { transition-delay: 0.26s; }
+        .reveal:nth-child(5) { transition-delay: 0.33s; }
+        .reveal:nth-child(6) { transition-delay: 0.40s; }
+
+        @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0;} }
+        .cursor { display:inline-block; width:0.6em; height:1.1em; background:var(--green); animation:blink 1s step-end infinite; vertical-align:text-bottom; margin-left:2px; }
+        @keyframes glow-pulse { 0%,100%{opacity:0.4;} 50%{opacity:1;} }
+        .animated { animation: glow-pulse 2s ease-in-out infinite; }
+
+        /* ===========================================
+           RESPONSIVE
+           =========================================== */
+        @media (max-height: 700px) {
+            :root { --slide-padding: clamp(1rem,3vw,2.5rem); --content-gap: clamp(0.5rem,1.5vw,1rem); --title-size: clamp(1.5rem,4.5vw,2.8rem); --h2-size: clamp(1.1rem,3vw,1.8rem); }
+        }
+        @media (max-height: 600px) {
+            :root { --slide-padding: clamp(0.75rem,2.5vw,1.5rem); --content-gap: clamp(0.4rem,1vw,0.75rem); --title-size: clamp(1.2rem,4vw,2rem); --body-size: clamp(0.65rem,1.1vw,0.9rem); }
+            .slide-counter { display: none; }
+        }
+        @media (max-height: 500px) {
+            :root { --slide-padding: clamp(0.5rem,2vw,1rem); --title-size: clamp(1rem,3.5vw,1.5rem); --h2-size: clamp(0.9rem,2.5vw,1.25rem); --body-size: clamp(0.6rem,1vw,0.8rem); }
+        }
+        @media (max-width: 768px) {
+            .grid-2, .two-col { grid-template-columns: 1fr; }
+            .hpipe { flex-direction: column; align-items: center; }
+            .hpipe-arrow { transform: rotate(90deg); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *,*::before,*::after { animation-duration: 0.01ms !important; transition-duration: 0.2s !important; }
+            html { scroll-behavior: auto; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="progress-bar" id="progressBar"></div>
+<nav class="nav-dots" id="navDots"></nav>
+<div class="slide-counter"><span class="current" id="currentSlide">01</span><span>/</span><span id="totalSlides">19</span></div>
+
+<!-- ═══════════════════════════════════════════════
+     SLIDE 1: TITLE
+     ═══════════════════════════════════════════════ -->
+<section class="slide" id="slide-title">
+    <div class="slide-content" style="align-items:center; text-align:center;">
+        <div class="title-ascii reveal">
+ _____ ____ ___   ____                      ____  _
+| ____|  _ \_ _| |  _ \ _ __ _____  ___   _|  _ \(_)___  ___ _____   _____ _ __ _   _
+|  _| | |_) | |  | |_) | '__/ _ \ \/ / | | | | | | / __|/ __/ _ \ \ / / _ \ '__| | | |
+| |___|  __/| |  |  __/| | | (_) >  <| |_| | |_| | \__ \ (_| (_) \ V /  __/ |  | |_| |
+|_____|_|  |___| |_|   |_|  \___/_/\_\\__, |____/|_|___/\___\___/ \_/ \___|_|   \__, |
+                                       |___/                                      |___/ </div>
+        <h1 class="reveal" style="margin-bottom:0.2em;">AI-Driven Data Proxy Discovery</h1>
+        <p class="reveal" style="font-size:var(--h3-size); color:var(--text-muted); max-width:700px;">A multi-agent pipeline for finding alternative data sources for the Environmental Performance Index</p>
+        <div class="title-meta reveal"><span>$</span> YCELP &times; ROSE Lab &nbsp;|&nbsp; internal walkthrough &nbsp;|&nbsp; 2026</div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     SLIDE 2: THE PROBLEM
+     ═══════════════════════════════════════════════ -->
+<section class="slide" id="slide-problem">
+    <div class="slide-content">
+        <div class="section-label reveal"><span class="prompt">$</span> cat problem.md</div>
+        <h2 class="reveal">The EPI Has a Data Problem</h2>
+        <div class="two-col reveal">
+            <div>
+                <ul class="terminal-list">
+                    <li>The EPI ranks <span style="color:var(--text-bright)">180 countries</span> across <span style="color:var(--text-bright)">58+ indicators</span> spanning environmental health and ecosystem vitality</li>
+                    <li>Many indicators suffer from <span style="color:var(--amber)">poor country coverage</span>, <span style="color:var(--amber)">infrequent updates</span>, or reliance on <span style="color:var(--amber)">modeled data</span></li>
+                    <li>Example: <strong style="color:var(--text-bright)">WRR</strong> (Waste Recovery Rate) &mdash; 56 of 180 countries imputed via regression with only R&sup2;=0.42</li>
+                    <li>Example: <strong style="color:var(--text-bright)">WWR</strong> (Wastewater Reused) &mdash; data exists for a <span class="error">single year (2015)</span> for most countries</li>
+                </ul>
+            </div>
+            <div class="code-block" style="font-size:var(--code-size);">
+<span class="comment"># What the EPI team often faces</span>
+<span class="comment"># ─────────────────────────────</span>
+<span class="keyword">Indicator</span>  Coverage  Imputed  Issue
+───────────────────────────────────
+WRR        124/180   56       R²=0.42
+SMW        124/180   56       same data
+WPC        124/180   56       same data
+WWR        ~80/180   100+     1 year only
+PRS        180/180   0        2 timepoints
+BER        180/180   0        5 timepoints
+
+<span class="comment"># Goal: find alternative data</span>
+<span class="comment"># sources that correlate with</span>
+<span class="comment"># these hard-to-measure indicators</span></div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     SLIDE 3: THE IDEA
+     ═══════════════════════════════════════════════ -->
+<section class="slide" id="slide-idea">
+    <div class="slide-content">
+        <div class="section-label reveal"><span class="prompt">$</span> cat solution.md</div>
+        <h2 class="reveal">Data Proxies: The Core Idea</h2>
+        <div class="two-col reveal">
+            <div>
+                <p style="margin-bottom:var(--content-gap); color:var(--text-primary);">
+                    A <span style="color:var(--green)">data proxy</span> is a measurable variable that correlates with a hard-to-measure target. If the correlation is strong and not spurious, the proxy can <span style="color:var(--text-bright)">supplement or validate</span> official statistics.
+                </p>
+                <div class="code-block" style="margin-bottom:var(--element-gap);">
+<span class="comment"># Classic example from the proposal:</span>
+<span class="comment"># ───────────────────────────────────</span>
+anti_diarrheal_sales <span class="keyword">~</span> water_quality_problems
+
+<span class="comment"># Pharma sales data is cheaper,</span>
+<span class="comment"># more frequent, broader coverage</span>
+<span class="comment"># than direct water quality testing</span></div>
+                <p style="font-size:var(--small-size); color:var(--text-muted);">The framework leverages modern AI to access expert insights alongside traditional reasoning engines and statistical analyses to uncover such connections at scale.</p>
+            </div>
+            <div>
+                <div class="code-block">
+<span class="comment"># Each hypothesis is formalized as:</span>
+<span class="keyword">h</span> = <span class="string">&#968;(context, variables, relationship)</span>
+
+<span class="keyword">context</span>: {
+  geographic_scope: <span class="string">"global"</span>,
+  time_period: <span class="string">"2010-2021"</span>
+}
+
+<span class="keyword">variables</span>: {
+  target: <span class="string">"UWD"</span>,  <span class="comment"># unsafe drinking water</span>
+  proxy:  <span class="string">"handwashing_access"</span>
+}
+
+<span class="keyword">relationship</span>: {
+  direction: <span class="string">"negative"</span>,
+  form: <span class="string">"log-linear"</span>,
+  strength: <span class="string">"r = -0.65"</span>
+}</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     SLIDE 4: HORIZONTAL PIPELINE SCHEMATIC
+     ═══════════════════════════════════════════════ -->
+<section class="slide" id="slide-pipeline">
+    <div class="slide-content">
+        <div class="section-label reveal"><span class="prompt">$</span> ./pipeline --diagram</div>
+        <h2 class="reveal">Pipeline Architecture</h2>
+
+        <div class="hpipe reveal">
+            <!-- INPUT column -->
+            <div class="hpipe-input">
+                <div class="hpipe-node" style="border-color:var(--green);">
+                    <div class="n-label">EPI Indicator</div>
+                    <div class="n-sub">e.g. "UWD"</div>
+                </div>
+                <div style="font-size:clamp(0.45rem,0.7vw,0.6rem); text-align:center; color:var(--text-muted);">+</div>
+                <div class="hpipe-node" style="border-color:var(--green);">
+                    <div class="n-label">Domain Knowledge</div>
+                    <div class="n-sub">Technical Appendix</div>
+                </div>
+            </div>
+
+            <div class="hpipe-arrow animated">&rarr;</div>
+
+            <!-- STAGE 1 -->
+            <div class="hpipe-stage s1">
+                <span class="hpipe-stage-label">STAGE 1: HYPOTHESIS GENERATION</span>
+                <div class="hpipe-node" data-slide="slide-research" style="border-color:var(--cyan);">
+                    <div class="n-label" style="color:var(--cyan);">Deep Researcher</div>
+                    <div class="n-sub">Perplexity sonar-deep-research</div>
+                    <div class="n-tip"><span style="color:var(--cyan)">Input:</span> indicator metadata + domain context<br><span style="color:var(--cyan)">Output:</span> research_report.md<br><span style="color:var(--cyan)">Sections:</span> causal map, literature proxies, speculative proxies, data availability, confounders, ranked candidates</div>
+                </div>
+                <div class="hpipe-inner-arrow animated">&rarr;</div>
+                <div class="hpipe-data">report.md</div>
+                <div class="hpipe-inner-arrow animated">&rarr;</div>
+                <div class="hpipe-node" data-slide="slide-parser" style="border-color:var(--cyan);">
+                    <div class="n-label" style="color:var(--cyan);">Parsing Agent</div>
+                    <div class="n-sub">Claude claude-sonnet-4-20250514</div>
+                    <div class="n-tip"><span style="color:var(--cyan)">Input:</span> research_report.md<br><span style="color:var(--cyan)">Output:</span> hypotheses.json<br>Extracts structured <span style="color:var(--cyan)">ProxyHypothesis</span> objects. Classifies confidence &amp; evidence_type. Infers direction from mechanism.</div>
+                </div>
+            </div>
+
+            <div class="hpipe-arrow animated">&rarr;</div>
+            <div class="hpipe-data" style="align-self:center;">hypotheses.json</div>
+            <div class="hpipe-arrow animated">&rarr;</div>
+
+            <!-- STAGE 2 -->
+            <div class="hpipe-stage s2">
+                <span class="hpipe-stage-label">STAGE 2: VERIFICATION</span>
+                <div class="hpipe-verifiers">
+                    <div class="hpipe-node" data-slide="slide-verifier1" style="border-color:var(--amber);">
+                        <div class="n-label" style="color:var(--amber); font-size:clamp(0.5rem,0.75vw,0.65rem);">Verifier [H01]</div>
+                        <div class="n-tip"><span style="color:var(--amber)">Claude Code SDK agent</span><br>Tools: Bash, Write, Read, Glob, WebFetch<br>Writes verify.py, fetches proxy data, runs stats, outputs result.json</div>
+                    </div>
+                    <div class="hpipe-node" data-slide="slide-verifier1" style="border-color:var(--amber);">
+                        <div class="n-label" style="color:var(--amber); font-size:clamp(0.5rem,0.75vw,0.65rem);">Verifier [H02]</div>
+                    </div>
+                    <div class="hpipe-node" data-slide="slide-verifier1" style="border-color:var(--amber); opacity:0.5;">
+                        <div class="n-label" style="color:var(--amber); font-size:clamp(0.5rem,0.75vw,0.65rem);">...  [H<em>n</em>]</div>
+                    </div>
+                </div>
+                <div class="hpipe-inner-arrow animated">&rarr;</div>
+                <div style="display:flex; flex-direction:column; gap:0.2rem;">
+                    <div class="hpipe-data">verify.py + result.json</div>
+                    <div class="hpipe-data">verify.py + result.json</div>
+                    <div class="hpipe-data" style="opacity:0.5;">verify.py + result.json</div>
+                </div>
+            </div>
+        </div>
+
+        <p class="reveal" style="text-align:center; font-size:var(--small-size); color:var(--text-muted); margin-top:var(--element-gap);">hover over nodes for details &nbsp;|&nbsp; click to jump to section</p>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     SLIDE 5: STAGE 1 — DEEP RESEARCH AGENT
+     ═══════════════════════════════════════════════ -->
+<section class="slide" id="slide-research">
+    <div class="slide-content">
+        <div class="section-label reveal"><span class="prompt">$</span> cat src/stage1/prompts.py <span class="comment"># RESEARCH_PROMPT_TEMPLATE</span></div>
+        <h2 class="reveal">Stage 1: Deep Research Agent</h2>
+        <div class="two-col">
+            <div class="reveal">
+                <p style="margin-bottom:var(--element-gap);">A <span style="color:var(--cyan)">Perplexity sonar-deep-research</span> model conducts literature review and data discovery. We prompt it with:</p>
+                <ul class="terminal-list" style="margin-bottom:var(--content-gap);">
+                    <li>Full indicator metadata (name, units, source, polarity, coverage)</li>
+                    <li>Domain knowledge from the EPI Technical Appendix (when available)</li>
+                    <li>Structured research task with 6 required sections</li>
+                </ul>
+                <h3 style="font-size:var(--body-size); margin-bottom:0.3em;">Required Output Sections:</h3>
+                <div class="code-block" style="font-size:var(--code-size);">
+<span class="line-num">1</span><span class="keyword">Causal Map</span>
+<span class="line-num">2</span><span class="keyword">Literature-Validated Proxies</span>
+<span class="line-num"> </span>  <span class="comment"># variable, source, r, form, caveats</span>
+<span class="line-num">3</span><span class="keyword">Speculative Proxies</span>
+<span class="line-num"> </span>  <span class="comment"># mechanistic reasoning, expected dir</span>
+<span class="line-num">4</span><span class="keyword">Data Availability Assessment</span>
+<span class="line-num">5</span><span class="keyword">Confounder Analysis</span>
+<span class="line-num">6</span><span class="keyword">Ranked Candidates</span> (top 5-8)</div>
+            </div>
+            <div class="reveal">
+                <h3 style="font-size:var(--body-size); margin-bottom:0.3em;">Example: UWD (Unsafe Drinking Water)</h3>
+                <div class="code-block" style="font-size:var(--code-size);">
+<span class="comment"># Indicator metadata fed to prompt</span>
+<span class="keyword">tla</span>: <span class="string">"UWD"</span>
+<span class="keyword">name</span>: <span class="string">"Unsafe Drinking Water"</span>
+<span class="keyword">units</span>: <span class="string">"DALYs/100k"</span>
+<span class="keyword">source</span>: <span class="string">"IHME GBD"</span>
+<span class="keyword">polarity</span>: <span class="string">"negative"</span> <span class="comment"># lower=better</span>
+<span class="keyword">coverage</span>: ~195 countries, 1990-2021
+
+<span class="comment"># Output: ~14 proxy hypotheses</span>
+<span class="comment"># including:</span>
+<span class="string">"Healthcare facility handwashing"</span>
+  <span class="comment"># WHO GHO: WHS8_110</span>
+  <span class="comment"># later verified: r = -0.653 !</span></div>
+                <p style="font-size:var(--small-size); color:var(--text-muted); margin-top:var(--element-gap);">The output is a ~2000-word markdown report with citations. Saved to <span class="file-ref">outputs/{TLA}/stage1/research_report.md</span></p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     SLIDE 6: DOMAIN KNOWLEDGE
+     ═══════════════════════════════════════════════ -->
+<section class="slide" id="slide-domain">
+    <div class="slide-content">
+        <div class="section-label reveal"><span class="prompt">$</span> cat src/domain_knowledge.py</div>
+        <h2 class="reveal">Domain Knowledge Injection</h2>
+        <div class="two-col">
+            <div class="reveal">
+                <p style="margin-bottom:var(--element-gap);">We inject <span style="color:var(--green)">curated domain context</span> from the EPI Technical Appendix so the research agent doesn't waste effort rediscovering known facts.</p>
+                <div class="code-block" style="font-size:var(--code-size);">
+<span class="comment"># src/domain_knowledge.py</span>
+DOMAIN_KNOWLEDGE: dict[str, str] = {
+  <span class="string">"UWD"</span>: <span class="string">"""
+  UWD measures age-standardized DALYs
+  lost per 100k due to unsafe drinking
+  water. Source: IHME GBD, 1990-2021.
+
+  Key confounders: GDP per capita,
+  urbanization, healthcare access.
+
+  Siblings: USD, HFD (same IHME method)
+  Related: WWT/WWC/WWG (different sources)
+  """</span>,
+  <span class="string">"WRR"</span>: <span class="string">"..."</span>,  <span class="comment"># 8 entries total</span>
+  <span class="string">"SMW"</span>: <span class="string">"..."</span>,  <span class="comment"># all Tier 1</span>
+  ...
+}</div>
+            </div>
+            <div class="reveal">
+                <h3 style="font-size:var(--body-size); margin-bottom:0.3em;">What each entry contains:</h3>
+                <ul class="terminal-list" style="margin-bottom:var(--content-gap);">
+                    <li>Indicator definition and formula</li>
+                    <li>Imputation model (if any) with R&sup2;</li>
+                    <li>Known confounders to control against</li>
+                    <li>Data quality issues &amp; caveats</li>
+                    <li>Sibling indicator relationships</li>
+                </ul>
+                <div class="code-block" style="font-size:var(--code-size);">
+<span class="comment"># Injected into Perplexity prompt as:</span>
+<span class="keyword">## Domain Context</span>
+<span class="comment">"The following is known about this</span>
+<span class="comment"> indicator from the EPI team's own</span>
+<span class="comment"> analysis. Use this as a starting</span>
+<span class="comment"> point -- do NOT spend effort</span>
+<span class="comment"> rediscovering these facts."</span></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     SLIDE 7: PARSING AGENT
+     ═══════════════════════════════════════════════ -->
+<section class="slide" id="slide-parser">
+    <div class="slide-content">
+        <div class="section-label reveal"><span class="prompt">$</span> cat src/stage1/parser.py <span class="comment"># PARSE_PROMPT_TEMPLATE</span></div>
+        <h2 class="reveal">Stage 1b: Parsing Agent</h2>
+        <div class="two-col">
+            <div class="reveal">
+                <p style="margin-bottom:var(--element-gap);"><span style="color:var(--cyan)">Claude claude-sonnet-4-20250514</span> extracts structured hypotheses from the research report and classifies each one into a <span class="tref">ProxyHypothesis<span class="tref-tip"><span class="tip-title">class ProxyHypothesis(BaseModel)</span><span class="tip-field"><span class="fname">id</span>: <span class="ftype">str</span>  <span class="comment"># e.g. "UWD-H01"</span>
+<span class="fname">context</span>: <span class="ftype">Context</span>
+<span class="fname">target_variable</span>: <span class="ftype">str</span>  <span class="comment"># EPI TLA</span>
+<span class="fname">proxy_variable</span>: <span class="ftype">str</span>
+<span class="fname">proxy_description</span>: <span class="ftype">str</span>
+<span class="fname">relationship</span>: <span class="ftype">Relationship</span>
+<span class="fname">mechanism</span>: <span class="ftype">str</span>
+<span class="fname">data_source</span>: <span class="ftype">DataSource</span>
+<span class="fname">confidence</span>: <span class="ftype">Confidence</span>
+<span class="fname">evidence_type</span>: <span class="ftype">EvidenceType</span>
+<span class="fname">literature_evidence</span>: <span class="ftype">Optional[str]</span>
+<span class="fname">caveats</span>: <span class="ftype">list[str]</span>
+<span class="fname">references</span>: <span class="ftype">list[str]</span></span></span></span> object.</p>
+
+                <h3 style="font-size:var(--body-size); margin-bottom:0.3em;">Classification Axes:</h3>
+                <div class="grid-2" style="gap:0.4rem; margin-bottom:var(--element-gap);">
+                    <div class="card" style="padding:0.4rem 0.6rem;">
+                        <div class="card-title" style="font-size:var(--small-size);">confidence</div>
+                        <div class="card-body" style="font-size:clamp(0.55rem,0.9vw,0.75rem);"><span class="keyword">literature_backed</span><br><span class="keyword">speculative</span><br><span class="keyword">expert_opinion</span></div>
+                    </div>
+                    <div class="card" style="padding:0.4rem 0.6rem;">
+                        <div class="card-title" style="font-size:var(--small-size);">evidence_type</div>
+                        <div class="card-body" style="font-size:clamp(0.55rem,0.9vw,0.75rem);"><span class="keyword">literature_attested</span><br><span class="keyword">programmatic_verify</span><br><span class="keyword">manual_data_needed</span></div>
+                    </div>
+                </div>
+                <h3 style="font-size:var(--body-size); margin-bottom:0.3em;">Key Parse Rules:</h3>
+                <ul class="terminal-list" style="font-size:var(--small-size);">
+                    <li><span class="keyword">NEVER</span> set direction to "unknown" if any mechanism evidence exists</li>
+                    <li>Default functional_form to <code>linear</code> unless evidence of non-linearity</li>
+                    <li><code>evidence_type</code> determines Stage 2 routing</li>
+                </ul>
+            </div>
+            <div class="reveal">
+                <h3 style="font-size:var(--body-size); margin-bottom:0.3em;">UWD example &mdash; 1 of 14 hypotheses:</h3>
+                <div class="code-block" style="font-size:var(--code-size);">
+{
+  <span class="string">"id"</span>: <span class="string">"UWD-H05"</span>,
+  <span class="string">"target_variable"</span>: <span class="string">"UWD"</span>,
+  <span class="string">"proxy_variable"</span>: <span class="string">"healthcare_handwashing"</span>,
+  <span class="string">"proxy_description"</span>:
+    <span class="string">"% of health facilities with</span>
+    <span class="string"> handwashing stations"</span>,
+  <span class="string">"relationship"</span>: {
+    <span class="string">"direction"</span>: <span class="string">"negative"</span>,
+    <span class="string">"functional_form"</span>: <span class="string">"linear"</span>
+  },
+  <span class="string">"data_source"</span>: {
+    <span class="string">"name"</span>: <span class="string">"WHO GHO: WHS8_110"</span>,
+    <span class="string">"accessibility"</span>: <span class="string">"open"</span>
+  },
+  <span class="string">"confidence"</span>: <span class="string">"speculative"</span>,
+  <span class="string">"evidence_type"</span>: <span class="string">"programmatic_verify"</span>
+}</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     SLIDE 8: STAGE 2 — VERIFIER OVERVIEW
+     ═══════════════════════════════════════════════ -->
+<section class="slide" id="slide-verifier1">
+    <div class="slide-content">
+        <div class="section-label reveal"><span class="prompt">$</span> cat src/stage2/verifier.py</div>
+        <h2 class="reveal">Stage 2: Verification Agents</h2>
+        <div class="two-col">
+            <div class="reveal">
+                <p style="margin-bottom:var(--element-gap);">Each hypothesis gets its own <span style="color:var(--amber)">Claude Code SDK</span> agent. The agent autonomously writes and executes a <code>verify.py</code> script, producing a <span class="tref">VerificationResult<span class="tref-tip"><span class="tip-title">class VerificationResult(BaseModel)</span><span class="tip-field"><span class="fname">hypothesis_id</span>: <span class="ftype">str</span>
+<span class="fname">verdict</span>: <span class="ftype">Verdict</span>
+<span class="fname">raw_correlation</span>: <span class="ftype">Optional[CorrelationResult]</span>
+<span class="fname">partial_correlation</span>: <span class="ftype">Optional[PartialCorrelationResult]</span>
+<span class="fname">functional_form</span>: <span class="ftype">Optional[FunctionalFormResult]</span>
+<span class="fname">data_quality_notes</span>: <span class="ftype">str</span>
+<span class="fname">script_path</span>: <span class="ftype">Optional[str]</span>
+<span class="fname">summary</span>: <span class="ftype">str</span></span></span></span>.</p>
+                <div class="code-block" style="font-size:var(--code-size);">
+<span class="comment"># src/stage2/verifier.py</span>
+options = <span class="keyword">ClaudeCodeOptions</span>(
+  allowed_tools=[
+    <span class="string">"Bash"</span>, <span class="string">"Write"</span>, <span class="string">"Read"</span>,
+    <span class="string">"Glob"</span>, <span class="string">"Grep"</span>, <span class="string">"WebFetch"</span>
+  ],
+  permission_mode=<span class="string">"bypassPermissions"</span>,
+  cwd=str(<span class="keyword">PROJECT_ROOT</span>),
+  max_turns=<span class="string">30</span>,
+  model=<span class="string">"claude-sonnet-4-6"</span>,
+)</div>
+            </div>
+            <div class="reveal">
+                <h3 style="font-size:var(--body-size); margin-bottom:0.3em;">Routing by evidence_type:</h3>
+                <div style="display:flex; flex-direction:column; gap:0.4rem;">
+                    <div class="card" style="border-left:3px solid var(--green);">
+                        <div class="card-title" style="font-size:var(--small-size);">programmatic_verify</div>
+                        <div class="card-body">Agent fetches data, runs full statistical verification</div>
+                    </div>
+                    <div class="card" style="border-left:3px solid var(--cyan);">
+                        <div class="card-title" style="font-size:var(--small-size);">literature_attested</div>
+                        <div class="card-body">Agent attempts independent corroboration of cited statistic</div>
+                    </div>
+                    <div class="card" style="border-left:3px solid var(--text-muted);">
+                        <div class="card-title" style="font-size:var(--small-size);">manual_data_needed</div>
+                        <div class="card-body">Skipped &mdash; placeholder <span class="badge badge-inconclusive">inconclusive</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     SLIDE 9: WHAT THE AGENT WRITES
+     ═══════════════════════════════════════════════ -->
+<section class="slide" id="slide-verifier2">
+    <div class="slide-content">
+        <div class="section-label reveal"><span class="prompt">$</span> cat verify.py <span class="comment"># agent-generated script</span></div>
+        <h2 class="reveal">What the Agent Writes</h2>
+        <div class="two-col">
+            <div class="reveal">
+                <p style="margin-bottom:var(--element-gap); font-size:var(--small-size);">Each agent writes a <code>verify.py</code> using our shared library. The system prompt mandates these imports:</p>
+                <div class="code-block" style="font-size:var(--code-size);">
+<span class="comment"># MANDATORY imports (system prompt)</span>
+<span class="keyword">from</span> src.utils.stats <span class="keyword">import</span> (
+  run_bivariate_correlation,
+  run_partial_correlation,
+  test_functional_form,
+  determine_verdict,
+  build_result_json
+)
+<span class="keyword">from</span> src.utils.data_utils <span class="keyword">import</span> (
+  load_raw_indicator
+)
+<span class="keyword">from</span> src.utils.data_fetch <span class="keyword">import</span> (
+  fetch_world_bank_indicator,
+  search_world_bank,
+  fetch_who_gho_indicator,
+  list_local_indicators
+)</div>
+            </div>
+            <div class="reveal">
+                <p style="margin-bottom:var(--element-gap); font-size:var(--small-size);">Typical script structure:</p>
+                <div class="code-block" style="font-size:var(--code-size);">
+<span class="comment"># 1. Load target</span>
+target = <span class="tref fn-ref">load_raw_indicator<span class="tref-tip"><span class="tip-sig">load_raw_indicator(tla: str) -&gt; DataFrame</span><span class="tip-desc">Loads raw EPI CSV, melts wide&rarr;long, replaces sentinels (-9999,-8888,-7777) with NaN. Returns: code, iso, country, year, value</span></span></span>(<span class="string">"UWD"</span>)
+
+<span class="comment"># 2. Fetch proxy data</span>
+proxy = <span class="tref fn-ref">fetch_who_gho_indicator<span class="tref-tip"><span class="tip-sig">fetch_who_gho_indicator(code: str) -&gt; DataFrame</span><span class="tip-desc">Fetches from WHO GHO API. Returns: iso, year, value. Deduplicates sub-dimension breakdowns (sex/area).</span></span></span>(
+  <span class="string">"WHS8_110"</span>)
+
+<span class="comment"># 3. Merge on (iso, year)</span>
+merged = target.merge(proxy, on=[<span class="string">"iso"</span>,<span class="string">"year"</span>])
+
+<span class="comment"># 4. Bivariate correlation</span>
+corr = <span class="tref fn-ref">run_bivariate_correlation<span class="tref-tip"><span class="tip-sig">run_bivariate_correlation(x: Series, y: Series, iso: Optional[Series]) -&gt; CorrelationResult</span><span class="tip-desc">Computes Pearson &amp; Spearman correlations. Drops NaN, requires n &ge; 3. Returns pearson_r, pearson_p, spearman_rho, spearman_p, n_observations, n_countries.</span></span></span>(
+  merged[<span class="string">"proxy"</span>], merged[<span class="string">"value"</span>])
+
+<span class="comment"># 5. Partial correlation</span>
+partial = <span class="tref fn-ref">run_partial_correlation<span class="tref-tip"><span class="tip-sig">run_partial_correlation(df: DataFrame, x_col: str, y_col: str, covar_cols: list[str]) -&gt; Optional[PartialCorrelationResult]</span><span class="tip-desc">Uses pingouin.partial_corr(). Returns None if n &lt; 30. Returns partial_r, partial_p, control_variables.</span></span></span>(
+  df, <span class="string">"proxy"</span>, <span class="string">"value"</span>, [<span class="string">"log_gpc"</span>])
+
+<span class="comment"># 6. Functional form</span>
+form = <span class="tref fn-ref">test_functional_form<span class="tref-tip"><span class="tip-sig">test_functional_form(x: Series, y: Series, min_n: int = 20) -&gt; Optional[FunctionalFormResult]</span><span class="tip-desc">Tests linear, log-linear, quadratic fits. Selects best by AIC = n*ln(RSS/n) + 2k. Returns best_form, r2 and aic for all three.</span></span></span>(x, y)
+
+<span class="comment"># 7. Verdict + output</span>
+verdict = <span class="tref fn-ref">determine_verdict<span class="tref-tip"><span class="tip-sig">determine_verdict(corr: CorrelationResult, partial: Optional[PartialCorrelationResult], expected_direction: str) -&gt; Verdict</span><span class="tip-desc">Decision tree: n&lt;20&rarr;inconclusive, direction mismatch&rarr;rejected, p&gt;0.10&rarr;rejected, |r|&gt;0.3 + partial significant&rarr;confirmed, else&rarr;partially_confirmed.</span></span></span>(corr, partial,
+  <span class="string">"negative"</span>)
+result = <span class="tref fn-ref">build_result_json<span class="tref-tip"><span class="tip-sig">build_result_json(hypothesis_id, verdict, corr, partial_corr, functional_form, data_quality_notes, summary) -&gt; dict</span><span class="tip-desc">Sanitizes NaN/Inf to None for JSON serialization. Returns dict matching VerificationResult schema.</span></span></span>(...)</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     SLIDE 10: DATA ACQUISITION + VERDICT
+     ═══════════════════════════════════════════════ -->
+<section class="slide" id="slide-data-acq">
+    <div class="slide-content">
+        <div class="section-label reveal"><span class="prompt">$</span> cat src/stage2/prompts.py <span class="comment"># Data Acquisition Protocol</span></div>
+        <h2 class="reveal">Data Acquisition &amp; Verdict Logic</h2>
+        <div class="two-col">
+            <div class="reveal">
+                <h3 style="font-size:var(--body-size); margin-bottom:0.3em;">Data Acquisition Protocol (ordered):</h3>
+                <div class="code-block" style="font-size:var(--code-size); margin-bottom:var(--element-gap);">
+<span class="line-num">1</span> <span class="keyword">check</span> <span class="tref fn-ref">list_local_indicators<span class="tref-tip"><span class="tip-sig">list_local_indicators() -&gt; list[dict]</span><span class="tip-desc">Lists all TLAs available as local raw CSVs (312 files). Returns: tla, description, type, source.</span></span></span>()
+<span class="line-num"> </span>   <span class="comment"># 312 EPI raw CSVs available</span>
+<span class="line-num">2</span> <span class="keyword">try</span> hypothesis.data_source.url
+<span class="line-num">3</span> <span class="keyword">try</span> <span class="tref fn-ref">fetch_world_bank_indicator<span class="tref-tip"><span class="tip-sig">fetch_world_bank_indicator(indicator_code: str, year_range: tuple = (1990, 2024)) -&gt; DataFrame</span><span class="tip-desc">Fetches any WB indicator by code. Returns: iso, year, value. Handles pagination, filters to EPI ISO set (180 countries).</span></span></span>(code)
+<span class="line-num">4</span> <span class="keyword">try</span> <span class="tref fn-ref">search_world_bank<span class="tref-tip"><span class="tip-sig">search_world_bank(query: str, max_results: int = 10) -&gt; list[dict]</span><span class="tip-desc">Searches WB indicator catalog by keyword. Returns: id, name, source.</span></span></span>(<span class="string">"keywords"</span>)
+<span class="line-num">5</span> <span class="keyword">try</span> <span class="tref fn-ref">fetch_who_gho_indicator<span class="tref-tip"><span class="tip-sig">fetch_who_gho_indicator(indicator_code: str) -&gt; DataFrame</span><span class="tip-desc">Fetches from WHO GHO API. Returns: iso, year, value. Deduplicates sub-dimension breakdowns.</span></span></span>(code)
+<span class="line-num">6</span> <span class="keyword">if</span> ALL fail:
+<span class="line-num"> </span>   verdict = <span class="string">"inconclusive"</span></div>
+                <div style="background:rgba(255,68,102,0.08); border:1px solid rgba(255,68,102,0.2); border-radius:4px; padding:0.4rem 0.6rem; font-size:var(--small-size);">
+                    <span class="error" style="font-weight:600;">HARD RULE:</span> Never fabricate, simulate, or synthesize proxy data. No <code>np.random</code>, no formula-generated proxies.
+                </div>
+            </div>
+            <div class="reveal">
+                <h3 style="font-size:var(--body-size); margin-bottom:0.3em;">Verdict Decision Tree:</h3>
+                <div class="decision-tree">
+                    <div><span class="condition">if</span> n &lt; 20 <span style="color:var(--text-muted);">&rarr; inconclusive</span></div>
+                    <div><span class="condition">if</span> direction mismatch <span style="color:var(--red);">&rarr; rejected</span></div>
+                    <div><span class="condition">if</span> p &gt; 0.10 <span style="color:var(--red);">&rarr; rejected</span></div>
+                    <div><span class="condition">if</span> 0.05 &lt; p &le; 0.10 <span style="color:var(--text-muted);">&rarr; inconclusive</span></div>
+                    <div><span class="condition">if</span> |r| &gt; 0.3 AND p &lt; 0.05:</div>
+                    <div class="branch">
+                        <div><span class="condition">if</span> partial_p &lt; 0.05 <span style="color:var(--green);">&rarr; confirmed</span></div>
+                        <div><span class="condition">else</span> <span style="color:var(--amber);">&rarr; partially_confirmed</span></div>
+                    </div>
+                    <div><span class="condition">else</span> <span style="color:var(--amber);">&rarr; partially_confirmed</span></div>
+                </div>
+                <h3 style="font-size:var(--body-size); margin-top:var(--element-gap); margin-bottom:0.3em;">Thresholds <span style="color:var(--text-muted);">(src/config.py)</span>:</h3>
+                <div class="code-block" style="font-size:var(--code-size);">
+VERDICT_R_THRESHOLD  = <span class="string">0.3</span>
+VERDICT_P_THRESHOLD  = <span class="string">0.05</span>
+VERDICT_P_BORDERLINE = <span class="string">0.10</span>
+VERDICT_MIN_N        = <span class="string">20</span>
+PARTIAL_CORR_MIN_N   = <span class="string">30</span></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     SLIDE 11: UWD EXAMPLE RESULTS
+     ═══════════════════════════════════════════════ -->
+<section class="slide" id="slide-results">
+    <div class="slide-content">
+        <div class="section-label reveal"><span class="prompt">$</span> cat outputs/UWD/pipeline_result.json | jq</div>
+        <h2 class="reveal">Example Results: UWD (Unsafe Drinking Water)</h2>
+
+        <div class="reveal" style="margin-bottom:var(--content-gap);">
+            <table class="data-table">
+                <thead>
+                    <tr><th>Hypothesis</th><th>Proxy</th><th>Source</th><th>Verdict</th><th>Pearson r</th><th>n</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>UWD-H05</code></td>
+                        <td>Healthcare facility handwashing</td>
+                        <td>WHO GHO WHS8_110</td>
+                        <td><span class="badge badge-confirmed">confirmed</span></td>
+                        <td style="color:var(--green);">-0.653</td>
+                        <td>4,249</td>
+                    </tr>
+                    <tr>
+                        <td><code>UWD-H07</code></td>
+                        <td>HIV prevalence</td>
+                        <td>WHO GHO HIV_0000000001</td>
+                        <td><span class="badge badge-partial">partial</span></td>
+                        <td style="color:var(--amber);">0.212</td>
+                        <td>3,252</td>
+                    </tr>
+                    <tr>
+                        <td><code>UWD-H01</code></td>
+                        <td>Safely managed drinking water</td>
+                        <td>WHO GHO WHS3_41</td>
+                        <td><span class="badge badge-rejected">rejected</span></td>
+                        <td style="color:var(--red);">0.072</td>
+                        <td>5,046</td>
+                    </tr>
+                    <tr>
+                        <td><code>UWD-H08</code></td>
+                        <td>E. coli in water bodies</td>
+                        <td>EPA portal</td>
+                        <td><span class="badge badge-inconclusive">inconclusive</span></td>
+                        <td style="color:var(--text-muted);">&mdash;</td>
+                        <td>0</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="two-col reveal">
+            <div class="card">
+                <div class="card-title">UWD-H05: Handwashing &rarr; Unsafe Drinking Water</div>
+                <div class="card-body">Strong negative correlation (r=-0.653): countries with better healthcare facility hygiene have fewer waterborne-disease DALYs. Survives partial correlation controlling for GDP &mdash; <span style="color:var(--green)">genuine signal beyond wealth</span>.</div>
+            </div>
+            <div class="card">
+                <div class="card-title">UWD-H01: Drinking Water Access &rarr; UWD DALYs</div>
+                <div class="card-body">Surprisingly weak (r=0.072). WHO's "safely managed water" metric measures <em>infrastructure coverage</em>, not <em>actual water safety</em>. A country can have piped water that's still contaminated &mdash; <span style="color:var(--red)">metric mismatch</span>.</div>
+            </div>
+        </div>
+
+        <p class="reveal" style="font-size:var(--small-size); color:var(--text-muted); margin-top:var(--element-gap);">
+            Of 14 UWD hypotheses: <span style="color:var(--green)">1 confirmed</span>, <span style="color:var(--amber)">1 partial</span>, <span style="color:var(--red)">2 rejected</span>, <span style="color:var(--text-muted)">10 inconclusive</span> (mostly data access failures)
+        </p>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     SLIDE 12: FIX 1 — INCONSISTENT STATS CODE
+     ═══════════════════════════════════════════════ -->
+<section class="slide" id="slide-fix1">
+    <div class="slide-content">
+        <div class="section-label reveal"><span class="prompt">$</span> git log --oneline <span class="comment"># fix 1 of 3</span></div>
+        <h2 class="reveal">Fix 1: Centralizing Statistical Analysis</h2>
+        <div class="two-col">
+            <div class="reveal">
+                <div class="fix-card" style="border-left-color:var(--red); margin-bottom:var(--content-gap);">
+                    <div class="problem" style="color:var(--red);">Problem: LLM generating inconsistent statistical code</div>
+                    <div class="fix-detail">Each verification agent was writing bespoke regression code &mdash; different imports, different test logic, different output formats. No way to verify correctness or ensure consistency across runs.</div>
+                </div>
+                <div class="fix-card resolved">
+                    <div class="problem">Solution: shared stats library</div>
+                    <div class="fix-detail">Created <span class="file-ref">src/utils/stats.py</span> with 5 standardized functions. System prompt mandates: <span style="color:var(--amber)">"Do NOT use scipy.stats directly. Do NOT write your own CSV loading."</span></div>
+                </div>
+            </div>
+            <div class="reveal">
+                <div class="code-block" style="font-size:var(--code-size);">
+<span class="comment"># src/utils/stats.py — 5 functions</span>
+
+<span class="keyword">def</span> <span class="tref fn-ref" style="border:none;">run_bivariate_correlation<span class="tref-tip"><span class="tip-sig">(x: Series, y: Series, iso: Optional[Series]) -&gt; CorrelationResult</span><span class="tip-desc">Pearson + Spearman. Drops NaN, requires n &ge; 3.</span></span></span>()
+
+<span class="keyword">def</span> <span class="tref fn-ref" style="border:none;">run_partial_correlation<span class="tref-tip"><span class="tip-sig">(df, x_col, y_col, covar_cols) -&gt; Optional[PartialCorrelationResult]</span><span class="tip-desc">Uses pingouin.partial_corr(). Returns None if n &lt; 30.</span></span></span>()
+
+<span class="keyword">def</span> <span class="tref fn-ref" style="border:none;">test_functional_form<span class="tref-tip"><span class="tip-sig">(x: Series, y: Series, min_n=20) -&gt; Optional[FunctionalFormResult]</span><span class="tip-desc">Tests linear, log-linear, quadratic. Best by AIC.</span></span></span>()
+
+<span class="keyword">def</span> <span class="tref fn-ref" style="border:none;">determine_verdict<span class="tref-tip"><span class="tip-sig">(corr, partial, expected_direction) -&gt; Verdict</span><span class="tip-desc">Decision tree: n&lt;20&rarr;inconclusive, mismatch&rarr;rejected, etc.</span></span></span>()
+
+<span class="keyword">def</span> <span class="tref fn-ref" style="border:none;">build_result_json<span class="tref-tip"><span class="tip-sig">(hypothesis_id, verdict, corr, ...) -&gt; dict</span><span class="tip-desc">Sanitizes NaN/Inf for JSON. Matches VerificationResult schema.</span></span></span>()
+
+<span class="comment"># Every agent now produces</span>
+<span class="comment"># identical output format with</span>
+<span class="comment"># consistent statistical methods</span></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     SLIDE 13: FIX 2 — DATA FABRICATION
+     ═══════════════════════════════════════════════ -->
+<section class="slide" id="slide-fix2">
+    <div class="slide-content">
+        <div class="section-label reveal"><span class="prompt">$</span> git log --oneline <span class="comment"># fix 2 of 3</span></div>
+        <h2 class="reveal">Fix 2: Preventing Data Fabrication</h2>
+        <div class="two-col">
+            <div class="reveal">
+                <div class="fix-card" style="border-left-color:var(--red); margin-bottom:var(--content-gap);">
+                    <div class="problem" style="color:var(--red);">Problem: Agent unable to access datasets &rarr; fabricating synthetic data</div>
+                    <div class="fix-detail">Many data sources require login or authentication. When blocked, agents would sometimes generate fake data with <code>np.random</code> and report "correlations" against noise &mdash; producing meaningless but confident-looking results.</div>
+                </div>
+                <div class="fix-card resolved">
+                    <div class="problem">Solution: centralized data access layer</div>
+                    <div class="fix-detail">Created <span class="file-ref">src/utils/data_fetch.py</span> with pre-built API wrappers + hard rule in prompt: <span class="error">"NEVER fabricate data. If ALL sources fail &rarr; verdict = inconclusive."</span></div>
+                </div>
+            </div>
+            <div class="reveal">
+                <div class="code-block" style="font-size:var(--code-size);">
+<span class="comment"># src/utils/data_fetch.py</span>
+
+<span class="keyword">def</span> <span class="tref fn-ref" style="border:none;">fetch_world_bank_indicator<span class="tref-tip"><span class="tip-sig">(indicator_code: str, year_range=(1990,2024)) -&gt; DataFrame</span><span class="tip-desc">Fetches any WB indicator by code. Handles pagination, null filtering, ISO3 validation. Filters to EPI ISO set (180 countries).</span></span></span>()
+  <span class="comment"># World Bank API (20k+ indicators)</span>
+
+<span class="keyword">def</span> <span class="tref fn-ref" style="border:none;">fetch_who_gho_indicator<span class="tref-tip"><span class="tip-sig">(indicator_code: str) -&gt; DataFrame</span><span class="tip-desc">Fetches from WHO GHO API. Deduplicates sub-dimension breakdowns (sex/area). Returns: iso, year, value.</span></span></span>()
+  <span class="comment"># WHO Global Health Observatory</span>
+
+<span class="keyword">def</span> <span class="tref fn-ref" style="border:none;">search_world_bank<span class="tref-tip"><span class="tip-sig">(query: str, max_results=10) -&gt; list[dict]</span><span class="tip-desc">Searches WB indicator catalog by keyword. Returns: id, name, source.</span></span></span>()
+  <span class="comment"># keyword → indicator code lookup</span>
+
+<span class="keyword">def</span> <span class="tref fn-ref" style="border:none;">list_local_indicators<span class="tref-tip"><span class="tip-sig">() -&gt; list[dict]</span><span class="tip-desc">Lists all TLAs available as local raw CSVs (312 files in Raw/). Returns: tla, description, type, source.</span></span></span>()
+  <span class="comment"># 312 local EPI raw CSVs</span>
+
+<span class="comment"># Agent tries each in order.</span>
+<span class="comment"># ALL fail? → verdict = "inconclusive"</span>
+<span class="comment"># No np.random. No synthetic data.</span></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     SLIDE 14: FIX 3 — CONFOUNDERS
+     ═══════════════════════════════════════════════ -->
+<section class="slide" id="slide-fix3">
+    <div class="slide-content">
+        <div class="section-label reveal"><span class="prompt">$</span> git log --oneline <span class="comment"># fix 3 of 3</span></div>
+        <h2 class="reveal">Fix 3: Controlling for Confounders</h2>
+        <div class="two-col">
+            <div class="reveal">
+                <div class="fix-card" style="border-left-color:var(--red); margin-bottom:var(--content-gap);">
+                    <div class="problem" style="color:var(--red);">Problem: spurious correlations from confounding variables</div>
+                    <div class="fix-detail">Many environmental indicators correlate with GDP. Without controlling for it, nearly <em>anything</em> that tracks national wealth will appear to predict waste recovery, water treatment, etc.</div>
+                </div>
+                <div class="fix-card resolved">
+                    <div class="problem">Solution: mandatory partial correlation against standard controls</div>
+                    <div class="fix-detail">Every verification now tests <span class="tref fn-ref">run_partial_correlation<span class="tref-tip"><span class="tip-sig">(df, x_col, y_col, covar_cols) -&gt; Optional[PartialCorrelationResult]</span><span class="tip-desc">Uses pingouin.partial_corr(). Returns None if n &lt; 30. Returns partial_r, partial_p, control_variables.</span></span></span>() against these 4 controls:</div>
+                </div>
+            </div>
+            <div class="reveal">
+                <div class="code-block" style="font-size:var(--code-size); margin-bottom:var(--content-gap);">
+<span class="comment"># src/utils/data_fetch.py</span>
+LOCAL_CONTROLS: dict[str, str] = {
+  <span class="string">"GPC"</span>: <span class="string">"GDP per capita, PPP"</span>,
+  <span class="string">"HDI"</span>: <span class="string">"Human Development Index"</span>,
+  <span class="string">"POP"</span>: <span class="string">"Total population"</span>,
+  <span class="string">"URB"</span>: <span class="string">"Urban population (%)"</span>,
+}
+
+<span class="comment"># A proxy is only useful if it</span>
+<span class="comment"># explains variance BEYOND these.</span>
+<span class="comment">#</span>
+<span class="comment"># WRR diagnostic showed exactly this:</span>
+<span class="comment"># URB→WRR: r=0.489 (looks good!)</span>
+<span class="comment"># URB→WRR | GPC: partial_r = -0.016</span>
+<span class="comment"># (entirely confounded by GDP)</span></div>
+                <p style="font-size:var(--small-size); color:var(--text-muted);">GDP, HDI, urbanization, and population all strongly predict many environmental indicators. The partial correlation step is what separates <span style="color:var(--green)">confirmed</span> from <span style="color:var(--amber)">partially_confirmed</span>.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     SLIDE 15: KNOWLEDGE GRAPH VISION
+     ═══════════════════════════════════════════════ -->
+<section class="slide" id="slide-kg">
+    <div class="slide-content">
+        <div class="section-label reveal"><span class="prompt">$</span> cat vision/knowledge_graph.md</div>
+        <h2 class="reveal">Why This Design: Toward a Knowledge Graph</h2>
+        <div class="two-col">
+            <div class="reveal">
+                <p style="margin-bottom:var(--element-gap);">We are building a <span style="color:var(--green)">knowledge graph</span> of data proxies where <span style="color:var(--text-bright)">nodes</span> are data variables and <span style="color:var(--text-bright)">edges</span> are typed, quantified relationships.</p>
+                <p style="margin-bottom:var(--element-gap);">By constraining edges with direction, strength, and functional form (all fields of <span class="tref">Relationship<span class="tref-tip"><span class="tip-title">class Relationship(BaseModel)</span><span class="tip-field"><span class="fname">direction</span>: <span class="ftype">Direction</span>  <span class="comment"># positive|negative|nonlinear</span>
+<span class="fname">functional_form</span>: <span class="ftype">FunctionalForm</span>  <span class="comment"># linear|log-linear|quadratic|...</span>
+<span class="fname">strength_estimate</span>: <span class="ftype">Optional[str]</span>  <span class="comment"># e.g. "r=0.72"</span></span></span></span>), we can use <span style="color:var(--cyan)">probabilistic model checking</span> to self-validate the graph.</p>
+                <h3 style="font-size:var(--body-size); margin-bottom:0.3em;">Sign Consistency Check:</h3>
+                <div class="code-block" style="font-size:var(--code-size);">
+<span class="comment"># Transitive consistency:</span>
+<span class="comment"># if A --[+]--> B and B --[+]--> C</span>
+<span class="comment"># then A --[?]--> C should be positive</span>
+<span class="comment">#</span>
+<span class="comment"># If the graph says A --[-]--> C,</span>
+<span class="comment"># something is wrong: likely a</span>
+<span class="comment"># confounded or misspecified edge.</span>
+
+<span class="keyword">Example</span>:
+GPC <span class="string">--[+]--></span> WWT  <span class="comment"># richer = more treatment</span>
+WWT <span class="string">--[+]--></span> H2O  <span class="comment"># treatment = cleaner water</span>
+GPC <span class="keyword">--[?]--></span> H2O  <span class="comment"># should be positive</span>
+
+<span class="comment"># If GPC --[-]--> H2O found,</span>
+<span class="comment"># flag for investigation</span></div>
+            </div>
+            <div class="reveal">
+                <h3 style="font-size:var(--body-size); margin-bottom:0.3em;">Graph Fragment (Water Cluster):</h3>
+                <div class="kg-canvas" style="height:min(40vh,280px);">
+                    <svg class="kg-svg" viewBox="0 0 500 300" preserveAspectRatio="xMidYMid meet">
+                        <defs>
+                            <marker id="aG" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--green-dim)"/></marker>
+                            <marker id="aR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--red)"/></marker>
+                            <marker id="aA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--amber)"/></marker>
+                        </defs>
+                        <line x1="80" y1="60" x2="250" y2="60" class="positive" marker-end="url(#aG)"/>
+                        <line x1="250" y1="60" x2="420" y2="60" class="positive" marker-end="url(#aG)"/>
+                        <line x1="80" y1="60" x2="250" y2="180" class="positive" marker-end="url(#aG)"/>
+                        <line x1="250" y1="180" x2="420" y2="60" class="negative" marker-end="url(#aR)"/>
+                        <line x1="80" y1="60" x2="80" y2="240" class="positive" marker-end="url(#aG)"/>
+                        <line x1="80" y1="240" x2="250" y2="180" class="flagged" marker-end="url(#aA)"/>
+                    </svg>
+                    <div class="kg-node" style="left:4%;top:8%;width:60px;height:60px;font-size:0.7rem;border-color:var(--green-dim);">GPC</div>
+                    <div class="kg-node" style="left:42%;top:8%;width:60px;height:60px;font-size:0.7rem;border-color:var(--green-dim);">WWT</div>
+                    <div class="kg-node" style="left:78%;top:8%;width:60px;height:60px;font-size:0.7rem;border-color:var(--green-dim);">UWD</div>
+                    <div class="kg-node" style="left:42%;top:48%;width:60px;height:60px;font-size:0.7rem;border-color:var(--amber);">URB</div>
+                    <div class="kg-node" style="left:4%;top:65%;width:60px;height:60px;font-size:0.7rem;border-color:var(--text-muted);">POP</div>
+                    <div class="kg-edge-label" style="left:18%;top:3%;color:var(--green-dim);">+</div>
+                    <div class="kg-edge-label" style="left:62%;top:3%;color:var(--green-dim);">+</div>
+                    <div class="kg-edge-label" style="left:21%;top:32%;color:var(--green-dim);">+</div>
+                    <div class="kg-edge-label" style="left:64%;top:32%;color:var(--red);">&minus;</div>
+                    <div class="kg-edge-label" style="left:1%;top:42%;color:var(--green-dim);">+</div>
+                    <div class="kg-edge-label" style="left:18%;top:62%;color:var(--amber);">?</div>
+                </div>
+                <p style="font-size:clamp(0.55rem,0.9vw,0.75rem); color:var(--text-muted); margin-top:0.3rem;">
+                    <span style="color:var(--green-dim)">green</span> = verified positive &nbsp;
+                    <span style="color:var(--red)">red</span> = verified negative &nbsp;
+                    <span style="color:var(--amber)">amber dashed</span> = flagged for review
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     SLIDE 16: SELF-VALIDATION
+     ═══════════════════════════════════════════════ -->
+<section class="slide" id="slide-kg2">
+    <div class="slide-content">
+        <div class="section-label reveal"><span class="prompt">$</span> cat vision/model_checking.md</div>
+        <h2 class="reveal">Self-Validation via Constraint Checking</h2>
+        <div class="two-col">
+            <div class="reveal">
+                <p style="margin-bottom:var(--element-gap);">With edges typed by <span class="tref">Relationship<span class="tref-tip"><span class="tip-title">class Relationship(BaseModel)</span><span class="tip-field"><span class="fname">direction</span>: <span class="ftype">Direction</span>
+<span class="fname">functional_form</span>: <span class="ftype">FunctionalForm</span>
+<span class="fname">strength_estimate</span>: <span class="ftype">Optional[str]</span></span></span></span> fields, we can define <span style="color:var(--cyan)">consistency constraints</span> and automatically flag violations:</p>
+                <div class="code-block" style="font-size:var(--code-size); margin-bottom:var(--element-gap);">
+<span class="comment"># Constraint 1: Sign Transitivity</span>
+<span class="keyword">for</span> path <span class="keyword">in</span> graph.all_paths(A, C):
+  expected = <span class="keyword">product</span>(
+    [e.direction <span class="keyword">for</span> e <span class="keyword">in</span> path])
+  <span class="keyword">if</span> expected != direct_edge(A,C):
+    <span class="keyword">flag</span>(<span class="string">"sign inconsistency"</span>)
+
+<span class="comment"># Constraint 2: Strength Bounds</span>
+<span class="comment"># if A->B strong (r=0.8) and</span>
+<span class="comment"># B->C strong (r=0.7),</span>
+<span class="comment"># A->C can't be near-zero</span>
+
+<span class="comment"># Constraint 3: Confounder Detection</span>
+<span class="comment"># partial_r drops to ~0 after</span>
+<span class="comment"># controlling a 3rd variable</span>
+<span class="comment"># => edge is confounded, not causal</span></div>
+            </div>
+            <div class="reveal">
+                <h3 style="font-size:var(--body-size); margin-bottom:0.3em;">Concrete Example:</h3>
+                <div class="code-block" style="font-size:var(--code-size); margin-bottom:var(--element-gap);">
+<span class="comment"># From our WRR diagnostic run:</span>
+<span class="comment"># ────────────────────────────</span>
+
+<span class="keyword">GPC</span> <span class="string">--[+, r=0.757]--></span> <span class="keyword">WRR</span>
+  <span class="comment"># confirmed (partial r=0.662)</span>
+
+<span class="keyword">URB</span> <span class="string">--[+, r=0.489]--></span> <span class="keyword">WRR</span>
+  <span class="comment"># partially confirmed</span>
+
+<span class="keyword">GPC</span> <span class="string">--[+]--></span> <span class="keyword">URB</span>
+  <span class="comment"># known strong positive</span>
+
+<span class="comment"># Model checker finds:</span>
+<span class="comment"># URB->WRR has partial_r = -0.016</span>
+<span class="comment"># after controlling GPC</span>
+<span class="comment"># => edge is CONFOUNDED, not causal</span>
+<span class="comment"># => remove or downgrade URB->WRR</span></div>
+                <p style="font-size:var(--small-size); color:var(--text-muted);">The structured hypothesis format (<span class="tref">ProxyHypothesis<span class="tref-tip"><span class="tip-title">class ProxyHypothesis(BaseModel)</span><span class="tip-field"><span class="fname">id</span>: <span class="ftype">str</span>
+<span class="fname">context</span>: <span class="ftype">Context</span>
+<span class="fname">target_variable</span>: <span class="ftype">str</span>
+<span class="fname">proxy_variable</span>: <span class="ftype">str</span>
+<span class="fname">relationship</span>: <span class="ftype">Relationship</span>
+<span class="fname">mechanism</span>: <span class="ftype">str</span>
+<span class="fname">data_source</span>: <span class="ftype">DataSource</span>
+<span class="fname">confidence</span>: <span class="ftype">Confidence</span>
+<span class="fname">evidence_type</span>: <span class="ftype">EvidenceType</span>
+<span class="fname">caveats</span>: <span class="ftype">list[str]</span></span></span></span>) was designed specifically to enable this kind of graph-level reasoning.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     SLIDE 17: FUTURE — ABLATION & VALIDATION
+     ═══════════════════════════════════════════════ -->
+<section class="slide" id="slide-future1">
+    <div class="slide-content">
+        <div class="section-label reveal"><span class="prompt">$</span> cat TODO.md</div>
+        <h2 class="reveal">Future Considerations</h2>
+        <div class="two-col">
+            <ol class="future-list reveal">
+                <li><span style="color:var(--text-bright)">Prompt ablation</span> &mdash; Current prompts are verbose. Which sections matter? Should we drop Confounder Analysis and Ranked Candidates from the research prompt?</li>
+                <li><span style="color:var(--text-bright)">Data validation</span> &mdash; Ensure coding agents properly validate and align data, especially from non-WB/WHO sources. Country name mismatches remain a risk.</li>
+                <li><span style="color:var(--text-bright)">Richer statistical tests</span> &mdash; Current <span class="tref fn-ref">test_functional_form<span class="tref-tip"><span class="tip-sig">(x: Series, y: Series, min_n=20) -&gt; Optional[FunctionalFormResult]</span><span class="tip-desc">Currently tests log(X) but NOT log(Y). Misses ln(WRR) ~ GPC form. Need log-Y, polynomial, threshold models.</span></span></span> tests log(X) but not log(Y). Need to add log-Y, polynomial, threshold models.</li>
+            </ol>
+            <ol class="future-list reveal" start="4">
+                <li><span style="color:var(--text-bright)">Output verification agent</span> &mdash; A final agent that reviews all <span class="tref">VerificationResult<span class="tref-tip"><span class="tip-title">class VerificationResult(BaseModel)</span><span class="tip-field"><span class="fname">hypothesis_id</span>: <span class="ftype">str</span>
+<span class="fname">verdict</span>: <span class="ftype">Verdict</span>
+<span class="fname">raw_correlation</span>: <span class="ftype">Optional[CorrelationResult]</span>
+<span class="fname">partial_correlation</span>: <span class="ftype">Optional[PartialCorrelationResult]</span>
+<span class="fname">functional_form</span>: <span class="ftype">Optional[FunctionalFormResult]</span>
+<span class="fname">data_quality_notes</span>: <span class="ftype">str</span>
+<span class="fname">summary</span>: <span class="ftype">str</span></span></span></span> files for consistency and flags suspect data.</li>
+                <li><span style="color:var(--text-bright)">Context scope</span> &mdash; Do we want only global relationships? Or also local ones (e.g. "in MENA countries, X correlates with Y") with properly bounded <span class="tref">Context<span class="tref-tip"><span class="tip-title">class Context(BaseModel)</span><span class="tip-field"><span class="fname">geographic_scope</span>: <span class="ftype">str</span>
+<span class="fname">time_period</span>: <span class="ftype">str</span>
+<span class="fname">subpopulations</span>: <span class="ftype">Optional[str]</span></span></span></span>?</li>
+                <li><span style="color:var(--text-bright)">Knowledge graph structure</span> &mdash; What is the schema? How do we store nodes, edges, constraints? How do we query and visualize the evolving graph?</li>
+            </ol>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     SLIDE 18: UNCONVENTIONAL DATA SOURCES
+     ═══════════════════════════════════════════════ -->
+<section class="slide" id="slide-datasources">
+    <div class="slide-content">
+        <div class="section-label reveal"><span class="prompt">$</span> cat TODO.md <span class="comment"># tuning data source discovery</span></div>
+        <h2 class="reveal">Exploring Unconventional Proxy Sources</h2>
+        <div class="two-col">
+            <div class="reveal">
+                <p style="margin-bottom:var(--element-gap);">The deep researcher currently finds proxies from <span style="color:var(--text-bright)">academic literature and statistical databases</span> (World Bank, WHO). We should tune the prompt to explicitly consider less conventional but increasingly available data modalities:</p>
+
+                <div class="card" style="border-left:3px solid var(--cyan); margin-bottom:0.4rem;">
+                    <div class="card-title" style="font-size:var(--small-size);">Satellite &amp; Remote Sensing</div>
+                    <div class="card-body">Satellite imagery of waste facilities, truck traffic at landfills, nighttime light intensity (VIIRS/DMSP) as economic proxy, TROPOMI atmospheric NO&#8322;/SO&#8322; columns, land use change detection for deforestation (Sentinel-2), ocean colour for coastal water quality</div>
+                </div>
+                <div class="card" style="border-left:3px solid var(--amber); margin-bottom:0.4rem;">
+                    <div class="card-title" style="font-size:var(--small-size);">Maritime &amp; Logistics Tracking</div>
+                    <div class="card-body">AIS vessel tracking for illegal fishing and waste dumping at sea, port throughput and freight manifests, import/export records for recycling equipment and hazardous waste shipments</div>
+                </div>
+                <div class="card" style="border-left:3px solid var(--green); margin-bottom:0.4rem;">
+                    <div class="card-title" style="font-size:var(--small-size);">Consumer &amp; Pharmaceutical Data</div>
+                    <div class="card-body">ORS (oral rehydration salts) and water purification tablet sales as water quality proxy, respiratory medication sales for air quality, pesticide import volumes for agricultural pollution</div>
+                </div>
+            </div>
+            <div class="reveal">
+                <div class="card" style="border-left:3px solid var(--purple); margin-bottom:0.4rem;">
+                    <div class="card-title" style="font-size:var(--small-size);">Crowdsourced &amp; Citizen Science</div>
+                    <div class="card-body">iNaturalist/eBird observation density for biodiversity, PurpleAir/OpenAQ sensor networks for air quality, OpenStreetMap infrastructure completeness (water/waste facilities), acoustic monitoring for ecosystem health</div>
+                </div>
+                <div class="card" style="border-left:3px solid var(--red); margin-bottom:0.4rem;">
+                    <div class="card-title" style="font-size:var(--small-size);">Digital Footprint &amp; Search Data</div>
+                    <div class="card-body">Google Trends for "water filter", "boil water advisory", "air pollution" by country, news corpus frequency of environmental incident reporting, e-commerce data for environmental products</div>
+                </div>
+                <div class="card" style="border-left:3px solid var(--text-muted); margin-bottom:0.4rem;">
+                    <div class="card-title" style="font-size:var(--small-size);">Financial &amp; Insurance Signals</div>
+                    <div class="card-body">Environmental insurance claim rates, green bond issuance as governance proxy, carbon credit trading volumes, ESG disclosure scores from corporate filings</div>
+                </div>
+
+                <div class="code-block" style="font-size:var(--code-size); margin-top:var(--element-gap);">
+<span class="comment"># Prompt tuning idea:</span>
+<span class="comment"># Add a "data modality" hint section</span>
+<span class="comment"># to RESEARCH_PROMPT_TEMPLATE</span>
+<span class="keyword">## Consider these data modalities:</span>
+<span class="string">"satellite imagery, vessel tracking,</span>
+<span class="string"> consumer purchasing, crowdsourced</span>
+<span class="string"> sensors, web search trends, trade</span>
+<span class="string"> and import/export records"</span></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     SLIDE 19: END
+     ═══════════════════════════════════════════════ -->
+<section class="slide" id="slide-end">
+    <div class="slide-content" style="align-items:center; text-align:center;">
+        <div class="reveal" style="font-family:var(--font-mono); font-size:clamp(0.4rem,0.7vw,0.6rem); color:var(--green-dim); line-height:1.2; white-space:pre; opacity:0.5; margin-bottom:var(--content-gap);">
++--------------------------------------------------+
+|                                                  |
+|   ╔═══════════════════════════════════════════╗   |
+|   ║                                           ║   |
+|   ║   $ echo "questions?"                     ║   |
+|   ║   questions?                              ║   |
+|   ║   $ _                                     ║   |
+|   ║                                           ║   |
+|   ╚═══════════════════════════════════════════╝   |
+|                                                  |
++--------------------------------------------------+</div>
+        <h1 class="reveal" style="font-size:var(--h2-size);"><span class="prompt">$</span> ./pipeline <span class="keyword">--help</span></h1>
+        <p class="reveal" style="color:var(--text-muted); font-size:var(--body-size); margin-top:var(--element-gap); max-width:600px;">
+            YCELP &times; ROSE Lab<br>
+            <span style="color:var(--text-primary)">python -m src --indicator {TLA} --stage both</span>
+        </p>
+        <div class="reveal" style="margin-top:var(--content-gap);"><span class="cursor"></span></div>
+    </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════
+     JAVASCRIPT
+     ═══════════════════════════════════════════════ -->
+<script>
+class SlidePresentation {
+    constructor() {
+        this.slides = document.querySelectorAll('.slide');
+        this.totalSlides = this.slides.length;
+        this.currentIndex = 0;
+        document.getElementById('totalSlides').textContent = String(this.totalSlides).padStart(2, '0');
+        this.createNavDots();
+        this.setupIntersectionObserver();
+        this.setupKeyboardNav();
+        this.setupClickNav();
+        this.updateProgress();
+    }
+
+    createNavDots() {
+        const nav = document.getElementById('navDots');
+        this.slides.forEach((_, i) => {
+            const dot = document.createElement('button');
+            dot.className = 'nav-dot' + (i === 0 ? ' active' : '');
+            dot.setAttribute('aria-label', `Slide ${i + 1}`);
+            dot.addEventListener('click', () => this.goToSlide(i));
+            nav.appendChild(dot);
+        });
+        this.dots = nav.querySelectorAll('.nav-dot');
+    }
+
+    setupIntersectionObserver() {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    const index = Array.from(this.slides).indexOf(entry.target);
+                    this.currentIndex = index;
+                    this.updateProgress();
+                    this.updateDots();
+                }
+            });
+        }, { threshold: 0.5 });
+        this.slides.forEach((s) => observer.observe(s));
+    }
+
+    setupKeyboardNav() {
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === ' ') {
+                e.preventDefault();
+                this.goToSlide(Math.min(this.currentIndex + 1, this.totalSlides - 1));
+            } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+                e.preventDefault();
+                this.goToSlide(Math.max(this.currentIndex - 1, 0));
+            } else if (e.key === 'Home') { e.preventDefault(); this.goToSlide(0); }
+            else if (e.key === 'End') { e.preventDefault(); this.goToSlide(this.totalSlides - 1); }
+        });
+    }
+
+    setupClickNav() {
+        document.querySelectorAll('.hpipe-node[data-slide]').forEach((node) => {
+            node.addEventListener('click', () => {
+                const target = document.getElementById(node.getAttribute('data-slide'));
+                if (target) target.scrollIntoView({ behavior: 'smooth' });
+            });
+        });
+    }
+
+    goToSlide(i) { if (i >= 0 && i < this.totalSlides) this.slides[i].scrollIntoView({ behavior: 'smooth' }); }
+
+    updateProgress() {
+        document.getElementById('progressBar').style.width = `${((this.currentIndex + 1) / this.totalSlides) * 100}%`;
+        document.getElementById('currentSlide').textContent = String(this.currentIndex + 1).padStart(2, '0');
+    }
+
+    updateDots() { this.dots.forEach((d, i) => d.classList.toggle('active', i === this.currentIndex)); }
+}
+
+document.addEventListener('DOMContentLoaded', () => new SlidePresentation());
+</script>
+
+</body>
+</html>
