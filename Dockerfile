@@ -10,6 +10,11 @@ RUN apt-get update && \
 # Claude CLI
 RUN npm install -g @anthropic-ai/claude-code
 
+# Env vars for headless Claude CLI inside container
+ENV NODE_PATH="/usr/local/lib/node_modules"
+ENV DISABLE_AUTOUPDATER=1
+ENV NODE_ENV=production
+
 WORKDIR /app
 COPY . .
 
