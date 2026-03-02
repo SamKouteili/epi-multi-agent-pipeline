@@ -46,6 +46,15 @@ async def verify_hypothesis(
 
     logger.info("Verifying hypothesis %s in %s", hypothesis.id, output_dir)
 
+    # Pass critical env vars explicitly so the Claude CLI subprocess inherits them
+    sdk_env = {
+        "PATH": os.environ.get("PATH", "/usr/local/bin:/usr/bin:/bin"),
+        "HOME": os.environ.get("HOME", "/root"),
+        "ANTHROPIC_API_KEY": os.environ.get("ANTHROPIC_API_KEY", ""),
+        "NODE_PATH": os.environ.get("NODE_PATH", "/usr/local/lib/node_modules"),
+        "DISABLE_AUTOUPDATER": "1",
+    }
+
     options = ClaudeCodeOptions(
         allowed_tools=["Bash", "Write", "Read", "Glob", "Grep", "WebFetch"],
         permission_mode="bypassPermissions",
@@ -53,6 +62,7 @@ async def verify_hypothesis(
         max_turns=30,
         system_prompt=system_prompt,
         model=CLAUDE_VERIFICATION_MODEL,
+        env=sdk_env,
     )
 
     # Collect agent text output
