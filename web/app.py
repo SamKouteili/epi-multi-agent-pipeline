@@ -115,35 +115,17 @@ def _load_presentation() -> str:
 
 
 _CUSTOM_CSS = """
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
-
-:root {
-    --bg-primary: #0a0e14;
-    --bg-secondary: #131920;
-    --accent: #00ff88;
-    --accent-dim: #00cc6a;
-    --text-primary: #c5cdd8;
-    --text-muted: #5c6b7f;
-    --border: #1e2a3a;
-}
-
-body, .gradio-container {
-    background: var(--bg-primary) !important;
-    color: var(--text-primary) !important;
-    font-family: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace !important;
-}
-
 /* Header banner */
 .app-header {
     text-align: center;
     padding: 2rem 1rem 1rem;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid #1e2a3a;
     margin-bottom: 1rem;
 }
 .app-header .tla-badge {
     display: inline-block;
-    background: var(--accent);
-    color: var(--bg-primary);
+    background: #00ff88;
+    color: #0a0e14;
     font-weight: 700;
     font-size: 0.75rem;
     padding: 0.25rem 0.6rem;
@@ -158,109 +140,106 @@ body, .gradio-container {
     margin: 0.5rem 0 0.25rem;
 }
 .app-header p {
-    color: var(--text-muted);
+    color: #5c6b7f;
     font-size: 0.85rem;
     margin: 0;
 }
 
-/* Panels & containers */
-.gr-panel, .gr-box, .gr-form, .gr-group,
-div[class*="block"], div[class*="container"] {
-    background: var(--bg-primary) !important;
-    border-color: var(--border) !important;
+/* Neon glow on primary buttons */
+button.primary:hover {
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.3) !important;
 }
 
-/* Inputs: textbox, textarea, dropdown */
-textarea, input[type="text"], .gr-input, .gr-text-input,
-div[data-testid="textbox"] textarea,
-.secondary-wrap, .wrap {
-    background: var(--bg-secondary) !important;
-    color: var(--text-primary) !important;
-    border: 1px solid var(--border) !important;
-    font-family: 'JetBrains Mono', monospace !important;
-    border-radius: 6px !important;
+/* Green accent on active tab */
+button[role="tab"][aria-selected="true"] {
+    color: #00ff88 !important;
+    border-color: #00ff88 !important;
 }
-textarea:focus, input[type="text"]:focus {
-    border-color: var(--accent) !important;
+
+/* Green focus ring on inputs */
+textarea:focus, input:focus {
+    border-color: #00ff88 !important;
     box-shadow: 0 0 0 2px rgba(0, 255, 136, 0.15) !important;
 }
 
-/* Dropdown */
-.gr-dropdown, div[data-testid="dropdown"] {
-    background: var(--bg-secondary) !important;
-    border-color: var(--border) !important;
-}
-.gr-dropdown .options {
-    background: var(--bg-secondary) !important;
-    border-color: var(--border) !important;
-}
-.gr-dropdown .option:hover {
-    background: var(--border) !important;
-}
-
-/* Buttons */
-button.primary, button[variant="primary"] {
-    background: var(--accent) !important;
-    color: var(--bg-primary) !important;
-    font-weight: 600 !important;
-    border: none !important;
-    font-family: 'JetBrains Mono', monospace !important;
-    border-radius: 6px !important;
-    transition: all 0.2s !important;
-}
-button.primary:hover, button[variant="primary"]:hover {
-    background: var(--accent-dim) !important;
-    box-shadow: 0 0 20px rgba(0, 255, 136, 0.25) !important;
-}
-button.secondary, button[variant="secondary"] {
-    background: transparent !important;
-    color: var(--text-primary) !important;
-    border: 1px solid var(--border) !important;
-    font-family: 'JetBrains Mono', monospace !important;
-    border-radius: 6px !important;
-}
-button.secondary:hover, button[variant="secondary"]:hover {
-    border-color: var(--accent) !important;
-    color: var(--accent) !important;
-}
-
-/* Tabs */
-button[role="tab"] {
-    color: var(--text-muted) !important;
-    font-family: 'JetBrains Mono', monospace !important;
-    border: none !important;
-    background: transparent !important;
-}
-button[role="tab"][aria-selected="true"] {
-    color: var(--accent) !important;
-    border-bottom: 2px solid var(--accent) !important;
-}
-
-/* Labels */
-label, .gr-label, span[data-testid="block-label"] {
-    color: var(--text-muted) !important;
-    font-family: 'JetBrains Mono', monospace !important;
-    font-size: 0.8rem !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.05em !important;
-}
-
-/* Markdown */
-.prose, .prose * {
-    color: var(--text-primary) !important;
-}
-
-/* Scrollbar */
+/* Thin scrollbar */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: var(--bg-primary); }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
-
-/* File download */
-.file-preview { background: var(--bg-secondary) !important; border-color: var(--border) !important; }
+::-webkit-scrollbar-track { background: #0a0e14; }
+::-webkit-scrollbar-thumb { background: #1e2a3a; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #5c6b7f; }
 """
 
-_CUSTOM_HEAD = '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">'
+_CUSTOM_HEAD = (
+    '<link rel="preconnect" href="https://fonts.googleapis.com">'
+    '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
+    '<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">'
+)
+
+# ── Build dark terminal theme via Gradio's theme API ─────────────────────────
+
+_THEME = gr.themes.Base(
+    primary_hue=gr.themes.Color(
+        c50="#e6fff3", c100="#b3ffdb", c200="#80ffc4",
+        c300="#4dffac", c400="#1aff95", c500="#00ff88",
+        c600="#00cc6a", c700="#00994f", c800="#006635", c900="#00331a", c950="#001a0d",
+    ),
+    neutral_hue=gr.themes.Color(
+        c50="#c5cdd8", c100="#a3adb8", c200="#8192a3",
+        c300="#5c6b7f", c400="#3d4f63", c500="#2a3a4e",
+        c600="#1e2a3a", c700="#131920", c800="#0d1117", c900="#0a0e14", c950="#070a0f",
+    ),
+    font=gr.themes.GoogleFont("JetBrains Mono"),
+    font_mono=gr.themes.GoogleFont("JetBrains Mono"),
+).set(
+    # Body
+    body_background_fill="#0a0e14",
+    body_background_fill_dark="#0a0e14",
+    body_text_color="#c5cdd8",
+    body_text_color_dark="#c5cdd8",
+    body_text_color_subdued="#5c6b7f",
+    body_text_color_subdued_dark="#5c6b7f",
+    # Blocks
+    background_fill_primary="#0a0e14",
+    background_fill_primary_dark="#0a0e14",
+    background_fill_secondary="#131920",
+    background_fill_secondary_dark="#131920",
+    block_background_fill="#0d1117",
+    block_background_fill_dark="#0d1117",
+    block_border_color="#1e2a3a",
+    block_border_color_dark="#1e2a3a",
+    block_label_background_fill="#0a0e14",
+    block_label_background_fill_dark="#0a0e14",
+    block_label_border_color="#1e2a3a",
+    block_label_border_color_dark="#1e2a3a",
+    block_label_text_color="#5c6b7f",
+    block_label_text_color_dark="#5c6b7f",
+    block_title_text_color="#5c6b7f",
+    block_title_text_color_dark="#5c6b7f",
+    # Borders
+    border_color_primary="#1e2a3a",
+    border_color_primary_dark="#1e2a3a",
+    border_color_accent="#00ff88",
+    border_color_accent_dark="#00ff88",
+    # Inputs
+    input_background_fill="#131920",
+    input_background_fill_dark="#131920",
+    # Primary button
+    button_primary_background_fill="#00ff88",
+    button_primary_background_fill_dark="#00ff88",
+    button_primary_background_fill_hover="#00cc6a",
+    button_primary_background_fill_hover_dark="#00cc6a",
+    button_primary_text_color="#0a0e14",
+    button_primary_text_color_dark="#0a0e14",
+    button_primary_border_color="#00ff88",
+    button_primary_border_color_dark="#00ff88",
+    # Secondary button
+    button_secondary_background_fill="transparent",
+    button_secondary_background_fill_dark="transparent",
+    button_secondary_text_color="#c5cdd8",
+    button_secondary_text_color_dark="#c5cdd8",
+    button_secondary_border_color="#1e2a3a",
+    button_secondary_border_color_dark="#1e2a3a",
+)
 
 
 def build_app() -> gr.Blocks:
@@ -318,7 +297,7 @@ if __name__ == "__main__":
     app.launch(
         server_name="0.0.0.0",
         server_port=7860,
-        theme=gr.themes.Base(primary_hue="green", neutral_hue="slate"),
+        theme=_THEME,
         css=_CUSTOM_CSS,
         head=_CUSTOM_HEAD,
     )
