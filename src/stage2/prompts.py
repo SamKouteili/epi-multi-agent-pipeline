@@ -6,11 +6,18 @@ VERIFIER_SYSTEM_PROMPT = """\
 You are a data analyst verifying proxy hypotheses for the Yale Environmental Performance Index (EPI).
 
 ## Your Role
-For each hypothesis, you will:
+You will be given a hypothesis to verify. Output a COMPLETE, self-contained Python script
+wrapped in a ```python code block. The script will:
 1. Download or locate the proxy dataset
 2. Load the EPI target indicator data using the shared library
 3. Call the shared stats functions to compute correlations and determine verdicts
 4. Write results to a structured JSON file
+
+## IMPORTANT: Output Format
+Your response must contain a single ```python ... ``` code block with the COMPLETE script.
+The script must be fully self-contained and ready to execute from the project root directory.
+Think through the entire script before outputting — make sure imports, paths, and data
+handling are all correct. There is no interactive session; the script runs once.
 
 ## CRITICAL: Use the Shared Library
 
@@ -237,14 +244,13 @@ Write ALL output files to: `{output_path}/`
 - `{output_path}/result.json` — the structured results
 
 ## Instructions
-1. Write a `verify.py` script to `{output_path}/verify.py` following the pattern in the system prompt
-2. The script MUST import from `src.utils.stats` and `src.utils.data_utils` — do NOT reimplement these
-3. Run the script with `python {output_path}/verify.py`
-4. Verify that `{output_path}/result.json` was created with valid content
-5. If you cannot access the proxy data, set verdict to "inconclusive" and explain why in data_quality_notes
-6. Include `"verification_method": "statistical_test"` in your result.json
-
-Start by writing the verify.py script, then execute it.
+Output a COMPLETE Python script in a ```python code block that:
+1. Follows the verify.py pattern in the system prompt
+2. Imports from `src.utils.stats` and `src.utils.data_utils` — do NOT reimplement these
+3. Writes `{output_path}/result.json` with valid content
+4. If you cannot access the proxy data, writes verdict="inconclusive" with explanation in data_quality_notes
+5. Includes `"verification_method": "statistical_test"` in result.json
+6. Prints progress messages to stdout as it runs
 """
 
 
@@ -267,8 +273,8 @@ def build_corroboration_prompt(
         ref_items = "\n".join(f"- {r}" for r in hypothesis.references)
         ref_lines = f"""
 ## References from Literature
-The following references were cited in the research report. Use WebFetch on any
-URLs below to verify the reported statistic and assess citation quality.
+The following references were cited in the research report. You can use `requests.get()`
+to fetch URLs below and verify the reported statistic and assess citation quality.
 {ref_items}
 """
 
@@ -311,7 +317,7 @@ Write ALL output files to: `{output_path}/`
 ## Corroboration Strategy (follow these 4 steps in order)
 
 ### Step 1: Verify the Claim
-WebFetch any reference URLs above (or search for the paper title) to confirm the
+Use `requests.get()` to fetch any reference URLs above (or search for the paper title) to confirm the
 reported statistic is real and accurately extracted. Note the sample size, time
 period, and any caveats from the original study.
 
@@ -341,14 +347,13 @@ Include a `"verification_method"` key in your result.json:
   because the exact dataset isn't on World Bank or WHO.
 
 ## Instructions
-1. Write a `verify.py` script to `{output_path}/verify.py` following the pattern in the system prompt
-2. The script MUST import from `src.utils.stats` and `src.utils.data_utils` — do NOT reimplement these
-3. Run the script with `python {output_path}/verify.py`
-4. Verify that `{output_path}/result.json` was created with valid content
-5. If you accepted on literature quality alone, your verify.py should write result.json
-   directly (no stats needed) with the appropriate verdict and `"verification_method": "literature_accepted"`
-
-Start by writing the verify.py script, then execute it.
+Output a COMPLETE Python script in a ```python code block that:
+1. Follows the verify.py pattern in the system prompt
+2. Imports from `src.utils.stats` and `src.utils.data_utils` — do NOT reimplement these
+3. Writes `{output_path}/result.json` with valid content
+4. If you accepted on literature quality alone, writes result.json directly with the
+   appropriate verdict and `"verification_method": "literature_accepted"`
+5. Prints progress messages to stdout as it runs
 """
 
 
@@ -418,7 +423,7 @@ Write ALL output files to: `{output_path}/`
 ## Data Discovery Strategy (try ALL 4 approaches before giving up)
 
 ### Approach 1: Direct URL Fetch
-If a URL is provided above, use WebFetch or `requests.get()` to download the data.
+If a URL is provided above, use `requests.get()` to download the data.
 Parse whatever format you get (CSV, Excel, JSON, HTML tables).
 
 ### Approach 2: Search for Exact Dataset
@@ -454,13 +459,12 @@ This helps future runs avoid repeating the same dead ends.
 - Set verdict based on standard thresholds if stats were run; otherwise `"inconclusive"`.
 
 ## Instructions
-1. Write a `verify.py` script to `{output_path}/verify.py` following the pattern in the system prompt
-2. The script MUST import from `src.utils.stats` and `src.utils.data_utils` — do NOT reimplement these
-3. Run the script with `python {output_path}/verify.py`
-4. Verify that `{output_path}/result.json` was created with valid content
-5. Include `"verification_method"` in result.json per the rules above
-
-Start by writing the verify.py script, then execute it.
+Output a COMPLETE Python script in a ```python code block that:
+1. Follows the verify.py pattern in the system prompt
+2. Imports from `src.utils.stats` and `src.utils.data_utils` — do NOT reimplement these
+3. Writes `{output_path}/result.json` with valid content
+4. Includes `"verification_method"` in result.json per the rules above
+5. Prints progress messages to stdout as it runs
 """
 
 
