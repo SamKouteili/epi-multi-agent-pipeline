@@ -7,11 +7,5 @@ dist/
 build/
 .venv/
 
-# Large docs not needed for web app
-docs/*.pdf
-docs/EPI2024_Work/*.pdf
-docs/EPI2024_Work/Source/
-docs/EPI2024_Work/EOutputs/
-docs/EPI2024_Work/PScripts/
-docs/EPI2024_Work/POutputs/
-docs/EPI2024_Work/P[1-6]_*/
+# Proprietary EPI data — keep local only
+docs/
