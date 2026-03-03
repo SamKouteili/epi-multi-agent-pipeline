@@ -59,7 +59,7 @@ def run_pipeline_web(tla: str):
                     # Final yield — pipeline done, provide export file
                     result_path = OUTPUTS_DIR / tla / "pipeline_result.json"
                     export = str(result_path) if result_path.exists() else None
-                    yield log_text, dashboard_html, export
+                    yield log_text, _wrap_in_iframe(dashboard_html), export
                 else:
                     yield log_text, dashboard_html, gr.skip()
             except StopAsyncIteration:
@@ -77,7 +77,7 @@ def load_previous_results(tla: str) -> tuple[str, str, str | None]:
     if dashboard_path.exists():
         html = dashboard_path.read_text(encoding="utf-8")
         export = str(result_path) if result_path.exists() else None
-        return f"Loaded previous results for {tla} from {dashboard_path}", html, export
+        return f"Loaded previous results for {tla} from {dashboard_path}", _wrap_in_iframe(html), export
     return f"No previous results found for {tla}.", "", None
 
 
@@ -96,18 +96,22 @@ def export_results(tla: str) -> str | None:
 PRESENTATION_PATH = PROJECT_ROOT / "presentation.html"
 
 
+def _wrap_in_iframe(html_content: str, height: str = "80vh") -> str:
+    """Wrap HTML in a sandboxed iframe so embedded scripts execute."""
+    import html as html_mod
+    escaped = html_mod.escape(html_content)
+    return (
+        f'<iframe srcdoc="{escaped}" '
+        f'style="width:100%;height:{height};border:none;border-radius:8px;" '
+        'sandbox="allow-scripts allow-same-origin">'
+        '</iframe>'
+    )
+
+
 def _load_presentation() -> str:
     if PRESENTATION_PATH.exists():
         content = PRESENTATION_PATH.read_text(encoding="utf-8")
-        # Wrap in a sandboxed iframe via srcdoc to isolate styles/scripts
-        import html as html_mod
-        escaped = html_mod.escape(content)
-        return (
-            f'<iframe srcdoc="{escaped}" '
-            'style="width:100%;height:80vh;border:none;border-radius:8px;" '
-            'sandbox="allow-scripts allow-same-origin">'
-            "</iframe>"
-        )
+        return _wrap_in_iframe(content)
     return "<p>presentation.html not found in project root.</p>"
 
 
