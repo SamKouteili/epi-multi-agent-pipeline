@@ -123,6 +123,7 @@ async def verify_hypothesis(
                 env={
                     **os.environ,
                     "PYTHONDONTWRITEBYTECODE": "1",
+                    "PYTHONPATH": str(PROJECT_ROOT),
                 },
             )
             agent_output_lines.append(f"=== Attempt {attempt} — stdout ===")
