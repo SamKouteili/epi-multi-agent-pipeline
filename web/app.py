@@ -16,19 +16,24 @@ if str(PROJECT_ROOT) not in sys.path:
 
 import gradio as gr  # noqa: E402
 
-from src.config import OUTPUTS_DIR  # noqa: E402
+from src.config import OUTPUTS_DIR, MASTER_VARIABLE_LIST  # noqa: E402
 from src.domain_knowledge import DOMAIN_KNOWLEDGE  # noqa: E402
-from src.utils.data_utils import load_variable_metadata  # noqa: E402
+
+import pandas as _pd  # noqa: E402
 
 # ── Build dropdown choices ──────────────────────────────────────────────────
 
+try:
+    _variable_meta = {
+        row["Abbreviation"]: row
+        for _, row in _pd.read_csv(MASTER_VARIABLE_LIST).iterrows()
+    }
+except FileNotFoundError:
+    _variable_meta = {}
+
 INDICATOR_CHOICES: list[tuple[str, str]] = []  # (label, tla)
 for _tla in sorted(DOMAIN_KNOWLEDGE.keys()):
-    try:
-        _meta = load_variable_metadata(_tla)
-        _desc = _meta.get("Description", _tla)
-    except Exception:
-        _desc = _tla
+    _desc = _variable_meta.get(_tla, {}).get("Description", _tla)
     INDICATOR_CHOICES.append((f"{_tla} — {_desc}", _tla))
 
 
