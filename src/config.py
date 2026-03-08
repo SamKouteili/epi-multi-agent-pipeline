@@ -40,6 +40,8 @@ VERDICT_P_THRESHOLD = 0.05         # p must be below this for significance
 VERDICT_P_BORDERLINE = 0.10        # p between 0.05-0.10 = "inconclusive"
 VERDICT_MIN_N = 20                 # minimum observations for any verdict
 PARTIAL_CORR_MIN_N = 30            # minimum observations for partial correlation
+VERDICT_R_STRONG = 0.5             # |r| threshold for confirmed without partial corr
+VERDICT_P_STRICT = 0.01            # p threshold for confirmed without partial corr
 
 # ── Pipeline Defaults ──────────────────────────────────────────────────────────
 MAX_HYPOTHESES = 10

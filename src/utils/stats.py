@@ -14,6 +14,8 @@ from src.config import (
     VERDICT_P_BORDERLINE,
     VERDICT_P_THRESHOLD,
     VERDICT_R_THRESHOLD,
+    VERDICT_R_STRONG,
+    VERDICT_P_STRICT,
     PARTIAL_CORR_MIN_N,
 )
 from src.schemas import (
@@ -233,7 +235,9 @@ def determine_verdict(
                 return Verdict.confirmed
             else:
                 return Verdict.partially_confirmed
-        # No partial correlation available — still significant bivariately
+        # Partial correlation not available — use stricter bivariate thresholds
+        if abs(r) > VERDICT_R_STRONG and p < VERDICT_P_STRICT:
+            return Verdict.confirmed
         return Verdict.partially_confirmed
 
     # Significant p but weak effect size

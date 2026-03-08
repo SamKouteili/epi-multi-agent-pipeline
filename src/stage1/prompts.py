@@ -23,6 +23,30 @@ indicate or serve as **statistical proxies** for this indicator. A good proxy is
 2. Has broader geographic coverage, more frequent updates, or easier access than the original
 3. Has a plausible causal or mechanistic explanation for the correlation
 
+## Proxy Selection Criteria — IMPORTANT
+
+We are looking for **novel, directly-measurable signals** — not high-level aggregate indices.
+
+**DO NOT suggest these as proxies** (they are known confounders, not proxies):
+- GDP per capita, GNI, or any income/wealth aggregate
+- Urbanization rate or urban population share
+- Population density or total population
+- Governance indices (Government Effectiveness, Rule of Law, Regulatory Quality)
+- Composite policy indices (Environmental Policy Stringency Index, Corruption Perceptions Index)
+- Human Development Index or similar multi-dimensional indices
+
+These variables correlate with nearly every EPI indicator because they reflect overall development level — they don't provide new information about the specific environmental process.
+
+**DO suggest proxies like these** — concrete, specific, directly-measured signals:
+- Satellite-derived measurements (nighttime lights, land cover change, water turbidity)
+- Sensor or monitoring network data (air quality stations, water quality readings)
+- Industry-specific production/trade statistics (fertilizer imports, cement production, pharmaceutical sales)
+- Facility-level counts or capacities (wastewater treatment plants, waste processing facilities)
+- Biological indicators (disease incidence rates, species counts, crop yields)
+- Supply chain or trade data (import/export of specific commodities)
+
+The ideal proxy is something a data scientist could download, merge with EPI country data by ISO code + year, and run a correlation — not a broad development indicator.
+
 ## Required Sections
 
 ### 1. Causal Map
@@ -171,6 +195,9 @@ application", "Must scrape country profiles from washdata.org").
 14. For the `references` field, use the actual citation URLs from the mapping above. \
 When the report cites [N], look up the URL for [N] and include it. Prefer full \
 URLs over abbreviated site names.
+15. EXCLUDE any hypothesis where the proxy is a broad development or governance indicator \
+(GDP, GNI, HDI, urbanization rate, population, government effectiveness, rule of law, \
+regulatory quality, CPI). These are known confounders, not proxies.
 
 Also extract a brief causal map summary (2-3 sentences) from the "Causal Map" section.
 

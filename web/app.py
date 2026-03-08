@@ -49,6 +49,11 @@ def run_pipeline_web(tla: str):
         yield "Please select an indicator first.", "", gr.skip()
         return
 
+    yield (
+        "Pipeline started — this typically takes ~20 minutes.\n"
+        "Stage 1 (research) takes ~5 min, Stage 2 (verification) takes ~15 min.\n"
+    ), "", gr.skip()
+
     loop = asyncio.new_event_loop()
     try:
         agen = _run_pipeline_async(tla)
@@ -256,6 +261,22 @@ def build_app() -> gr.Blocks:
             "</div>"
         )
 
+        with gr.Tab("Reports"):
+            gr.Markdown("### Pre-computed Results\nSelect an indicator to view its dashboard report.")
+            _report_indicators = []
+            for _d in sorted(OUTPUTS_DIR.iterdir()) if OUTPUTS_DIR.exists() else []:
+                if _d.is_dir() and (_d / "dashboard.html").exists():
+                    _report_indicators.append(_d.name)
+
+            if _report_indicators:
+                for _ind in _report_indicators:
+                    with gr.Accordion(_ind, open=False):
+                        _dash_path = OUTPUTS_DIR / _ind / "dashboard.html"
+                        _dash_html = _dash_path.read_text(encoding="utf-8")
+                        gr.HTML(_wrap_in_iframe(_dash_html))
+            else:
+                gr.Markdown("_No reports found yet. Run the pipeline to generate results._")
+
         with gr.Tab("Pipeline Runner"):
             with gr.Row():
                 indicator_dd = gr.Dropdown(
@@ -263,7 +284,7 @@ def build_app() -> gr.Blocks:
                     label="EPI Indicator",
                     info="Select an indicator with known domain knowledge",
                 )
-                run_btn = gr.Button("Run Pipeline", variant="primary")
+                run_btn = gr.Button("Run Pipeline (~20 min)", variant="primary")
                 prev_btn = gr.Button("View Previous Results", variant="secondary")
 
             log_box = gr.Textbox(
