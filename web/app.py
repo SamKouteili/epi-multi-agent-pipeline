@@ -292,7 +292,7 @@ def build_app() -> gr.Blocks:
                 gr.Markdown("_No reports found yet. Run the pipeline to generate results._")
             else:
                 for tla in completed:
-                    desc = _variable_meta.get(tla, {}).get("Description", tla)
+                    desc = DOMAIN_KNOWLEDGE.get(tla, "").split(")")[0].split("(")[-1] if "(" in DOMAIN_KNOWLEDGE.get(tla, "") else tla
                     indicator_dir = OUTPUTS_DIR / tla
 
                     # Dashboard iframe
@@ -311,9 +311,10 @@ def build_app() -> gr.Blocks:
 
                     with gr.Accordion(f"{tla} — {desc}", open=False):
                         if dash_iframe:
-                            gr.HTML(dash_iframe)
+                            with gr.Accordion("Interactive Dashboard", open=True):
+                                gr.HTML(dash_iframe)
                         if research_md:
-                            with gr.Accordion("Research Report", open=False):
+                            with gr.Accordion("Research Report", open=True):
                                 gr.Markdown(research_md)
 
         # ── Tab 2: Pipeline Runner ────────────────────────────────────────
