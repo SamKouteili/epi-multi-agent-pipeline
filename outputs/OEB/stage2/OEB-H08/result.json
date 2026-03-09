@@ -1,0 +1,31 @@
+{
+  "hypothesis_id": "OEB-H08",
+  "verdict": "rejected",
+  "verification_method": "statistical_test",
+  "raw_correlation": {
+    "pearson_r": 0.2214045896052544,
+    "pearson_p": 2.0316819914767055e-40,
+    "spearman_rho": 0.13745373886366322,
+    "spearman_p": 2.4193278263053963e-16,
+    "n_observations": 3527,
+    "n_countries": 178
+  },
+  "partial_correlation": {
+    "partial_r": 0.09568565885593391,
+    "partial_p": 1.8948355230679516e-08,
+    "control_variables": [
+      "log_gpc"
+    ]
+  },
+  "functional_form": {
+    "best_form": "linear",
+    "linear_r2": 0.04901999229827114,
+    "linear_aic": -27373.252368607544,
+    "log_linear_r2": 0.01741753677686264,
+    "log_linear_aic": -27257.95039219272,
+    "quadratic_r2": 0.04902090011732119,
+    "quadratic_aic": -27371.255735533552
+  },
+  "data_quality_notes": "Proxy used: World Bank AG.YLD.CREL.KG (cereal_yield). Crop yield (kg/ha) used as a downstream indicator of ozone damage \u2014 higher yields expected in areas with lower ozone stress (negative expected direction). Note: crop yields are influenced by many factors beyond ozone (fertilizers, irrigation, breeding improvements, weather), which may weaken the ozone signal. Yield data is national average, not KBA-specific. Secular trends in yield improvement may confound the analysis.",
+  "summary": "Testing whether national crop yields (as proxy for integrated ozone damage) are negatively correlated with OEB ozone exposure. Pearson r=0.221 (p=0.000), Spearman rho=0.137 (p=0.000), n=3527 obs from 178 countries. Partial r=0.096 (p=0.000) controlling for log(GPC). Best functional form: linear. Verdict: Verdict.rejected."
+}

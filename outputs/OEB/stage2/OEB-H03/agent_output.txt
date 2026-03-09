@@ -1,0 +1,216 @@
+=== Attempt 1 — Claude response ===
+```python
+import json
+import os
+import pandas as pd
+import numpy as np
+import requests
+
+from src.utils.stats import (
+    run_bivariate_correlation,
+    run_partial_correlation,
+    determine_verdict,
+    build_result_json,
+    test_functional_form,
+)
+from src.utils.data_utils import load_raw_indicator
+from src.utils.data_fetch import fetch_world_bank_indicator, search_world_bank
+
+output_path = "/Users/samkouteili/rose/epi/multi-agent/outputs/OEB/stage2/OEB-H03"
+os.makedirs(output_path, exist_ok=True)
+
+print("=== OEB-H03: Ground-based NO₂ and PM₂.₅ Concentrations vs OEB ===\n")
+
+# 1. Load EPI target data
+print("Loading OEB target indicator...")
+target = load_raw_indicator("OEB")
+print(f"  OEB rows: {len(target)}, years: {target['year'].min()}-{target['year'].max()}")
+print(f"  Countries: {target['iso'].nunique()}")
+
+# 2. Try to get proxy data
+# WAQI API requires authentication token and is not a simple open endpoint.
+# We'll try World Bank PM2.5 and NO2 indicators as proxies.
+
+print("\nSearching for NO₂ / PM₂.₅ indicators on World Bank...")
+
+# Known World Bank air quality indicators:
+# PM2.5: EN.ATM.PM25.MC.M3 (PM2.5 air pollution, mean annual exposure, micrograms per cubic meter)
+# NO2: no standard WB NO2 country-level indicator; we use PM2.5 as best available proxy
+
+proxy_df = None
+proxy_name = None
+notes = []
+
+# Try PM2.5
+print("Attempting to fetch World Bank PM2.5 indicator (EN.ATM.PM25.MC.M3)...")
+try:
+    pm25 = fetch_world_bank_indicator("EN.ATM.PM25.MC.M3")
+    if pm25 is not None and len(pm25) > 0:
+        pm25 = pm25.rename(columns={"value": "proxy_value"})
+        pm25 = pm25.dropna(subset=["proxy_value"])
+        print(f"  PM2.5 rows: {len(pm25)}, countries: {pm25['iso'].nunique()}, years: {pm25['year'].min()}-{pm25['year'].max()}")
+        proxy_df = pm25
+        proxy_name = "PM2.5 (EN.ATM.PM25.MC.M3)"
+        notes.append("Used World Bank PM2.5 mean annual exposure (EN.ATM.PM25.MC.M3) as proxy for ground-based air pollutants.")
+    else:
+        print("  PM2.5 returned empty dataframe.")
+except Exception as e:
+    print(f"  PM2.5 fetch failed: {e}")
+
+# If PM2.5 failed, try NO2 search
+if proxy_df is None or len(proxy_df) == 0:
+    print("Searching World Bank for NO2 indicators...")
+    try:
+        results = search_world_bank("nitrogen dioxide NO2 air pollution")
+        print(f"  Search returned {len(results)} results")
+        if len(results) > 0:
+            print(results.head(10).to_string())
+    except Exception as e:
+        print(f"  Search failed: {e}")
+
+# Try WAQI token-free endpoint (historical data not available without token)
+if proxy_df is None or len(proxy_df) == 0:
+    print("\nAttempting WAQI API (no token)...")
+    try:
+        resp = requests.get("https://api.waqi.info/feed/here/?token=demo", timeout=10)
+        print(f"  WAQI demo response status: {resp.status_code}")
+        # WAQI doesn't provide country-level aggregated historical data via free API
+        notes.append("WAQI API requires authentication token and does not provide country-level aggregated historical data via free endpoint.")
+    except Exception as e:
+        print(f"  WAQI request failed: {e}")
+        notes.append(f"WAQI API request failed: {e}")
+
+# 3. Merge and analyze
+if proxy_df is not None and len(proxy_df) > 0:
+    print(f"\nMerging {proxy_name} with OEB target...")
+    merged = target.merge(proxy_df[["iso", "year", "proxy_value"]], on=["iso", "year"])
+    merged = merged.dropna(subset=["value", "proxy_value"])
+    print(f"  Merged rows: {len(merged)}, countries: {merged['iso'].nunique()}")
+
+    if len(merged) < 20:
+        print("  WARNING: Insufficient overlap for analysis (< 20 observations)")
+        verdict_str = "inconclusive"
+        corr = None
+        partial = None
+        form = None
+    else:
+        # 4. Bivariate correlation
+        print("\nRunning bivariate correlation...")
+        corr = run_bivariate_correlation(merged["proxy_value"], merged["value"], iso=merged["iso"])
+        print(f"  Pearson r={corr.pearson_r:.4f}, p={corr.pearson_p:.4e}")
+        print(f"  Spearman rho={corr.spearman_rho:.4f}, p={corr.spearman_p:.4e}")
+        print(f"  n_observations={corr.n_observations}, n_countries={corr.n_countries}")
+
+        # 5. Partial correlation controlling for log(GDP per capita)
+        print("\nRunning partial correlation controlling for log(GPC)...")
+        gpc = load_raw_indicator("GPC")
+        merged_gpc = merged.merge(
+            gpc[["iso", "year", "value"]].rename(columns={"value": "gpc"}),
+            on=["iso", "year"]
+        )
+        merged_gpc = merged_gpc.dropna(subset=["gpc"])
+        merged_gpc["log_gpc"] = np.log(merged_gpc["gpc"].clip(lower=1e-9))
+        print(f"  Merged with GPC: {len(merged_gpc)} rows")
+
+        if len(merged_gpc) >= 20:
+            partial = run_partial_correlation(merged_gpc, "proxy_value", "value", ["log_gpc"])
+            print(f"  Partial r={partial.partial_r:.4f}, p={partial.partial_p:.4e}")
+        else:
+            print("  Insufficient data for partial correlation after GPC merge")
+            partial = None
+
+        # 6. Functional form
+        print("\nTesting functional form...")
+        form = test_functional_form(merged["proxy_value"], merged["value"])
+        print(f"  Best form: {form.best_form.value}")
+        print(f"  Linear R²={form.linear_r2:.4f}, Log-linear R²={form.log_linear_r2:.4f}, Quadratic R²={form.quadratic_r2:.4f}")
+
+        # 7. Verdict
+        verdict = determine_verdict(corr, partial, "positive")
+        print(f"\nVerdict: {verdict.value}")
+
+        notes_str = " | ".join(notes) if notes else "World Bank PM2.5 used as proxy for ground-based NO₂/PM₂.₅."
+        result = build_result_json(
+            "OEB-H03",
+            verdict,
+            corr,
+            partial,
+            functional_form=form,
+            data_quality_notes=notes_str,
+            summary=(
+                f"Used World Bank PM2.5 mean annual exposure as proxy for ground-based air pollutant concentrations "
+                f"(WAQI not accessible without API token). "
+                f"Pearson r={corr.pearson_r:.3f} (p={corr.pearson_p:.3e}), "
+                f"Spearman rho={corr.spearman_rho:.3f} (p={corr.spearman_p:.3e}), "
+                f"n={corr.n_observations} obs across {corr.n_countries} countries. "
+                f"{'Partial r=' + str(round(partial.partial_r, 3)) + ' (p=' + str(round(partial.partial_p, 4)) + ') controlling for log(GPC).' if partial else 'Partial correlation not computed (insufficient data).'} "
+                f"Best functional form: {form.best_form.value}."
+            )
+        )
+        result["verification_method"] = "statistical_test"
+        result["proxy_source"] = proxy_name
+
+else:
+    # No proxy data available
+    print("\nNo proxy data available. Reporting inconclusive.")
+    notes_str = (
+        "WAQI API requires authentication token and does not provide country-level aggregated historical data. "
+        "World Bank PM2.5 (EN.ATM.PM25.MC.M3) fetch returned empty or failed. "
+        "No suitable ground-based NO₂/PM₂.₅ country-level time-series proxy could be obtained."
+    )
+    result = {
+        "hypothesis_id": "OEB-H03",
+        "verdict": "inconclusive",
+        "verification_method": "statistical_test",
+        "data_quality_notes": notes_str,
+        "summary": (
+            "Unable to obtain ground-based NO₂ or PM₂.₅ concentration data at the country level. "
+            "WAQI requires an API token for historical/aggregated data. "
+            "World Bank PM2.5 fetch failed or returned no data. Verdict is inconclusive."
+        ),
+        "bivariate_correlation": None,
+        "partial_correlation": None,
+        "functional_form": None,
+    }
+
+# Write result
+output_file = f"{output_path}/result.json"
+with open(output_file, "w") as f:
+    json.dump(result, f, indent=2, default=str)
+
+print(f"\nResults written to: {output_file}")
+print(f"Final verdict: {result.get('verdict', 'unknown')}")
+```
+=== Attempt 1 — stdout ===
+=== OEB-H03: Ground-based NO₂ and PM₂.₅ Concentrations vs OEB ===
+
+Loading OEB target indicator...
+  OEB rows: 4260, years: 2003-2022
+  Countries: 213
+
+Searching for NO₂ / PM₂.₅ indicators on World Bank...
+Attempting to fetch World Bank PM2.5 indicator (EN.ATM.PM25.MC.M3)...
+  PM2.5 rows: 6045, countries: 195, years: 1990-2020
+
+Merging PM2.5 (EN.ATM.PM25.MC.M3) with OEB target...
+  Merged rows: 3420, countries: 190
+
+Running bivariate correlation...
+  Pearson r=0.3047, p=2.1994e-74
+  Spearman rho=0.1828, p=4.4912e-27
+  n_observations=3420, n_countries=190
+
+Running partial correlation controlling for log(GPC)...
+  Merged with GPC: 3330 rows
+  Partial r=0.5013, p=2.1670e-211
+
+Testing functional form...
+  Best form: quadratic
+  Linear R²=0.0928, Log-linear R²=0.0552, Quadratic R²=0.1090
+
+Verdict: confirmed
+
+Results written to: /Users/samkouteili/rose/epi/multi-agent/outputs/OEB/stage2/OEB-H03/result.json
+Final verdict: confirmed
+
+=== Attempt 1 — stderr ===

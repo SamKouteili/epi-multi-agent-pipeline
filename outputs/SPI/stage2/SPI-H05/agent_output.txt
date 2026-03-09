@@ -1,0 +1,378 @@
+=== Attempt 1 — Claude response ===
+```python
+import json
+import os
+import numpy as np
+import pandas as pd
+
+from src.utils.stats import (
+    run_bivariate_correlation,
+    run_partial_correlation,
+    determine_verdict,
+    build_result_json,
+    test_functional_form,
+)
+from src.utils.data_utils import load_raw_indicator
+from src.utils.data_fetch import fetch_world_bank_indicator
+
+output_path = "/Users/samkouteili/rose/epi/multi-agent/outputs/SPI/stage2/SPI-H05"
+os.makedirs(output_path, exist_ok=True)
+
+print("=== SPI-H05: Terrestrial Protected Areas vs Species Protection Index ===\n")
+
+# 1. Load EPI target data
+print("Loading SPI target indicator...")
+target = load_raw_indicator("SPI")
+print(f"  SPI rows: {len(target)}, countries: {target['iso'].nunique()}")
+
+# 2. Fetch proxy data from World Bank
+print("\nFetching World Bank terrestrial protected areas data (ER.LND.PTLD.ZS)...")
+try:
+    proxy = fetch_world_bank_indicator("ER.LND.PTLD.ZS")
+    proxy = proxy.rename(columns={"value": "proxy_value"})
+    proxy = proxy.dropna(subset=["proxy_value"])
+    print(f"  Proxy rows: {len(proxy)}, countries: {proxy['iso'].nunique()}")
+    data_available = True
+except Exception as e:
+    print(f"  ERROR fetching proxy data: {e}")
+    data_available = False
+
+if not data_available:
+    print("\nProxy data unavailable — writing inconclusive result.")
+    result = {
+        "hypothesis_id": "SPI-H05",
+        "verdict": "inconclusive",
+        "verification_method": "statistical_test",
+        "data_quality_notes": (
+            "Failed to fetch World Bank indicator ER.LND.PTLD.ZS "
+            "(Terrestrial protected areas % of total land area). "
+            "No alternative dataset was available."
+        ),
+        "summary": "Could not verify hypothesis due to data access failure.",
+    }
+    with open(f"{output_path}/result.json", "w") as f:
+        json.dump(result, f, indent=2)
+    print("Result written to result.json")
+else:
+    # 3. Merge on iso + year
+    print("\nMerging SPI target with proxy data...")
+    merged = target.merge(proxy, on=["iso", "year"])
+    merged = merged.dropna(subset=["value", "proxy_value"])
+    print(f"  Merged rows: {len(merged)}, countries: {merged['iso'].nunique()}")
+
+    # 4. Bivariate correlation
+    print("\nRunning bivariate correlation...")
+    corr = run_bivariate_correlation(
+        merged["proxy_value"], merged["value"], iso=merged["iso"]
+    )
+    print(f"  Pearson r={corr.pearson_r:.4f}, p={corr.pearson_p:.4e}")
+    print(f"  Spearman rho={corr.spearman_rho:.4f}, p={corr.spearman_p:.4e}")
+    print(f"  n_observations={corr.n_observations}, n_countries={corr.n_countries}")
+
+    # 5. Partial correlation controlling for log(GDP per capita)
+    print("\nLoading GPC for partial correlation control...")
+    gpc = load_raw_indicator("GPC")
+    merged_gpc = merged.merge(
+        gpc[["iso", "year", "value"]].rename(columns={"value": "gpc"}),
+        on=["iso", "year"],
+    )
+    merged_gpc = merged_gpc.dropna(subset=["gpc"])
+    merged_gpc["log_gpc"] = np.log(merged_gpc["gpc"].clip(lower=1e-9))
+    print(f"  Rows after GPC merge: {len(merged_gpc)}")
+
+    print("Running partial correlation (controlling for log GDP per capita)...")
+    partial = run_partial_correlation(
+        merged_gpc, "proxy_value", "value", ["log_gpc"]
+    )
+    print(f"  Partial r={partial.partial_r:.4f}, p={partial.partial_p:.4e}")
+
+    # 6. Functional form test
+    print("\nTesting functional form (linear vs log-linear vs quadratic)...")
+    form = test_functional_form(merged["proxy_value"], merged["value"])
+    print(f"  Best form: {form.best_form.value}")
+    print(f"  Linear R²={form.linear_r2:.4f}, AIC={form.linear_aic:.2f}")
+    print(f"  Log-linear R²={form.log_linear_r2:.4f}, AIC={form.log_linear_aic:.2f}")
+    print(f"  Quadratic R²={form.quadratic_r2:.4f}, AIC={form.quadratic_aic:.2f}")
+
+    # 7. Verdict
+    print("\nDetermining verdict...")
+    verdict = determine_verdict(corr, partial, "positive")
+    print(f"  Verdict: {verdict.value}")
+
+    # 8. Build and write result JSON
+    result = build_result_json(
+        "SPI-H05",
+        verdict,
+        corr,
+        partial,
+        functional_form=form,
+        data_quality_notes=(
+            "Proxy: World Bank ER.LND.PTLD.ZS — Terrestrial protected areas "
+            "as % of total land area. Data covers 1992–2024. Includes all IUCN "
+            "protected area categories; designation does not ensure effective "
+            "management. No marine protected areas included. "
+            f"Merged dataset: {len(merged)} obs, {merged['iso'].nunique()} countries."
+        ),
+        summary=(
+            f"Terrestrial protected area percentage shows a "
+            f"{'positive' if corr.pearson_r > 0 else 'negative'} correlation "
+            f"with SPI (Pearson r={corr.pearson_r:.3f}, p={corr.pearson_p:.3e}; "
+            f"Spearman rho={corr.spearman_rho:.3f}). "
+            f"After controlling for log GDP per capita, partial r={partial.partial_r:.3f} "
+            f"(p={partial.partial_p:.3e}). Best functional form: {form.best_form.value}. "
+            f"Verdict: {verdict.value}."
+        ),
+    )
+    result["verification_method"] = "statistical_test"
+
+    out_file = f"{output_path}/result.json"
+    with open(out_file, "w") as f:
+        json.dump(result, f, indent=2)
+    print(f"\nResult written to {out_file}")
+    print(json.dumps(result, indent=2))
+```
+=== Attempt 1 — stdout ===
+=== SPI-H05: Terrestrial Protected Areas vs Species Protection Index ===
+
+Loading SPI target indicator...
+  SPI rows: 8010, countries: 178
+
+Fetching World Bank terrestrial protected areas data (ER.LND.PTLD.ZS)...
+  Proxy rows: 2449, countries: 206
+
+Merging SPI target with proxy data...
+  Merged rows: 2124, countries: 177
+
+Running bivariate correlation...
+  Pearson r=0.6039, p=2.4172e-211
+  Spearman rho=0.6319, p=4.0220e-237
+  n_observations=2124, n_countries=177
+
+Loading GPC for partial correlation control...
+  Rows after GPC merge: 1761
+Running partial correlation (controlling for log GDP per capita)...
+  Partial r=0.5988, p=1.0630e-171
+
+Testing functional form (linear vs log-linear vs quadratic)...
+  Best form: quadratic
+  Linear R²=0.3647, AIC=13243.50
+
+=== Attempt 1 — stderr ===
+Traceback (most recent call last):
+  File "/Users/samkouteili/rose/epi/multi-agent/outputs/SPI/stage2/SPI-H05/verify.py", line 92, in <module>
+    print(f"  Log-linear R²={form.log_linear_r2:.4f}, AIC={form.log_linear_aic:.2f}")
+                            ^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: unsupported format string passed to NoneType.__format__
+
+=== Attempt 2 — Claude response ===
+The issue is that `form.log_linear_r2` is `None` (the log-linear fit failed, likely due to zero/negative proxy values). I need to handle `None` values when printing the functional form results.
+
+```python
+import json
+import os
+import numpy as np
+import pandas as pd
+
+from src.utils.stats import (
+    run_bivariate_correlation,
+    run_partial_correlation,
+    determine_verdict,
+    build_result_json,
+    test_functional_form,
+)
+from src.utils.data_utils import load_raw_indicator
+from src.utils.data_fetch import fetch_world_bank_indicator
+
+output_path = "/Users/samkouteili/rose/epi/multi-agent/outputs/SPI/stage2/SPI-H05"
+os.makedirs(output_path, exist_ok=True)
+
+print("=== SPI-H05: Terrestrial Protected Areas vs Species Protection Index ===\n")
+
+# 1. Load EPI target data
+print("Loading SPI target indicator...")
+target = load_raw_indicator("SPI")
+print(f"  SPI rows: {len(target)}, countries: {target['iso'].nunique()}")
+
+# 2. Fetch proxy data from World Bank
+print("\nFetching World Bank terrestrial protected areas data (ER.LND.PTLD.ZS)...")
+try:
+    proxy = fetch_world_bank_indicator("ER.LND.PTLD.ZS")
+    proxy = proxy.rename(columns={"value": "proxy_value"})
+    proxy = proxy.dropna(subset=["proxy_value"])
+    print(f"  Proxy rows: {len(proxy)}, countries: {proxy['iso'].nunique()}")
+    data_available = True
+except Exception as e:
+    print(f"  ERROR fetching proxy data: {e}")
+    data_available = False
+
+if not data_available:
+    print("\nProxy data unavailable — writing inconclusive result.")
+    result = {
+        "hypothesis_id": "SPI-H05",
+        "verdict": "inconclusive",
+        "verification_method": "statistical_test",
+        "data_quality_notes": (
+            "Failed to fetch World Bank indicator ER.LND.PTLD.ZS "
+            "(Terrestrial protected areas % of total land area). "
+            "No alternative dataset was available."
+        ),
+        "summary": "Could not verify hypothesis due to data access failure.",
+    }
+    with open(f"{output_path}/result.json", "w") as f:
+        json.dump(result, f, indent=2)
+    print("Result written to result.json")
+else:
+    # 3. Merge on iso + year
+    print("\nMerging SPI target with proxy data...")
+    merged = target.merge(proxy, on=["iso", "year"])
+    merged = merged.dropna(subset=["value", "proxy_value"])
+    print(f"  Merged rows: {len(merged)}, countries: {merged['iso'].nunique()}")
+
+    # 4. Bivariate correlation
+    print("\nRunning bivariate correlation...")
+    corr = run_bivariate_correlation(
+        merged["proxy_value"], merged["value"], iso=merged["iso"]
+    )
+    print(f"  Pearson r={corr.pearson_r:.4f}, p={corr.pearson_p:.4e}")
+    print(f"  Spearman rho={corr.spearman_rho:.4f}, p={corr.spearman_p:.4e}")
+    print(f"  n_observations={corr.n_observations}, n_countries={corr.n_countries}")
+
+    # 5. Partial correlation controlling for log(GDP per capita)
+    print("\nLoading GPC for partial correlation control...")
+    gpc = load_raw_indicator("GPC")
+    merged_gpc = merged.merge(
+        gpc[["iso", "year", "value"]].rename(columns={"value": "gpc"}),
+        on=["iso", "year"],
+    )
+    merged_gpc = merged_gpc.dropna(subset=["gpc"])
+    merged_gpc["log_gpc"] = np.log(merged_gpc["gpc"].clip(lower=1e-9))
+    print(f"  Rows after GPC merge: {len(merged_gpc)}")
+
+    print("Running partial correlation (controlling for log GDP per capita)...")
+    partial = run_partial_correlation(
+        merged_gpc, "proxy_value", "value", ["log_gpc"]
+    )
+    print(f"  Partial r={partial.partial_r:.4f}, p={partial.partial_p:.4e}")
+
+    # 6. Functional form test
+    print("\nTesting functional form (linear vs log-linear vs quadratic)...")
+    form = test_functional_form(merged["proxy_value"], merged["value"])
+    print(f"  Best form: {form.best_form.value}")
+
+    # Helper to safely format potentially-None floats
+    def fmt_r2(v):
+        return f"{v:.4f}" if v is not None else "N/A"
+
+    def fmt_aic(v):
+        return f"{v:.2f}" if v is not None else "N/A"
+
+    print(f"  Linear     R²={fmt_r2(form.linear_r2)}, AIC={fmt_aic(form.linear_aic)}")
+    print(f"  Log-linear R²={fmt_r2(form.log_linear_r2)}, AIC={fmt_aic(form.log_linear_aic)}")
+    print(f"  Quadratic  R²={fmt_r2(form.quadratic_r2)}, AIC={fmt_aic(form.quadratic_aic)}")
+
+    # 7. Verdict
+    print("\nDetermining verdict...")
+    verdict = determine_verdict(corr, partial, "positive")
+    print(f"  Verdict: {verdict.value}")
+
+    # 8. Build and write result JSON
+    best_form_str = form.best_form.value if form.best_form is not None else "unknown"
+
+    result = build_result_json(
+        "SPI-H05",
+        verdict,
+        corr,
+        partial,
+        functional_form=form,
+        data_quality_notes=(
+            "Proxy: World Bank ER.LND.PTLD.ZS — Terrestrial protected areas "
+            "as % of total land area. Data covers 1992–2024. Includes all IUCN "
+            "protected area categories; designation does not ensure effective "
+            "management. No marine protected areas included. "
+            "Note: log-linear functional form fit returned None (likely due to "
+            "zero values in the proxy — some countries have 0% protected area). "
+            f"Merged dataset: {len(merged)} obs, {merged['iso'].nunique()} countries."
+        ),
+        summary=(
+            f"Terrestrial protected area percentage shows a "
+            f"{'positive' if corr.pearson_r > 0 else 'negative'} correlation "
+            f"with SPI (Pearson r={corr.pearson_r:.3f}, p={corr.pearson_p:.3e}; "
+            f"Spearman rho={corr.spearman_rho:.3f}). "
+            f"After controlling for log GDP per capita, partial r={partial.partial_r:.3f} "
+            f"(p={partial.partial_p:.3e}). Best functional form: {best_form_str}. "
+            f"Verdict: {verdict.value}."
+        ),
+    )
+    result["verification_method"] = "statistical_test"
+
+    out_file = f"{output_path}/result.json"
+    with open(out_file, "w") as f:
+        json.dump(result, f, indent=2)
+    print(f"\nResult written to {out_file}")
+    print(json.dumps(result, indent=2))
+```
+=== Attempt 2 — stdout ===
+=== SPI-H05: Terrestrial Protected Areas vs Species Protection Index ===
+
+Loading SPI target indicator...
+  SPI rows: 8010, countries: 178
+
+Fetching World Bank terrestrial protected areas data (ER.LND.PTLD.ZS)...
+  Proxy rows: 2449, countries: 206
+
+Merging SPI target with proxy data...
+  Merged rows: 2124, countries: 177
+
+Running bivariate correlation...
+  Pearson r=0.6039, p=2.4172e-211
+  Spearman rho=0.6319, p=4.0220e-237
+  n_observations=2124, n_countries=177
+
+Loading GPC for partial correlation control...
+  Rows after GPC merge: 1761
+Running partial correlation (controlling for log GDP per capita)...
+  Partial r=0.5988, p=1.0630e-171
+
+Testing functional form (linear vs log-linear vs quadratic)...
+  Best form: quadratic
+  Linear     R²=0.3647, AIC=13243.50
+  Log-linear R²=N/A, AIC=N/A
+  Quadratic  R²=0.4170, AIC=13063.04
+
+Determining verdict...
+  Verdict: confirmed
+
+Result written to /Users/samkouteili/rose/epi/multi-agent/outputs/SPI/stage2/SPI-H05/result.json
+{
+  "hypothesis_id": "SPI-H05",
+  "verdict": "confirmed",
+  "verification_method": "statistical_test",
+  "raw_correlation": {
+    "pearson_r": 0.6039432416668155,
+    "pearson_p": 2.417247128523255e-211,
+    "spearman_rho": 0.6318904160043814,
+    "spearman_p": 4.0219723079911784e-237,
+    "n_observations": 2124,
+    "n_countries": 177
+  },
+  "partial_correlation": {
+    "partial_r": 0.5987501019542326,
+    "partial_p": 1.063029043307278e-171,
+    "control_variables": [
+      "log_gpc"
+    ]
+  },
+  "functional_form": {
+    "best_form": "quadratic",
+    "linear_r2": 0.3647474391550215,
+    "linear_aic": 13243.5008905579,
+    "log_linear_r2": null,
+    "log_linear_aic": null,
+    "quadratic_r2": 0.41703965549239075,
+    "quadratic_aic": 13063.041879694118
+  },
+  "data_quality_notes": "Proxy: World Bank ER.LND.PTLD.ZS \u2014 Terrestrial protected areas as % of total land area. Data covers 1992\u20132024. Includes all IUCN protected area categories; designation does not ensure effective management. No marine protected areas included. Note: log-linear functional form fit returned None (likely due to zero values in the proxy \u2014 some countries have 0% protected area). Merged dataset: 2124 obs, 177 countries.",
+  "summary": "Terrestrial protected area percentage shows a positive correlation with SPI (Pearson r=0.604, p=2.417e-211; Spearman rho=0.632). After controlling for log GDP per capita, partial r=0.599 (p=1.063e-171). Best functional form: quadratic. Verdict: confirmed."
+}
+
+=== Attempt 2 — stderr ===

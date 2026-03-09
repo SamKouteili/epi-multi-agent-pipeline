@@ -1,0 +1,31 @@
+{
+  "hypothesis_id": "OEB-H05",
+  "verdict": "rejected",
+  "verification_method": "exploratory_test",
+  "raw_correlation": {
+    "pearson_r": -0.4948500730854384,
+    "pearson_p": 6.094479993034927e-245,
+    "spearman_rho": -0.4888949656250192,
+    "spearman_p": 2.9230894307628045e-238,
+    "n_observations": 3980,
+    "n_countries": 201
+  },
+  "partial_correlation": {
+    "partial_r": -0.5244348563821647,
+    "partial_p": 5.921126326735968e-264,
+    "control_variables": [
+      "log_gpc"
+    ]
+  },
+  "functional_form": {
+    "best_form": "quadratic",
+    "linear_r2": 0.24487659483266355,
+    "linear_aic": -31605.515682790152,
+    "log_linear_r2": null,
+    "log_linear_aic": null,
+    "quadratic_r2": 0.2622472375172198,
+    "quadratic_aic": -31696.13994686342
+  },
+  "data_quality_notes": "MEGAN 2.1 has no direct URL; NCAR data server requires authentication. | World Bank has no direct biogenic VOC / isoprene indicator. | Substitution: MEGAN biogenic VOC data unavailable. Using World Bank 'Forest area (% of land area)' (AG.LND.FRST.ZS) as a proxy. Forests are the dominant source of biogenic VOCs (isoprene/monoterpenes); higher forest cover implies higher biogenic VOC emission potential. This is an acknowledged approximation \u2014 actual emissions also depend on temperature, LAI, and species composition.",
+  "summary": "Used forest area (% land) as proxy for biogenic VOC emission potential (MEGAN data unavailable). Forests are the primary source of isoprene/monoterpenes. Pearson r=-0.495 (p=0.0000), Spearman rho=-0.489 (p=0.0000), n=3980 observations across 201 countries. Partial r=-0.524 (p=0.0000) controlling for log(GDP/capita). Best functional form: quadratic. Verdict: rejected."
+}

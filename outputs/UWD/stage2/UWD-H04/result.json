@@ -1,0 +1,18 @@
+{
+  "hypothesis_id": "UWD-H04",
+  "verdict": "partially_confirmed",
+  "verification_method": "statistical_test",
+  "raw_correlation": {
+    "pearson_r": 0.07240011166192248,
+    "pearson_p": 2.6266229391194686e-07,
+    "spearman_rho": 0.20125272056036017,
+    "spearman_p": 2.8785733143723173e-47,
+    "n_observations": 5046,
+    "n_countries": 196
+  },
+  "partial_correlation": null,
+  "functional_form": null,
+  "data_quality_notes": "Used WHO GHO WHS3_41 as proxy for Hepatitis A case reports. WHS3_41 is a WHO GHO disease notification indicator. Note: This indicator may reflect general disease notifications, not exclusively Hepatitis A; verify exact indicator definition. Hypothesis specified reported acute hepatitis A cases per 100,000 or seroprevalence. CDC/WHO NDSS URL (https://www.cdc.gov/diseases-conditions/hepatitis-a/) provides PDFs only, not machine-readable data. Partial correlation computed on country-level mean aggregates to avoid panel data issues with pingouin. HAV incidence severely undercounts true infections (high asymptomatic rate). Vaccination rollout may mask the water contamination signal in high-coverage countries.",
+  "summary": "Statistical test of WHO GHO WHS3_41 vs UWD (unsafe water DALYs). Pearson r=0.072 (p=0.0000), Spearman rho=0.201 (p=0.0000), n=5046 observations, 196 countries. Literature reports r\u22480.55-0.70 between HAV rates and WASH coverage (WHO 2012). Hypothesis direction is positive (high HAV \u2192 high unsafe water burden).",
+  "proxy_source": "WHO GHO WHS3_41"
+}

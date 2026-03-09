@@ -1,0 +1,17 @@
+{
+  "no_synthetic_data": true,
+  "year_alignment_ok": true,
+  "hypothesis_interpretation_ok": false,
+  "data_source_authentic": false,
+  "country_coverage_adequate": true,
+  "outlier_concerns": false,
+  "mechanistic_explanation": "The hypothesis proposes that wastewater treatment plant (WWTP) capacity—specifically the number of facilities employing anaerobic digestion for biosolids recovery—drives waste recovery rates (WRR). The script instead tested safely managed sanitation services (SH.STA.SMSS.ZS), which measures population access to improved sanitation, not WWTP infrastructure capacity or anaerobic digestion adoption. While both relate to wastewater management, they measure fundamentally different constructs: one is individual-level sanitation access, the other is facility-level treatment technology deployment.",
+  "issues": [
+    "CRITICAL: Proxy variable substitution is materially misaligned. Hypothesis specifies 'number of municipal wastewater treatment plants and proportion employing anaerobic digestion' (facility-level infrastructure metric). Script used 'safely managed sanitation services' (population-level access metric)—a conceptually different variable that happens to correlate with development but does not directly measure WWTP capacity or anaerobic digestion deployment.",
+    "CRITICAL: Data source not authentic. Hypothesis cites UN-Water Progress on Wastewater Treatment (https://www.unwater.org/publications/progress-wastewater-treatment-2024-update) as the primary source. The script acknowledges this URL is PDF-only and instead uses World Bank sanitation indicators. This substitution was documented in data_quality_notes but the proxy is not a documented alternative to UN-Water—it is a different data source measuring a different variable.",
+    "MODERATE: Partial correlation not computed. Script notes 'Partial correlation could not be computed' but does not explain why (GPC merge succeeded with 360 obs). The summary acknowledges 'Strong correlation likely reflects shared GDP confounding,' which suggests the bivariate r=0.686 may be spurious confounding rather than genuine proxy validity. Absence of GDP control weakens the verdict.",
+    "MODERATE: Functional form mismatch. Hypothesis expects log-linear form; script found quadratic form fits best (quadratic R²=0.539 vs log-linear R²=0.363, better AIC). The best-fit functional form contradicts the hypothesis prediction.",
+    "MODERATE: Proxy substitution not theoretically justified in data_quality_notes. Script claims 'safely managed sanitation services coverage correlates strongly with WWTP infrastructure' but provides no citation or empirical evidence for this equivalence. The two measures need not correlate at country level (e.g., a country could have good sanitation access via pit latrines without advanced WWTP infrastructure)."
+  ],
+  "overall_assessment": "major_issues"
+}

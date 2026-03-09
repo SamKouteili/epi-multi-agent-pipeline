@@ -1,0 +1,31 @@
+{
+  "hypothesis_id": "SPI-H04",
+  "verdict": "partially_confirmed",
+  "verification_method": "statistical_test",
+  "raw_correlation": {
+    "pearson_r": 0.15076853800184742,
+    "pearson_p": 5.428337278266222e-30,
+    "spearman_rho": 0.11211649943436792,
+    "spearman_p": 3.208385505398782e-17,
+    "n_observations": 5632,
+    "n_countries": 176
+  },
+  "partial_correlation": {
+    "partial_r": 0.14699120004063507,
+    "partial_p": 1.864120663292074e-26,
+    "control_variables": [
+      "log_gpc"
+    ]
+  },
+  "functional_form": {
+    "best_form": "log-linear",
+    "linear_r2": 0.022731152051214676,
+    "linear_aic": 37198.7614933392,
+    "log_linear_r2": 0.02295338256330881,
+    "log_linear_aic": 37197.48063334328,
+    "quadratic_r2": 0.022893559859759494,
+    "quadratic_aic": 37199.825459420426
+  },
+  "data_quality_notes": "Used RLI data from https://ourworldindata.org/grapher/red-list-index.csv?tab=chart. RLI data sourced from OWID/World Bank. RLI ranges 0 (all extinct) to 1 (no species extinct). Higher RLI = better outcomes, consistent with positive direction hypothesis. Note: a 5-10 year lag effect was hypothesized but not explicitly tested here (contemporaneous matching used). Data Deficient species are excluded from RLI, biasing toward well-known vertebrates.",
+  "summary": "The Red List Index (RLI) shows a partially_confirmed correlation with the Species Protection Index (SPI). Pearson r=0.151 (p=0.0000), Spearman rho=0.112 (p=0.0000), n=5632 observations across 176 countries. Partial correlation controlling for log(GDP/capita): r=0.147 (p=0.0000). Best functional form: log-linear. The RLI measures average extinction risk and is expected to correlate positively with SPI (Species Protection Index), as well-protected areas should reduce extinction pressure. A lag effect of 5-10 years may attenuate contemporaneous correlations."
+}

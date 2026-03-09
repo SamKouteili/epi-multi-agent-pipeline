@@ -1,0 +1,26 @@
+{
+  "hypothesis_id": "WRR-H02",
+  "verdict": "partially_confirmed",
+  "verification_method": "statistical_test",
+  "raw_correlation": {
+    "pearson_r": 0.36179447384613106,
+    "pearson_p": 7.774661647301067e-06,
+    "spearman_rho": 0.29442564686382944,
+    "spearman_p": 0.0003247846796920335,
+    "n_observations": 145,
+    "n_countries": 65
+  },
+  "partial_correlation": null,
+  "functional_form": {
+    "best_form": "linear",
+    "linear_r2": 0.1308952413055987,
+    "linear_aic": -742.0579291096494,
+    "log_linear_r2": 0.12345133783301099,
+    "log_linear_aic": -740.8212889690185,
+    "quadratic_r2": 0.13126222247786945,
+    "quadratic_aic": -740.1191685714087
+  },
+  "data_quality_notes": "Primary proxy (Statista WtE capacity) unavailable \u2014 paid subscription. Substituted with World Bank indicator 'World Bank SH.STA.HYGN.ZS: People using basic hygiene services (% of population)' as a proxy for environmental/waste infrastructure development. NOTE: This is NOT a direct measure of WtE capacity; it measures sanitation service access which correlates with waste management infrastructure broadly. Direct WtE capacity data was not available from any free/open API. EPA SMM energy recovery page accessible (HTTP 200). | EPA page references combustion facilities and energy recovery. | Statista URL (primary source) requires paid subscription; data not directly accessible.",
+  "summary": "Hypothesis: Waste-to-Energy capacity positively correlates with WRR. Primary data (Statista WtE capacity) is behind a paywall. Used WB proxy 'World Bank SH.STA.HYGN.ZS: People using basic hygiene services (% of population)' as substitute. Pearson r=0.362 (p=0.0000), Spearman rho=0.294 (p=0.0003), n=145 observations. Verdict: partially_confirmed. Note: indirect proxy \u2014 sanitation infrastructure used as stand-in for WtE capacity.",
+  "proxy_substitution": "Used 'World Bank SH.STA.HYGN.ZS: People using basic hygiene services (% of population)' instead of Statista WtE capacity data (paid/unavailable). Sanitation access is a correlated but indirect proxy."
+}

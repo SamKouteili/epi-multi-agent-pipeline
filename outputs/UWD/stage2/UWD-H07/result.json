@@ -1,0 +1,25 @@
+{
+  "hypothesis_id": "UWD-H07",
+  "verdict": "confirmed",
+  "verification_method": "statistical_test",
+  "raw_correlation": {
+    "pearson_r": 0.9136089144853874,
+    "pearson_p": 1.17333855947201e-72,
+    "spearman_rho": 0.8425604799710698,
+    "spearman_p": 1.604718768964363e-50,
+    "n_observations": 183,
+    "n_countries": 183
+  },
+  "partial_correlation": null,
+  "functional_form": {
+    "best_form": "quadratic",
+    "linear_r2": 0.834681248627168,
+    "linear_aic": 2208.934938418035,
+    "log_linear_r2": 0.5832066495362924,
+    "log_linear_aic": 2378.157801663966,
+    "quadratic_r2": 0.8388966049240167,
+    "quadratic_aic": 2206.2082181458177
+  },
+  "data_quality_notes": "Used WB SH.STA.WASH.P5 (mortality rate attributed to unsafe water, unsafe sanitation and lack of hygiene, per 100,000 population) as proxy for child diarrheal mortality. This is a closely related indicator from WHO/WB. Original hypothesis cited IHME cause-specific child mortality database (not available via API).",
+  "summary": "WASH-attributable mortality proxy vs UWD DALYs: Pearson r=0.914 (p=1.173e-72), Spearman rho=0.843. Partial correlation not computed. Best functional form: quadratic. Hypothesis claimed r\u22480.72 for diarrheal mortality vs WASH (Victora et al. 2012, Lancet)."
+}

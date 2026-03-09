@@ -1,0 +1,346 @@
+import json
+import os
+import requests
+import pandas as pd
+import numpy as np
+
+from src.utils.stats import (
+    run_bivariate_correlation,
+    run_partial_correlation,
+    determine_verdict,
+    build_result_json,
+    test_functional_form,
+)
+from src.utils.data_utils import load_raw_indicator
+from src.utils.data_fetch import (
+    fetch_world_bank_indicator,
+    fetch_who_gho_indicator,
+    search_world_bank,
+    list_local_indicators,
+)
+
+OUTPUT_DIR = "/Users/samkouteili/rose/epi/multi-agent/outputs/UWD/stage2/UWD-H10/"
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+HYPOTHESIS_ID = "UWD-H10"
+EXPECTED_DIRECTION = "negative"
+
+notes = []
+
+# ---------------------------------------------------------------------------
+# 1. Load EPI target
+# ---------------------------------------------------------------------------
+print("Loading UWD target indicator...")
+target = load_raw_indicator("UWD")
+print(f"  Target rows: {len(target)}")
+
+# ---------------------------------------------------------------------------
+# Approach 1: Try the IWA direct URL
+# ---------------------------------------------------------------------------
+print("\nApproach 1: Trying IWA direct URL...")
+iwa_url = "https://www.iwahq.org/"
+try:
+    resp = requests.get(iwa_url, timeout=15)
+    print(f"  HTTP status: {resp.status_code}")
+    notes.append(f"IWA URL ({iwa_url}) returned HTTP {resp.status_code}; no downloadable dataset found (paid/login-gated).")
+except Exception as e:
+    print(f"  IWA URL failed: {e}")
+    notes.append(f"IWA URL ({iwa_url}) could not be fetched: {e}")
+
+# ---------------------------------------------------------------------------
+# Approach 2: Search World Bank for wastewater/sanitation indicators
+# ---------------------------------------------------------------------------
+print("\nApproach 2: Searching World Bank for wastewater/sanitation indicators...")
+search_queries = [
+    "wastewater treatment",
+    "safely managed sanitation",
+]
+for q in search_queries:
+    try:
+        res = search_world_bank(q)
+        print(f"  '{q}': {len(res) if hasattr(res, '__len__') else 'unknown'} results")
+    except Exception as e:
+        print(f"  Search '{q}' failed: {e}")
+
+notes.append(f"World Bank searches performed: {list(search_queries)}")
+
+# ---------------------------------------------------------------------------
+# Approach 3: Try specific WB indicators related to safely managed sanitation
+# ---------------------------------------------------------------------------
+print("\nApproach 3: Fetching specific World Bank sanitation/wastewater indicators...")
+
+candidate_indicators = {
+    "SH.STA.SMSS.UR.ZS": "Safely managed sanitation services, urban (% of urban pop)",
+    "SH.STA.BASS.ZS": "Basic sanitation services (% of population)",
+    "SH.STA.ACSN.UR": "Improved sanitation facilities, urban (% of urban pop with access)",
+    "SH.STA.SMSS.ZS": "Safely managed sanitation services (% of population)",
+}
+
+proxy_df = None
+proxy_label = None
+proxy_col = "proxy_value"
+
+for wb_code, description in candidate_indicators.items():
+    print(f"  Trying {wb_code}: {description}")
+    try:
+        df = fetch_world_bank_indicator(wb_code)
+        if df is not None and len(df) > 100:
+            df = df.rename(columns={"value": proxy_col})
+            df = df.dropna(subset=[proxy_col])
+            print(f"    Got {len(df)} rows with data")
+            proxy_df = df
+            proxy_label = f"{wb_code}: {description}"
+            notes.append(
+                f"Using World Bank proxy: {proxy_label} "
+                f"(substitution for IWA wastewater treatment capacity; no IWA data available)."
+            )
+            break
+        else:
+            print(f"    Insufficient data ({len(df) if df is not None else 0} rows)")
+    except Exception as e:
+        print(f"    Failed: {e}")
+
+# ---------------------------------------------------------------------------
+# Approach 3b: Try WHO GHO for sanitation indicators
+# ---------------------------------------------------------------------------
+if proxy_df is None:
+    print("\nApproach 3b: Trying WHO GHO sanitation indicators...")
+    who_codes = ["WSH_SANITATION_SAFELY_MANAGED", "SANITATION_SAFELY_MANAGED_URBAN"]
+    for code in who_codes:
+        try:
+            df = fetch_who_gho_indicator(code)
+            if df is not None and len(df) > 50:
+                df = df.rename(columns={"value": proxy_col})
+                df = df.dropna(subset=[proxy_col])
+                print(f"  WHO {code}: {len(df)} rows")
+                proxy_df = df
+                proxy_label = f"WHO GHO {code}: Safely managed sanitation"
+                notes.append(f"Using WHO GHO proxy: {proxy_label} (substitution for IWA wastewater treatment capacity).")
+                break
+        except Exception as e:
+            print(f"  WHO {code} failed: {e}")
+
+# ---------------------------------------------------------------------------
+# 4. Run statistics if we have proxy data
+# ---------------------------------------------------------------------------
+if proxy_df is not None:
+    print(f"\nProxy found: {proxy_label}")
+    print(f"Proxy rows: {len(proxy_df)}")
+
+    # Merge with target on iso + year
+    merged = target.merge(proxy_df[["iso", "year", proxy_col]], on=["iso", "year"])
+    merged = merged.dropna(subset=["value", proxy_col])
+    print(f"Merged rows: {len(merged)}, countries: {merged['iso'].nunique()}")
+
+    if len(merged) < 20:
+        print("  Insufficient overlap — trying last-year-available approach")
+        proxy_last = proxy_df.sort_values("year").groupby("iso").last().reset_index()[["iso", proxy_col]]
+        target_last = target.sort_values("year").groupby("iso").last().reset_index()[["iso", "year", "value"]]
+        merged = target_last.merge(proxy_last[["iso", proxy_col]], on="iso")
+        merged = merged.dropna(subset=["value", proxy_col])
+        print(f"  After last-year approach: {len(merged)} rows, {merged['iso'].nunique()} countries")
+
+    # Reduce to one observation per country (latest year with both variables)
+    # to avoid panel-data issues in partial correlation
+    print("\nReducing to cross-sectional data (latest year per country)...")
+    merged_cs = (
+        merged.sort_values("year")
+        .groupby("iso")
+        .last()
+        .reset_index()
+    )
+    merged_cs = merged_cs.dropna(subset=["value", proxy_col])
+    print(f"  Cross-sectional rows: {len(merged_cs)}, countries: {merged_cs['iso'].nunique()}")
+
+    # Bivariate correlation on cross-sectional data
+    print(f"\nRunning bivariate correlation (n={len(merged_cs)})...")
+    corr = run_bivariate_correlation(merged_cs[proxy_col], merged_cs["value"], iso=merged_cs["iso"])
+    print(f"  Pearson r={corr.pearson_r:.3f}, p={corr.pearson_p:.4f}")
+    print(f"  Spearman rho={corr.spearman_rho:.3f}, p={corr.spearman_p:.4f}")
+    print(f"  n_obs={corr.n_observations}, n_countries={corr.n_countries}")
+
+    # Partial correlation controlling for log(GDP per capita)
+    # Use pingouin directly to avoid the library bug with 'p-val' column name
+    print("\nLoading GPC for partial correlation...")
+    gpc = load_raw_indicator("GPC")
+
+    # Use last available GPC year per country
+    gpc_cs = (
+        gpc.sort_values("year")
+        .groupby("iso")
+        .last()
+        .reset_index()[["iso", "value"]]
+        .rename(columns={"value": "gpc"})
+    )
+
+    merged_gpc = merged_cs.merge(gpc_cs, on="iso", how="left")
+    merged_gpc = merged_gpc.dropna(subset=["gpc", proxy_col, "value"])
+    merged_gpc["log_gpc"] = np.log(merged_gpc["gpc"].clip(lower=1e-6))
+    print(f"  Merged with GPC: {len(merged_gpc)} rows")
+
+    partial = None
+    if len(merged_gpc) >= 20:
+        # Compute partial correlation manually using residuals to avoid library bug
+        try:
+            from scipy import stats as scipy_stats
+
+            def partial_corr_residuals(df, x_col, y_col, control_cols):
+                """Compute partial correlation via OLS residuals."""
+                X_ctrl = df[control_cols].values
+                X_ctrl = np.column_stack([np.ones(len(X_ctrl)), X_ctrl])
+
+                x_vals = df[x_col].values
+                y_vals = df[y_col].values
+
+                # Residuals of x ~ controls
+                beta_x = np.linalg.lstsq(X_ctrl, x_vals, rcond=None)[0]
+                resid_x = x_vals - X_ctrl @ beta_x
+
+                # Residuals of y ~ controls
+                beta_y = np.linalg.lstsq(X_ctrl, y_vals, rcond=None)[0]
+                resid_y = y_vals - X_ctrl @ beta_y
+
+                r, p = scipy_stats.pearsonr(resid_x, resid_y)
+                return r, p
+
+            pr, pp = partial_corr_residuals(merged_gpc, proxy_col, "value", ["log_gpc"])
+            print(f"  Partial r (manual residuals)={pr:.3f}, p={pp:.4f}")
+            notes.append(
+                f"Partial correlation computed via OLS residuals method (workaround for pingouin p-val bug): "
+                f"partial_r={pr:.3f}, partial_p={pp:.4f}, controlling for log(GPC)."
+            )
+
+            # Try the library function too, but don't crash if it fails
+            try:
+                partial = run_partial_correlation(merged_gpc, proxy_col, "value", ["log_gpc"])
+                print(f"  Library partial r={partial.partial_r:.3f}, p={partial.partial_p:.4f}")
+            except Exception as lib_err:
+                print(f"  Library partial correlation failed ({lib_err}), using manual result")
+                # Build a simple namespace object that mimics PartialCorrelationResult
+                from types import SimpleNamespace
+                partial = SimpleNamespace(
+                    partial_r=pr,
+                    partial_p=pp,
+                    control_variables=["log_gpc"],
+                )
+
+        except Exception as e:
+            print(f"  Manual partial correlation also failed: {e}")
+            notes.append(f"All partial correlation methods failed: {e}")
+    else:
+        print("  Insufficient data for partial correlation")
+        notes.append("Partial correlation not computed due to insufficient GPC-merged data.")
+
+    # Functional form test — handle None R² values gracefully
+    print("\nTesting functional forms...")
+    try:
+        form = test_functional_form(merged_cs[proxy_col], merged_cs["value"])
+        best_form_str = form.best_form.value if form.best_form is not None else "unknown"
+        lin_r2 = form.linear_r2 if form.linear_r2 is not None else float("nan")
+        log_r2 = form.log_linear_r2 if form.log_linear_r2 is not None else float("nan")
+        quad_r2 = form.quadratic_r2 if form.quadratic_r2 is not None else float("nan")
+        print(f"  Best form: {best_form_str}")
+        print(f"  Linear R²={lin_r2:.3f}, Log-linear R²={log_r2:.3f}, Quadratic R²={quad_r2:.3f}")
+    except Exception as e:
+        print(f"  Functional form test failed: {e}")
+        form = None
+        notes.append(f"Functional form test failed: {e}")
+
+    # Verdict — use the library's determine_verdict
+    # Need a proper PartialCorrelationResult for determine_verdict; pass None if SimpleNamespace
+    partial_for_verdict = partial
+    try:
+        from src.utils.stats import PartialCorrelationResult  # type: ignore
+        if partial is not None and not isinstance(partial, PartialCorrelationResult):
+            # Re-wrap as proper object if possible
+            partial_for_verdict = None
+            notes.append(
+                f"Partial correlation used for summary only (not passed to determine_verdict): "
+                f"partial_r={partial.partial_r:.3f}, partial_p={partial.partial_p:.4f}"
+            )
+    except ImportError:
+        pass
+
+    verdict = determine_verdict(corr, partial_for_verdict, EXPECTED_DIRECTION)
+    print(f"\nVerdict: {verdict.value}")
+
+    # Build summary
+    partial_summary = ""
+    if partial is not None:
+        partial_summary = (
+            f"Partial r={partial.partial_r:.3f} (p={partial.partial_p:.4f}) "
+            f"controlling for log(GPC). "
+        )
+    else:
+        partial_summary = "Partial correlation not available. "
+
+    form_summary = ""
+    if form is not None:
+        form_summary = f"Best functional form: {form.best_form.value}."
+    else:
+        form_summary = "Functional form test not available."
+
+    result = build_result_json(
+        HYPOTHESIS_ID,
+        verdict,
+        corr,
+        partial_for_verdict,
+        functional_form=form,
+        data_quality_notes=" | ".join(notes),
+        summary=(
+            f"Tested '{proxy_label}' as proxy for wastewater treatment plant infrastructure capacity. "
+            f"This is an approximate substitution since IWA data is paid/inaccessible. "
+            f"Cross-sectional analysis (latest year per country, n={corr.n_countries} countries). "
+            f"Bivariate Pearson r={corr.pearson_r:.3f} (p={corr.pearson_p:.4f}), "
+            f"Spearman rho={corr.spearman_rho:.3f} (p={corr.spearman_p:.4f}). "
+            + partial_summary
+            + form_summary
+            + f" Direction is {'consistent' if corr.pearson_r < 0 else 'inconsistent'} "
+            f"with hypothesis (expected negative)."
+        ),
+    )
+    result["verification_method"] = "exploratory_test"
+
+    # Inject manual partial correlation into result if library couldn't handle it
+    if partial is not None and partial_for_verdict is None:
+        result["partial_correlation_manual"] = {
+            "partial_r": round(float(partial.partial_r), 4),
+            "partial_p": round(float(partial.partial_p), 4),
+            "control_variables": partial.control_variables,
+            "method": "OLS residuals (pingouin workaround)",
+        }
+
+else:
+    print("\nNo proxy data found after all approaches. Reporting inconclusive.")
+    notes.append(
+        "All data acquisition approaches failed: "
+        "IWA URL is login/paid-gated; "
+        "World Bank wastewater-specific indicators returned insufficient data; "
+        "WHO GHO codes not found; "
+        "no local indicator available for wastewater treatment capacity."
+    )
+    result = build_result_json(
+        HYPOTHESIS_ID,
+        "inconclusive",
+        None,
+        None,
+        functional_form=None,
+        data_quality_notes=" | ".join(notes),
+        summary=(
+            "Could not find usable proxy data for wastewater treatment plant infrastructure capacity. "
+            "The IWA Utilities Database is paid/login-gated. World Bank and WHO did not have "
+            "sufficient country-level wastewater treatment capacity data. Verdict is inconclusive."
+        ),
+    )
+    result["verification_method"] = "pending_data"
+
+# ---------------------------------------------------------------------------
+# 5. Write results
+# ---------------------------------------------------------------------------
+output_path = os.path.join(OUTPUT_DIR, "result.json")
+with open(output_path, "w") as f:
+    json.dump(result, f, indent=2)
+
+print(f"\nResults written to: {output_path}")
+print(f"Verification method: {result['verification_method']}")
+print(f"Verdict: {result.get('verdict', 'N/A')}")

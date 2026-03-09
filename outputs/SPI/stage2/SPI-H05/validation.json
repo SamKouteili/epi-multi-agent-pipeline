@@ -1,0 +1,15 @@
+{
+  "no_synthetic_data": true,
+  "year_alignment_ok": true,
+  "hypothesis_interpretation_ok": true,
+  "data_source_authentic": true,
+  "country_coverage_adequate": true,
+  "outlier_concerns": false,
+  "mechanistic_explanation": "Protected areas capture unprotected habitat hotspots, yielding large SPI gains at low protection percentages; as protection increases beyond 20-30%, remaining suitable habitat becomes marginal and diminishing returns set in. The hypothesis predicts a log-linear (diminishing returns) relationship, but the data shows a quadratic form instead, suggesting a non-monotonic pattern that may reflect the complexity of conservation effectiveness across different habitat types and management contexts.",
+  "issues": [
+    "Functional form mismatch: hypothesis specifies log-linear, but result shows quadratic as best fit. Log-linear R²=null due to zero values in proxy data (countries with 0% protected area). This is a material discrepancy between predicted and observed functional form.",
+    "The quadratic form is not mentioned in the hypothesis mechanism, which explicitly expects diminishing returns (log-linear behavior). A quadratic fit suggests the relationship may have a maximum and then decline, which is conceptually different from the monotonic diminishing-returns mechanism stated.",
+    "Data coverage note: log-linear fit failure due to zero/low proxy values is acknowledged in data_quality_notes but creates uncertainty about whether the true functional form can be tested as hypothesized."
+  ],
+  "overall_assessment": "minor_issues"
+}

@@ -1,0 +1,31 @@
+{
+  "hypothesis_id": "SPI-H02",
+  "verdict": "rejected",
+  "verification_method": "statistical_test",
+  "raw_correlation": {
+    "pearson_r": -0.14461848822300974,
+    "pearson_p": 0.06984188783094727,
+    "spearman_rho": -0.21363337017861075,
+    "spearman_p": 0.007034738677324341,
+    "n_observations": 158,
+    "n_countries": 158
+  },
+  "partial_correlation": {
+    "partial_r": -0.07253682246779683,
+    "partial_p": 0.36662632315851196,
+    "control_variables": [
+      "log_gpc"
+    ]
+  },
+  "functional_form": {
+    "best_form": "linear",
+    "linear_r2": 0.02091450713590881,
+    "linear_aic": 1052.494343065706,
+    "log_linear_r2": null,
+    "log_linear_aic": null,
+    "quadratic_r2": 0.024196153295579115,
+    "quadratic_aic": 1053.9638776631116
+  },
+  "data_quality_notes": "Proxy used: EN.CLC.MDAT.ZS (mean area protected in terrestrial sites important to biodiversity). Used WB indicator EN.CLC.MDAT.ZS as biodiversity protection proxy (n=166). True LBII (raster product at 1km resolution) was not accessible as country-level tabular data. A World Bank substitute indicator was used instead. Taxonomic bias toward vertebrates/plants is noted in PREDICTS; this substitute does not fully capture local biodiversity intactness.",
+  "summary": "Using 'EN.CLC.MDAT.ZS (mean area protected in terrestrial sites important to biodiversity)' as a substitute for LBII, bivariate correlation with SPI is r=-0.145 (p=6.984e-02, n=158 countries). Spearman rho=-0.214 (p=7.035e-03). After controlling for log(GDP/capita): partial r=-0.073 (p=3.666e-01). Best functional form: linear. Verdict: rejected. Note: Results reflect the substitute proxy, not true LBII."
+}

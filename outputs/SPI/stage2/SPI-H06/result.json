@@ -1,0 +1,31 @@
+{
+  "hypothesis_id": "SPI-H06",
+  "verdict": "partially_confirmed",
+  "verification_method": "exploratory_test",
+  "raw_correlation": {
+    "pearson_r": -0.03941139901902179,
+    "pearson_p": 0.002480356882405062,
+    "spearman_rho": -0.020745421941753373,
+    "spearman_p": 0.11133104202017437,
+    "n_observations": 5892,
+    "n_countries": 177
+  },
+  "partial_correlation": {
+    "partial_r": -0.030722954544477928,
+    "partial_p": 0.021579621283724603,
+    "control_variables": [
+      "log_gpc"
+    ]
+  },
+  "functional_form": {
+    "best_form": "quadratic",
+    "linear_r2": 0.0015532583726364235,
+    "linear_aic": 38937.97880300317,
+    "log_linear_r2": 3.9763879848719874e-05,
+    "log_linear_aic": 38946.90342281862,
+    "quadratic_r2": 0.02280586926848438,
+    "quadratic_aic": 38813.209595446235
+  },
+  "data_quality_notes": "SUBSTITUTION: True habitat fragmentation metrics (patch size, edge density, core area index) are not available as country-level statistics in any accessible API \u2014 they require raster processing of MODIS/ESA land cover data. Used 'Agricultural land (% of land area)' (WB: AG.LND.AGRI.ZS) as an approximate proxy: higher agricultural land share implies greater habitat conversion and fragmentation. This is an indirect proxy that captures land-use pressure rather than landscape configuration directly. Already-used proxies excluded: LBII, SHI, IUCN Red List, protected areas, FAO pesticides, PARC indices. n=5892 observations, 177 countries after merge.",
+  "summary": "Using agricultural land area (% of total land) as an indirect proxy for habitat fragmentation (higher agricultural expansion \u2192 more habitat conversion and fragmentation \u2192 lower SPI). Bivariate Pearson r=-0.039 (p=2.480e-03), Spearman rho=-0.021 (p=1.113e-01). Partial r=-0.031 (p=2.158e-02) controlling for log(GDP/capita). Best functional form: quadratic. Verdict: partially_confirmed."
+}

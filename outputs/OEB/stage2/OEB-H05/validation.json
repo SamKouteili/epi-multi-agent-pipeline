@@ -1,0 +1,17 @@
+{
+  "no_synthetic_data": true,
+  "year_alignment_ok": true,
+  "hypothesis_interpretation_ok": false,
+  "data_source_authentic": false,
+  "country_coverage_adequate": true,
+  "outlier_concerns": false,
+  "mechanistic_explanation": "The hypothesis posits that biogenic VOC emissions (isoprene and monoterpenes) from vegetation enhance ozone formation in NOx-limited regions. The script substituted forest area (% land) for the specified MEGAN 2.1 modeled emissions data, assuming forests are a proxy for VOC emission potential. However, forest cover is a crude static land-use measure that does not capture the temperature-dependent, species-composition-dependent, and light-dependent emission dynamics that drive actual isoprene/monoterpene fluxes. This is a substantial conceptual deviation from the hypothesis.",
+  "issues": [
+    "HYPOTHESIS_INTERPRETATION: Substituted forest cover (a static land-use variable) for biogenic VOC emission potential (a dynamically modeled flux variable). While forests *contain* VOC-emitting vegetation, forest area does not measure emission rates and lacks the temperature, light, and species-composition dependencies central to the mechanism.",
+    "DATA_SOURCE_AUTHENTIC: The hypothesis specifies MEGAN 2.1 model outputs (nmol m⁻² s⁻¹ monthly fluxes). The script uses World Bank forest area indicator (AG.LND.FRST.ZS, % of land area). This is not a documented or acknowledged reasonable substitution—it is a fundamentally different variable that may not proxy the intended phenomenon.",
+    "NEGATIVE_CORRELATION_UNEXPECTED: The result shows a strong negative correlation (Pearson r = −0.495, p < 0.001) between forest cover and OEB. This contradicts the hypothesis's predicted positive relationship. The agent did not flag or investigate why the sign is reversed, which suggests either the proxy is invalid or there is confounding (e.g., developed countries with both lower forest cover and stricter emission controls).",
+    "MECHANISM_MISMATCH: The script acknowledges that actual MEGAN emissions depend on temperature, LAI, and species composition, but the proxy (forest % area) is static and does not vary with these drivers. The causal chain breaks down.",
+    "CONFOUNDING_RISK: The negative correlation with forest cover may reflect that high-income, low-forest countries have strict air quality regulations, not that forests increase ozone. The partial correlation controlling for log(GDP/capita) remains negative and stronger (r = −0.524), but this does not validate the proxy as a measure of biogenic VOC emission potential."
+  ],
+  "overall_assessment": "major_issues"
+}

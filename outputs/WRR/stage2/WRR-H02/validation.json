@@ -1,0 +1,18 @@
+{
+  "no_synthetic_data": true,
+  "year_alignment_ok": true,
+  "hypothesis_interpretation_ok": false,
+  "data_source_authentic": false,
+  "country_coverage_adequate": true,
+  "outlier_concerns": false,
+  "mechanistic_explanation": "Waste-to-Energy facilities directly divert municipal solid waste from landfills to combustion with energy recovery, mechanistically increasing the proportion of waste treated via incineration (the WRR numerator). Higher installed WtE capacity should correlate with higher waste recovery rates in countries with well-developed waste infrastructure.",
+  "issues": [
+    "CRITICAL: Hypothesis specified 'Waste-to-Energy plant capacity' (count/MW) but agent substituted 'People using basic hygiene services (SH.STA.HYGN.ZS)' — a fundamentally different variable measuring sanitation access, NOT waste infrastructure or WtE capacity. This is not a reasonable proxy but a conceptually unrelated variable.",
+    "CRITICAL: Data source mismatch — hypothesis requires Statista WtE capacity data; agent used World Bank sanitation indicator instead. Substitution was documented in data_quality_notes but the variables measure entirely different constructs.",
+    "The agent states 'sanitation access is a correlated but indirect proxy' but provides no empirical or theoretical justification for why basic hygiene services should correlate with WtE capacity. This is speculative.",
+    "The positive correlation found (Pearson r=0.362, p<0.0001) likely reflects broad economic/development patterns (wealthier countries have better both hygiene services AND waste infrastructure) rather than a mechanistic link between WtE capacity and WRR.",
+    "No attempt was made to find alternative waste-management-specific indicators (e.g., Eurostat WtE data, national waste authority statistics, or OECD waste databases) before accepting a sanitation proxy.",
+    "The verdict 'partially_confirmed' is misleading because the statistical test used a misaligned proxy variable, not the actual proxy specified in the hypothesis."
+  ],
+  "overall_assessment": "major_issues"
+}

@@ -1,0 +1,16 @@
+{
+  "no_synthetic_data": true,
+  "year_alignment_ok": true,
+  "hypothesis_interpretation_ok": false,
+  "data_source_authentic": false,
+  "country_coverage_adequate": true,
+  "outlier_concerns": false,
+  "mechanistic_explanation": "The hypothesis proposes that countries with developed e-waste recycling infrastructure (requiring technical sophistication) will show higher waste recovery rates overall. However, the verification script substituted renewable electricity output (% of total generation) as the proxy, which measures energy transition maturity rather than waste management capability. While both may correlate with development level, renewable energy penetration is conceptually distinct from e-waste recycling infrastructure and breaks the intended causal chain.",
+  "issues": [
+    "MAJOR: Proxy variable substitution — hypothesis specifies 'e-waste recycling rate' but script uses 'renewable electricity as % of total' (World Bank EG.ELC.RNEW.ZS). These are materially different variables. Renewable energy output reflects energy policy and resource endowment, not waste management infrastructure.",
+    "MAJOR: Data source not authentic — the hypothesis explicitly requires 'Global E-waste Monitor 2024' (ITU/UNITAR). The script could not access this source and substituted World Bank renewable electricity data without adequate justification. The data_quality_notes acknowledge this substitution but do not explain why renewable electricity is a valid proxy for e-waste recycling.",
+    "MODERATE: Weak mechanistic link — the claimed mechanism ('countries with advanced renewable energy infrastructure tend to also have developed waste management systems') is plausible but indirect. The script provides no evidence that renewable energy infrastructure causally relates to e-waste recycling capacity. This is a confounding-by-development inference, not a direct proxy.",
+    "MINOR: Partial correlation not computed — although 423 observations and 132 countries are available, partial correlation controlling for GDP was skipped. This would help isolate the proxy effect from general development level, which is critical given the development-driven confounding."
+  ],
+  "overall_assessment": "major_issues"
+}

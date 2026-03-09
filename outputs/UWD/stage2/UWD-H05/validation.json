@@ -1,0 +1,20 @@
+{
+  "no_synthetic_data": true,
+  "year_alignment_ok": true,
+  "hypothesis_interpretation_ok": false,
+  "data_source_authentic": false,
+  "country_coverage_adequate": false,
+  "outlier_concerns": false,
+  "mechanistic_explanation": "Chronic exposure to arsenic and fluoride in groundwater causes long-term health damage (kidney disease, gastrointestinal disease, skeletal fluorosis) that accumulates as disability-adjusted life years. Chemical contamination of water sources is a marker of broader water safety system failure and indicates populations at higher risk of multiple health burdens. However, the hypothesis acknowledges a substantial lag time (1970s–1990s exposure driving 2010–2020 disease burden), making causal inference difficult.",
+  "issues": [
+    "HYPOTHESIS_INTERPRETATION_MISMATCH: The hypothesis specifies arsenic & fluoride contamination (specific chemical thresholds: >10 µg/L arsenic, >1.5 mg/L fluoride), but no proxy data was obtained for this variable. The script attempted World Bank indicators SH.H2O.BASW.ZS and SH.H2O.SMDW.ZS, which measure access to basic/safely managed drinking water — a fundamentally different concept from chemical contamination levels. These are not valid substitutes.",
+    "DATA_SOURCE_MISMATCH: The hypothesis specifies USGS World Water Quality Database as the data source. The script confirmed this source does not expose country-level aggregated data (only site-level US data via NWIS). No alternative source was authenticated or documented as an acceptable substitute. The World Bank indicators used are from a different organization entirely.",
+    "NO_EMPIRICAL_VERIFICATION: The script performed no statistical analysis (no proxy-target correlation, no year-alignment check, no country-level merge). The verdict is based entirely on literature quality assessment, not on empirical proxy validation. Statistical_results is null.",
+    "COUNTRY_COVERAGE_INADEQUATE: No merged dataset was created. The hypothesis specifies ~30 countries with monitoring, but no actual country-level data was assembled. Without a real dataset, country coverage cannot be assessed, and the 15-country minimum threshold cannot be verified.",
+    "DATA_AVAILABILITY_CONFLICT: The script explicitly states data_available=false, yet proceeds to render a verdict of 'partially_confirmed'. A hypothesis cannot be verified without actual data or a rigorous statistical analysis. Literature backing alone, especially from a single region (Bangladesh), does not constitute proxy verification for a global EPI indicator.",
+    "LITERATURE_GENERALIZATION_RISK: The cited literature (Smith et al. 2000, Ravenscroft et al. 2009) is region-specific (Bangladesh, South/Southeast Asia). The script acknowledges this is 'not a global cross-country analysis' and that 'global generalisability remains unverified.' This undermines the hypothesis's applicability to a ~30-country EPI proxy framework.",
+    "TEMPORAL_LAG_UNADDRESSED: The hypothesis notes a chronic disease lag (reflects exposure from 1970s–1990s). The script does not discuss how to align historical exposure data (unavailable) with 2010–2020 disease burden. This temporal mismatch is not resolved.",
+    "SUBSTITUTE_PROXY_NOT_DOCUMENTED: The data_quality_notes mention that WB indicators are 'not valid proxies' but the script still attempted to use them. This is internally contradictory and suggests the agent recognized the substitution was inappropriate but proceeded anyway without formal documentation of why this approach was acceptable or necessary."
+  ],
+  "overall_assessment": "major_issues"
+}

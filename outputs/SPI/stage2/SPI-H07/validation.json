@@ -1,0 +1,17 @@
+{
+  "no_synthetic_data": true,
+  "year_alignment_ok": true,
+  "hypothesis_interpretation_ok": false,
+  "data_source_authentic": false,
+  "country_coverage_adequate": true,
+  "outlier_concerns": false,
+  "mechanistic_explanation": "The hypothesis proposes that Protected Area Management Effectiveness (PAME)—measured by METT-4 assessments of legal status, planning, staffing, budgeting, and enforcement—drives SPI by determining whether protected areas genuinely conserve habitat. However, the verification script substituted Government Effectiveness (WGI) as a proxy, which measures institutional quality and public service capacity more broadly, not the specific operational management quality of protected areas. While governance may be a prerequisite for PA effectiveness, it is conceptually distinct from METT-4's detailed assessment of park-level management practices.",
+  "issues": [
+    "Major: Proxy substitution is materially different from hypothesis intent. GD-PAME/METT-4 measures park-level management effectiveness (legal designation, planning, staffing, enforcement, stakeholder engagement). Government Effectiveness (WGI) is a country-level governance index covering broader institutional quality. This is not a reasonable substitution—it tests governance-SPI correlation, not management-effectiveness-SPI correlation.",
+    "Major: Data source authentication failed. The hypothesis specifies GD-PAME from UNEP-WCMC/BIOPAMA. The script could not access this source and substituted with World Bank WGI without explicit documentation in the hypothesis caveat section. The proxy_substitution field acknowledges this in result.json, but this constitutes a fundamental departure from the hypothesis specification.",
+    "Moderate: Bivariate correlation is weak (r=0.063, p<0.0001) and practically non-meaningful despite statistical significance due to large N (4377 obs). After controlling for GDP per capita (partial r=0.011, p=0.47), the relationship becomes indistinguishable from zero. This suggests Government Effectiveness does not capture PAME's mechanism.",
+    "Moderate: Functional form is quadratic but with very low R² (0.0052), indicating the relationship explains <1% of variance. The quadratic fit (AIC=29023.49) is only marginally better than linear (AIC=29027.31), suggesting no meaningful non-linear threshold effect as hypothesized.",
+    "Minor: The script's fallback to 'year-agnostic' merge (most recent values per country) could mask temporal misalignment if Government Effectiveness and SPI data come from different years for the same country. The merged dataset combines 4377 year-country observations, but the year_alignment logic is not fully documented."
+  ],
+  "overall_assessment": "major_issues"
+}

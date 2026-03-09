@@ -1,0 +1,19 @@
+{
+  "no_synthetic_data": true,
+  "year_alignment_ok": true,
+  "hypothesis_interpretation_ok": false,
+  "data_source_authentic": false,
+  "country_coverage_adequate": true,
+  "outlier_concerns": false,
+  "mechanistic_explanation": "The hypothesis proposes that countries with high recycled material trade flows (as a proportion of total material consumption) demonstrate advanced waste collection, sorting, and processing infrastructure, thereby indicating higher waste recovery rates. The actual proxy tested—'Manufactures exports as % of merchandise exports'—is conceptually unrelated: it measures the composition of a country's export basket, not recycling capacity or waste material trade. While both wealthy/industrial countries may trade more manufactures AND have better recycling, the causal chain is broken.",
+  "issues": [
+    "CRITICAL: Data source substitution without equivalent proxy. The hypothesis specifies UN Comtrade recycled material trade flow data (metals, paper, plastics, glass as % of total material consumption). The script uses WB:TX.VAL.MANF.ZS.UN (Manufactures exports % of merchandise exports), which is a fundamentally different variable. Manufactures exports do not measure recycled material trade.",
+    "CRITICAL: Hypothesis interpretation mismatch. The hypothesis targets a specific waste-recovery proxy (recycled material trade as proportion of consumption). The proxy used measures industrial export composition, which is conceptually distinct. This is not a reasonable substitution but a category error.",
+    "The data_quality_notes acknowledge this substitution but frame it as 'unavailable without auth' rather than flagging that the test does not actually verify the stated hypothesis.",
+    "Confounding acknowledged in notes: wealthier countries both export more manufactures AND have higher recycling rates, making it impossible to isolate the causal effect of recycling infrastructure from wealth effects.",
+    "Partial correlation computation failed ('p-val' error), preventing control for GDP/capita—the primary confounder.",
+    "Functional form test also failed (format string error), so the hypothesis's claim of 'log-linear' form cannot be evaluated.",
+    "The verdict 'partially_confirmed' is based on a correlation (r=0.49) between a proxy that does not measure recycled material trade and the target, inflating confidence in a hypothesis that was never actually tested."
+  ],
+  "overall_assessment": "major_issues"
+}

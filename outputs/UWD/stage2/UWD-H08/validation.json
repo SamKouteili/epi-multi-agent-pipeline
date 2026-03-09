@@ -1,0 +1,17 @@
+{
+  "no_synthetic_data": true,
+  "year_alignment_ok": true,
+  "hypothesis_interpretation_ok": true,
+  "data_source_authentic": true,
+  "country_coverage_adequate": false,
+  "outlier_concerns": false,
+  "mechanistic_explanation": "High water turbidity indicates the presence of suspended solids (sediments, fecal matter, organic debris) in water bodies, which correlates with poor water clarity and likely contamination by pathogens and chemical pollutants that cause waterborne disease. Therefore, satellite-measured turbidity serves as a proxy for water contamination severity, which should positively correlate with unsafe water disease burden (UWD DALYs).",
+  "issues": [
+    "No actual statistical verification performed: the script halted at data acquisition failure and returned an inconclusive verdict without testing any proxy-target relationship.",
+    "country_coverage_adequate failed: n_countries and n_observations are both null, making any assessment of statistical reliability impossible. The script never reached the point of merging any datasets.",
+    "The inconclusive verdict, while justified by data inaccessibility, means the hypothesis remains untested. This is appropriate documentation of the limitation, but represents a failed verification attempt rather than a successful quality check.",
+    "The script correctly identified that the primary data source (USGS EarthExplorer / Copernicus GeoTIFF imagery) requires GIS expertise and cannot be accessed via standard APIs, which is an honest assessment of the limitation.",
+    "No synthetic data was generated as a fallback, which is correct given the hypothesis's specialized nature, but also means no empirical relationship could be tested."
+  ],
+  "overall_assessment": "major_issues"
+}

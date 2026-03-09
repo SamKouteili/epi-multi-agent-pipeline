@@ -1,0 +1,233 @@
+import json
+import os
+import pandas as pd
+import numpy as np
+import requests
+
+from src.utils.stats import (
+    run_bivariate_correlation,
+    run_partial_correlation,
+    determine_verdict,
+    build_result_json,
+    test_functional_form,
+)
+from src.utils.data_utils import load_raw_indicator
+from src.utils.data_fetch import (
+    fetch_world_bank_indicator,
+    search_world_bank,
+    list_local_indicators,
+)
+
+output_path = "/Users/samkouteili/rose/epi/multi-agent/outputs/OEB/stage2/OEB-H05"
+os.makedirs(output_path, exist_ok=True)
+
+print("=== OEB-H05: Biogenic VOC Emission Potential vs OEB ===\n")
+
+# ─────────────────────────────────────────────────────────────────
+# Step 1: Load target indicator
+# ─────────────────────────────────────────────────────────────────
+print("Loading OEB target data...")
+target = load_raw_indicator("OEB")
+print(f"  Target rows: {len(target)}, countries: {target['iso'].nunique()}")
+
+# ─────────────────────────────────────────────────────────────────
+# Step 2: Data discovery — try all four approaches
+# ─────────────────────────────────────────────────────────────────
+
+data_quality_notes = []
+proxy = None
+verification_method = "pending_data"
+
+# ── Approach 1: MEGAN 2.1 (no direct URL provided) ──────────────
+print("\nApproach 1: No direct URL provided for MEGAN 2.1. Skipping direct fetch.")
+data_quality_notes.append("MEGAN 2.1 has no direct URL; NCAR data server requires authentication.")
+
+# ── Approach 2: Search World Bank for biogenic VOC / isoprene ────
+print("\nApproach 2: Searching World Bank for biogenic VOC / isoprene proxy...")
+for query in ["biogenic volatile organic compound", "isoprene emissions", "forest isoprene"]:
+    try:
+        results = search_world_bank(query)
+        print(f"  Query '{query}': {len(results)} results")
+        if results:
+            print(f"  Top: {results[:3]}")
+    except Exception as e:
+        print(f"  Error: {e}")
+
+data_quality_notes.append(
+    "World Bank has no direct biogenic VOC / isoprene indicator."
+)
+
+# ── Approach 3: Approximate proxy — Forest cover / tree density ──
+# MEGAN emissions are driven by leaf area index and vegetation type.
+# Forest cover is a well-known first-order predictor of biogenic VOC
+# potential (Laothawornkitkul et al., 2009; Guenther et al., 2012).
+# We try:
+#   (a) Forest area % land  (AG.LND.FRST.ZS)
+#   (b) Forest area (sq km) (AG.LND.FRST.K2)
+#   (c) Tree canopy cover from WB (if available)
+
+print("\nApproach 3: Using forest cover as proxy for biogenic VOC emission potential...")
+data_quality_notes.append(
+    "Substitution: MEGAN biogenic VOC data unavailable. Using World Bank 'Forest area (% of land area)' "
+    "(AG.LND.FRST.ZS) as a proxy. Forests are the dominant source of biogenic VOCs (isoprene/monoterpenes); "
+    "higher forest cover implies higher biogenic VOC emission potential. "
+    "This is an acknowledged approximation — actual emissions also depend on temperature, LAI, and species composition."
+)
+
+try:
+    print("  Fetching forest area % land (AG.LND.FRST.ZS)...")
+    proxy_forest = fetch_world_bank_indicator("AG.LND.FRST.ZS")
+    proxy_forest = proxy_forest.rename(columns={"value": "proxy_value"})
+    print(f"  Forest cover rows: {len(proxy_forest)}, countries: {proxy_forest['iso'].nunique()}")
+
+    if len(proxy_forest) > 100:
+        proxy = proxy_forest
+        verification_method = "exploratory_test"
+        print("  SUCCESS: Will use forest cover as biogenic VOC proxy.")
+    else:
+        print("  Insufficient data from forest cover fetch.")
+        data_quality_notes.append("Forest area % fetch returned insufficient data.")
+except Exception as e:
+    print(f"  Error fetching forest cover: {e}")
+    data_quality_notes.append(f"Forest area % fetch failed: {e}")
+
+# Fallback: try forest area in sq km
+if proxy is None or len(proxy) < 100:
+    try:
+        print("  Fetching forest area sq km (AG.LND.FRST.K2)...")
+        proxy_forest2 = fetch_world_bank_indicator("AG.LND.FRST.K2")
+        proxy_forest2 = proxy_forest2.rename(columns={"value": "proxy_value"})
+        print(f"  Forest area sq km rows: {len(proxy_forest2)}, countries: {proxy_forest2['iso'].nunique()}")
+        if len(proxy_forest2) > 100:
+            proxy = proxy_forest2
+            verification_method = "exploratory_test"
+            data_quality_notes.append("Using forest area (sq km) as secondary forest proxy.")
+            print("  Using forest area sq km as proxy.")
+    except Exception as e:
+        print(f"  Error: {e}")
+        data_quality_notes.append(f"Forest area sq km fetch failed: {e}")
+
+# ─────────────────────────────────────────────────────────────────
+# Step 4: Merge and run statistics
+# ─────────────────────────────────────────────────────────────────
+
+if proxy is None or len(proxy) < 50:
+    print("\nNo usable proxy data found. Reporting inconclusive.")
+    data_quality_notes.append("All four data acquisition approaches failed.")
+    result = {
+        "hypothesis_id": "OEB-H05",
+        "verdict": "inconclusive",
+        "verification_method": "pending_data",
+        "bivariate_correlation": None,
+        "partial_correlation": None,
+        "functional_form": None,
+        "data_quality_notes": " | ".join(data_quality_notes),
+        "summary": (
+            "No usable proxy data for biogenic VOC emission potential could be obtained. "
+            "MEGAN 2.1 requires NetCDF downloads not accessible via API. "
+            "World Bank has no direct biogenic VOC indicator. "
+            "Forest cover fetch also failed or returned insufficient data."
+        ),
+    }
+    out_file = f"{output_path}/result.json"
+    with open(out_file, "w") as f:
+        json.dump(result, f, indent=2)
+    print(f"Result written to {out_file}")
+else:
+    print(f"\nMerging proxy ({len(proxy)} rows) with OEB target ({len(target)} rows)...")
+    merged = target.merge(proxy[["iso", "year", "proxy_value"]], on=["iso", "year"])
+    merged = merged.dropna(subset=["value", "proxy_value"])
+    print(f"  Merged rows: {len(merged)}, countries: {merged['iso'].nunique()}")
+
+    if len(merged) < 20:
+        print("Too few observations after merge. Reporting inconclusive.")
+        result = {
+            "hypothesis_id": "OEB-H05",
+            "verdict": "inconclusive",
+            "verification_method": "pending_data",
+            "bivariate_correlation": None,
+            "partial_correlation": None,
+            "functional_form": None,
+            "data_quality_notes": " | ".join(data_quality_notes)
+            + f" | Only {len(merged)} overlapping observations after merge.",
+            "summary": "Insufficient overlapping data after merging forest cover proxy with OEB target.",
+        }
+        out_file = f"{output_path}/result.json"
+        with open(out_file, "w") as f:
+            json.dump(result, f, indent=2)
+        print(f"Result written to {out_file}")
+    else:
+        # ── Bivariate correlation ──────────────────────────────────
+        print("\nRunning bivariate correlation...")
+        corr = run_bivariate_correlation(
+            merged["proxy_value"], merged["value"], iso=merged["iso"]
+        )
+        print(
+            f"  Pearson r={corr.pearson_r:.4f}, p={corr.pearson_p:.4f}, "
+            f"Spearman rho={corr.spearman_rho:.4f}, p={corr.spearman_p:.4f}, "
+            f"n={corr.n_observations}, countries={corr.n_countries}"
+        )
+
+        # ── Partial correlation controlling for log(GDP/capita) ───
+        print("\nLoading GPC for partial correlation control...")
+        gpc = load_raw_indicator("GPC")
+        merged_gpc = merged.merge(
+            gpc[["iso", "year", "value"]].rename(columns={"value": "gpc"}),
+            on=["iso", "year"],
+        )
+        merged_gpc = merged_gpc.dropna(subset=["gpc"])
+        merged_gpc["log_gpc"] = np.log(merged_gpc["gpc"].clip(lower=1e-9))
+        print(f"  Rows for partial correlation: {len(merged_gpc)}")
+
+        partial = None
+        if len(merged_gpc) >= 20:
+            partial = run_partial_correlation(
+                merged_gpc, "proxy_value", "value", ["log_gpc"]
+            )
+            print(
+                f"  Partial r={partial.partial_r:.4f}, p={partial.partial_p:.4f}, "
+                f"controls={partial.control_variables}"
+            )
+        else:
+            print("  Too few rows for partial correlation; skipping.")
+            data_quality_notes.append("Partial correlation skipped — too few overlapping rows with GPC.")
+
+        # ── Functional form ───────────────────────────────────────
+        print("\nTesting functional form...")
+        form = test_functional_form(merged["proxy_value"], merged["value"])
+        print(f"  Best form: {form.best_form.value}")
+
+        # ── Verdict ───────────────────────────────────────────────
+        verdict = determine_verdict(corr, partial, "positive")
+        print(f"\nVerdict: {verdict.value}")
+
+        # ── Build result JSON ─────────────────────────────────────
+        summary = (
+            f"Used forest area (% land) as proxy for biogenic VOC emission potential "
+            f"(MEGAN data unavailable). Forests are the primary source of isoprene/monoterpenes. "
+            f"Pearson r={corr.pearson_r:.3f} (p={corr.pearson_p:.4f}), "
+            f"Spearman rho={corr.spearman_rho:.3f} (p={corr.spearman_p:.4f}), "
+            f"n={corr.n_observations} observations across {corr.n_countries} countries. "
+        )
+        if partial:
+            summary += (
+                f"Partial r={partial.partial_r:.3f} (p={partial.partial_p:.4f}) controlling for log(GDP/capita). "
+            )
+        summary += f"Best functional form: {form.best_form.value}. Verdict: {verdict.value}."
+
+        result = build_result_json(
+            "OEB-H05",
+            verdict,
+            corr,
+            partial,
+            functional_form=form,
+            data_quality_notes=" | ".join(data_quality_notes),
+            summary=summary,
+        )
+        result["verification_method"] = verification_method
+
+        out_file = f"{output_path}/result.json"
+        with open(out_file, "w") as f:
+            json.dump(result, f, indent=2)
+        print(f"\nResult written to {out_file}")
+        print(json.dumps(result, indent=2))

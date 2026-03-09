@@ -1,0 +1,16 @@
+{
+  "no_synthetic_data": true,
+  "year_alignment_ok": true,
+  "hypothesis_interpretation_ok": false,
+  "data_source_authentic": false,
+  "country_coverage_adequate": true,
+  "outlier_concerns": false,
+  "mechanistic_explanation": "The hypothesis proposes that countries with large intact habitat patches can protect representative species more efficiently, while fragmented habitats require disproportionate protected area expansion. However, the script tests forest area percentage (AG.LND.FRST.ZS), which measures total forest coverage but entirely omits the fragmentation dimension central to the mechanism. Forest percentage does not distinguish between one large contiguous patch and many small scattered patches—two scenarios with radically different conservation implications.",
+  "issues": [
+    "Proxy substitution changes hypothesis materially: 'Area of Habitat Remaining within Fragmented Landscape Patches' (requires geospatial fragmentation metrics) was replaced with 'Forest area (% of land area)' (a simple landscape coverage metric). Fragmentation geometry is the core mechanism; forest area % is a proxy for habitat availability only.",
+    "Data source not authentic: hypothesis specifies Global Forest Watch and ESA CCI raster data; script uses World Bank forest area indicator instead. While documented in data_quality_notes, this is a fundamental substitution, not a reasonable approximation.",
+    "Weak correlation (r=0.158) may reflect the poor fit between proxy and hypothesis. If fragmentation were central to the mechanism, a non-fragmentation proxy would be expected to show weaker or no relationship.",
+    "The script acknowledges the substitution is 'imperfect' but proceeds with full statistical testing and a 'partially_confirmed' verdict. This overstates confidence given the conceptual mismatch."
+  ],
+  "overall_assessment": "major_issues"
+}

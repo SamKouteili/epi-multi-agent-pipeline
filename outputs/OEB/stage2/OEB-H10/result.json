@@ -1,0 +1,31 @@
+{
+  "hypothesis_id": "OEB-H10",
+  "verdict": "partially_confirmed",
+  "verification_method": "statistical_test",
+  "raw_correlation": {
+    "pearson_r": 0.060394575251958,
+    "pearson_p": 0.00021264211267465837,
+    "spearman_rho": 0.07012348618277692,
+    "spearman_p": 1.69670181827999e-05,
+    "n_observations": 3756,
+    "n_countries": 189
+  },
+  "partial_correlation": {
+    "partial_r": 0.01967113569472007,
+    "partial_p": 0.2363225357774205,
+    "control_variables": [
+      "log_gpc"
+    ]
+  },
+  "functional_form": {
+    "best_form": "quadratic",
+    "linear_r2": 0.003647504719864414,
+    "linear_aic": -28707.773212455864,
+    "log_linear_r2": 0.00015241874506344288,
+    "log_linear_aic": -28694.620666786675,
+    "quadratic_r2": 0.009845103517238218,
+    "quadratic_aic": -28729.20957791368
+  },
+  "data_quality_notes": "Proxy used: Livestock production index (World Bank). Primary proxy (EDGAR ammonia emissions) was excluded as already used by OEB-H04. FAOSTAT also excluded (used by OEB-H08). Merged dataset: 3756 observations across 189 countries. Livestock-related indicators are available primarily for years with World Bank coverage.",
+  "summary": "Testing whether Livestock production index correlates positively with OEB (ozone exposure in KBAs). Pearson r=0.060 (p=0.000), Spearman rho=0.070 (p=0.000). Partial r=0.020 (p=0.236) controlling for log(GPC). Best functional form: quadratic. Verdict: partially_confirmed."
+}

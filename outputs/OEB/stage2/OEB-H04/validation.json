@@ -1,0 +1,19 @@
+{
+  "no_synthetic_data": true,
+  "year_alignment_ok": true,
+  "hypothesis_interpretation_ok": false,
+  "data_source_authentic": false,
+  "country_coverage_adequate": true,
+  "outlier_concerns": true,
+  "mechanistic_explanation": "Industrial energy consumption drives ozone-precursor emissions (NOx, VOCs) through fuel combustion and chemical manufacturing processes, which accumulate in the atmosphere and degrade air quality in protected areas. However, the proxy used (industry value added as % of GDP) is an economic indicator of industrial scale, not a direct measure of energy consumption or emissions intensity, weakening the mechanistic link.",
+  "issues": [
+    "CRITICAL: Proxy variable substitution — Hypothesis specifies 'Industrial Energy Consumption' and 'Sectoral fuel consumption...metrics' from EDGAR emissions inventory, but script used 'NV.IND.TOTL.ZS' (Industry value added % of GDP), which is a fundamentally different proxy measuring economic contribution rather than energy use or emissions.",
+    "CRITICAL: Data source mismatch — Hypothesis clearly specifies EDGAR (EC Joint Research Centre, global gridded 0.1° emissions data), but script substituted World Bank macroeconomic indicators without sufficient documentation of this deviation in the result JSON.",
+    "Weak correlation signal — Pearson r=0.086 (p<0.001) is statistically significant but extremely weak (< 0.1 R²). Spearman rho=-0.0067 is negligible and non-significant (p=0.68), suggesting the monotonic relationship is non-existent. This contradicts hypothesis strength estimate of r=0.4–0.7.",
+    "Outlier concern — Large dataset (n=3,850, 200 countries) with near-zero Spearman correlation despite significant Pearson p-value suggests extreme outlier influence or non-linear distortion by few high-leverage points. No outlier analysis or robustness checks were performed.",
+    "Time period mismatch — Hypothesis specifies 1970–2022, but proxy covers 1990–2024. The critical early period (1970–1989) is missing, limiting ability to test the full hypothesis.",
+    "Partial correlation is also very weak (r=0.056, p<0.001) and barely changes after controlling for GDP per capita, indicating the relationship is not driven by development level but is intrinsically tenuous.",
+    "Documentation gap — data_quality_notes mentions EDGAR inaccessibility and fallback to World Bank, but the result.json verdict is 'partially_confirmed' despite the proxy being conceptually misaligned and the correlation being negligible."
+  ],
+  "overall_assessment": "major_issues"
+}

@@ -1,0 +1,25 @@
+{
+  "hypothesis_id": "UWD-H09",
+  "verdict": "confirmed",
+  "verification_method": "exploratory_test",
+  "raw_correlation": {
+    "pearson_r": 0.7229428211084421,
+    "pearson_p": 0.0,
+    "spearman_rho": 0.8846968923265142,
+    "spearman_p": 0.0,
+    "n_observations": 4125,
+    "n_countries": 194
+  },
+  "partial_correlation": null,
+  "functional_form": {
+    "best_form": "quadratic",
+    "linear_r2": 0.5226463225922333,
+    "linear_aic": 57378.101276440844,
+    "log_linear_r2": null,
+    "log_linear_aic": null,
+    "quadratic_r2": 0.5404191714095223,
+    "quadratic_aic": 57223.587035218356
+  },
+  "data_quality_notes": "Approach 1: Fetched https://www.who.int/news/item/07-06-2022-who-launches-new-initiative-on-wastewater-surveillance \u2014 HTTP 404. This is a WHO news/press page (404 or HTML only), not a structured dataset. No machine-readable pathogen data available here.; Approach 2a \u2014 World Bank searches for fecal/pathogen indicators: WB 'fecal coliform water': 10 results; WB 'E. coli water contamination': 10 results; WB 'waterborne pathogen': 10 results; WB 'water quality bacteria': 10 results; WB 'sanitation fecal': 10 results. No relevant pathogen-specific indicators found.; Approach 2b \u2014 WHO GHO: No country-level E. coli/enterococcus/viral marker data available through standard GHO codes. Tried: WSH_SANITATION_SAFELY_MANAGED: (3692, 3); WHS3_41: (8755, 3); Local indicators available: ['GDP', 'GPC', 'POP', 'PPO', 'PDN', 'URB', 'GOE', 'ROL', 'RQU', 'OEB', 'OEC', 'NXA', 'SDA', 'SNM', 'PSU', 'PRS', 'RCY', 'MKP', 'MHP', 'MPE', 'PAR', 'BER', 'SHI', 'SPI', 'PAE', 'PHL', 'TBN', 'TKP', 'RLI', 'PFL', 'IFL', 'FCL', 'TCG', 'FLI', 'FSS', 'FCD', 'BTZ', 'BTO', 'RMS', 'WWG', 'WWC', 'WWT', 'WWR', 'COE', 'HFD', 'HFX', 'NOD', 'NOE', 'OZD', 'OZE', 'HPE', 'SOE', 'VOE', 'LED', 'LEX', 'WPC', 'WRR', 'SMW', 'USD', 'UWD', 'USX', 'UWX', 'CDA', 'CDF', 'CHA', 'FGA', 'NDA', 'BCA', 'GHN', 'GHI', 'GHP', 'GHA', 'LUF', 'GTI', 'GTP', 'CBP', 'PTI', 'PCR', 'NTI', 'NCR', 'PF5', 'PFA', 'PFC', 'IF5', 'IFA', 'IFC', 'TC5', 'TCA', 'TCC', 'GHG', 'CH4', 'FOG', 'NOT', 'CDO', 'BLC', 'CXN', 'WST', 'PMD', 'PME', 'CHP', 'FGP', 'NDP', 'CDP', 'CHG', 'FGG', 'NDG', 'CDG', 'BCP', 'BCG']; Approach 3: Using WB indicator SH.STA.ODFC.ZS 'Open defecation rate (% of population)' as approximate proxy. Rationale: country-level sanitation/open-defecation rate is the best available global proxy for fecal contamination of water (FIO load). Direct E. coli/enterococcus monitoring data (original hypothesis proxy) is not available in any global database with sufficient country coverage.; Partial correlation (controlling log_gpc) failed with error: 'p-val'. This may be due to near-collinearity between proxy and GPC.",
+  "summary": "Used WB indicator 'SH.STA.ODFC.ZS' (Open defecation rate (% of population)) as approximate proxy for waterborne pathogen prevalence (original proxy: E. coli/enterococcus in surface water \u2014 no global dataset exists). Bivariate: Pearson r=0.723 (p=0.0000), Spearman rho=0.885 (p=0.0000), n=4125 obs across 194 countries. Partial correlation not computed. Best functional form: quadratic."
+}

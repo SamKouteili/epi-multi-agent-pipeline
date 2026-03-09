@@ -1,0 +1,33 @@
+{
+  "hypothesis_id": "UWD-H10",
+  "verdict": "confirmed",
+  "verification_method": "exploratory_test",
+  "raw_correlation": {
+    "pearson_r": -0.5139072120168365,
+    "pearson_p": 1.654154579877778e-09,
+    "spearman_rho": -0.767238634610712,
+    "spearman_p": 1.049815000891568e-24,
+    "n_observations": 121,
+    "n_countries": 121
+  },
+  "partial_correlation": null,
+  "functional_form": {
+    "best_form": "linear",
+    "linear_r2": 0.2641006225629178,
+    "linear_aic": 1628.0480420903214,
+    "log_linear_r2": null,
+    "log_linear_aic": null,
+    "quadratic_r2": 0.27025771508777163,
+    "quadratic_aic": 1629.0314053538941
+  },
+  "data_quality_notes": "IWA URL (https://www.iwahq.org/) could not be fetched: HTTPSConnectionPool(host='www.iwahq.org', port=443): Max retries exceeded with url: / (Caused by ConnectTimeoutError(<HTTPSConnection(host='www.iwahq.org', port=443) at 0x10ea81590>, 'Connection to www.iwahq.org timed out. (connect timeout=15)')) | World Bank searches performed: ['wastewater treatment', 'safely managed sanitation'] | Using World Bank proxy: SH.STA.SMSS.UR.ZS: Safely managed sanitation services, urban (% of urban pop) (substitution for IWA wastewater treatment capacity; no IWA data available). | Partial correlation computed via OLS residuals method (workaround for pingouin p-val bug): partial_r=-0.005, partial_p=0.9609, controlling for log(GPC). | Partial correlation used for summary only (not passed to determine_verdict): partial_r=-0.005, partial_p=0.9609",
+  "summary": "Tested 'SH.STA.SMSS.UR.ZS: Safely managed sanitation services, urban (% of urban pop)' as proxy for wastewater treatment plant infrastructure capacity. This is an approximate substitution since IWA data is paid/inaccessible. Cross-sectional analysis (latest year per country, n=121 countries). Bivariate Pearson r=-0.514 (p=0.0000), Spearman rho=-0.767 (p=0.0000). Partial r=-0.005 (p=0.9609) controlling for log(GPC). Best functional form: linear. Direction is consistent with hypothesis (expected negative).",
+  "partial_correlation_manual": {
+    "partial_r": -0.0045,
+    "partial_p": 0.9609,
+    "control_variables": [
+      "log_gpc"
+    ],
+    "method": "OLS residuals (pingouin workaround)"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "no_synthetic_data": true,
+  "year_alignment_ok": true,
+  "hypothesis_interpretation_ok": false,
+  "data_source_authentic": false,
+  "country_coverage_adequate": true,
+  "outlier_concerns": false,
+  "mechanistic_explanation": "The hypothesis posits that vehicle ownership and fuel consumption drive NOx emissions, which in turn drive tropospheric ozone formation in Key Biodiversity Areas. However, the script ultimately used 'Energy use per capita (kg oil equivalent)' as the proxy—a measure of total energy consumption, not specifically vehicle fleet size or fuel consumption. This substitution is conceptually distant from the original mechanism and lacks documentation of why this distant proxy is acceptable.",
+  "issues": [
+    "hypothesis_interpretation_ok=false: The hypothesis specifies 'Vehicle Fleet Size and Fuel Consumption' (vehicles per 1,000 people and total vehicle fuel consumption). The script failed to obtain OICA vehicle data and settled on 'Energy use per capita (WB EG.USE.PCAP.KG.OE)' — a general energy metric that includes residential, industrial, and commercial energy use, not vehicle-specific fuel consumption. This is a material departure from the proxy variable.",
+    "data_source_authentic=false: The hypothesis cites OICA (International Organization of Motor Vehicle Manufacturers) as the data source. The script explicitly states 'OICA data is restricted' and no URL was provided, then abandoned the primary source and substituted a World Bank general energy indicator without documenting approval for this substitution as a valid proxy in data_quality_notes. The notes mention the substitution but do not justify why EG.USE.PCAP.KG.OE is an acceptable proxy for vehicle fleet size and fuel consumption.",
+    "mechanistic_weakness: The hypothesis mechanism links vehicle emissions → NOx → ozone in Key Biodiversity Areas. The script's data_quality_notes acknowledge 'OEB measures ozone exposure in Key Biodiversity Areas (not urban areas), which may weaken the expected vehicle emission → NOx → ozone link.' This is a critical caveat that undermines the mechanism, yet the verdict is 'confirmed' based on a moderate correlation (r=0.35) that may be driven by confounding (total energy use correlates with development, which affects multiple pollution pathways).",
+    "confounding_risk: The bivariate correlation (r=0.35) drops to partial r=0.23 after controlling for log(GDP per capita), suggesting ~35% of the signal is explained by development level, not vehicle-specific emissions. The hypothesis claims a specific vehicle emission mechanism, but the proxy is too broad to isolate that pathway."
+  ],
+  "overall_assessment": "major_issues"
+}

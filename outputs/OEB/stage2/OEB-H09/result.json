@@ -1,0 +1,31 @@
+{
+  "hypothesis_id": "OEB-H09",
+  "verdict": "confirmed",
+  "verification_method": "statistical_test",
+  "raw_correlation": {
+    "pearson_r": -0.4948500730854384,
+    "pearson_p": 6.094479993034927e-245,
+    "spearman_rho": -0.4888949656250192,
+    "spearman_p": 2.9230894307628045e-238,
+    "n_observations": 3980,
+    "n_countries": 201
+  },
+  "partial_correlation": {
+    "partial_r": -0.5244348563821647,
+    "partial_p": 5.921126326735968e-264,
+    "control_variables": [
+      "log_gpc"
+    ]
+  },
+  "functional_form": {
+    "best_form": "quadratic",
+    "linear_r2": 0.24487659483266355,
+    "linear_aic": -31605.515682790152,
+    "log_linear_r2": null,
+    "log_linear_aic": null,
+    "quadratic_r2": 0.2622472375172198,
+    "quadratic_aic": -31696.13994686342
+  },
+  "data_quality_notes": "MODIS NPP data is in HDF4 format and not accessible via standard APIs. Used World Bank AG.LND.FRST.ZS (Forest area % of land area) as proxy for Net Primary Productivity, as forest cover is a major component of terrestrial NPP. This is an imperfect substitute \u2014 forest area reflects standing biomass but not actual annual carbon flux. MODIS NPP uncertainty is \u00b120-30%; forest area has its own measurement issues. The negative direction (higher forest area \u2192 lower ozone exposure in KBAs) is plausible if forested regions have lower anthropogenic ozone sources.",
+  "summary": "Testing World Bank forest area (% of land) as a proxy for MODIS NPP against OEB (ozone exposure in Key Biodiversity Areas). Pearson r=-0.495 (p=6.094e-245), Spearman rho=-0.489, n=3980 obs across 201 countries. Best functional form: quadratic. Partial r=-0.524 (p=5.9211e-264) controlling for log(GDP/capita)."
+}

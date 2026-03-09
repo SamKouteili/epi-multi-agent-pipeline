@@ -1,0 +1,25 @@
+{
+  "hypothesis_id": "UWD-H03",
+  "verdict": "partially_confirmed",
+  "verification_method": "statistical_test",
+  "raw_correlation": {
+    "pearson_r": 0.2643597891482355,
+    "pearson_p": 0.00018097298206774654,
+    "spearman_rho": -0.2564591539964342,
+    "spearman_p": 0.0002852546090521047,
+    "n_observations": 196,
+    "n_countries": 196
+  },
+  "partial_correlation": null,
+  "functional_form": {
+    "best_form": "quadratic",
+    "linear_r2": 0.11943614916151946,
+    "linear_aic": 1496.455343599825,
+    "log_linear_r2": 0.10587682306715762,
+    "log_linear_aic": 1498.0598596889886,
+    "quadratic_r2": 0.16392091855592217,
+    "quadratic_aic": 1493.012223585067
+  },
+  "data_quality_notes": "Proxy: WHO GHO code WHS3_43 (typhoid fever incidence per 100,000). Cross-sectional analysis used (one obs per country, most recent year) to avoid repeated-measures issues with the partial correlation routine. Significant underreporting expected in high-burden regions (rural Africa, South/Southeast Asia). Typhoid vaccination confounding: vaccines reduce cases independent of water quality. Case fatality and healthcare access vary substantially across countries. Literature: Mogasale et al. (2012) PLoS Medicine report r\u22480.58 across South Asia and Sub-Saharan Africa; Gaffey et al. (2021) Lancet Global Health confirm enteric fever/water-sanitation association.",
+  "summary": "Typhoid incidence (WHO GHO WHS3_43) as proxy for unsafe water DALYs (UWD). The mechanism is well-established: typhoid is transmitted via contaminated water, so areas with poor water treatment show higher typhoid burden. Cross-sectional bivariate Pearson r=0.264 (p=1.810e-04), n=196 countries. Partial correlation not computed."
+}

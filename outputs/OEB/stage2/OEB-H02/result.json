@@ -1,0 +1,12 @@
+{
+  "hypothesis_id": "OEB-H02",
+  "verdict": "inconclusive",
+  "verification_method": "statistical_test",
+  "data_quality_notes": "ERA5 Planetary Boundary Layer Height data requires CDS API credentials and is not available via automated download in this environment. NCEP Reanalysis PBLH (hpbl) from NOAA PSL was inaccessible. No suitable World Bank indicator exists for boundary layer height. PBL height is a specialized meteorological variable only available from reanalysis products (ERA5, MERRA-2, NCEP) requiring authenticated API access or direct file download of large NetCDF files. The CAMS Global Reanalysis was already used by OEB-H01 and cannot be reused. Alternative approaches tried: World Bank climate indicators, NCEP THREDDS server.",
+  "summary": "Could not verify OEB-H02 hypothesis (PBL height \u2192 OEB) due to data unavailability. ERA5 PBL height data requires authenticated CDS API access. No open, automated-access proxy for planetary boundary layer height was found. The mechanism (lower PBL \u2192 higher ozone concentration) is physically plausible and literature-backed, but cannot be statistically tested without the data.",
+  "bivariate_correlation": null,
+  "partial_correlation": null,
+  "functional_form": null,
+  "n_observations": 0,
+  "n_countries": 0
+}

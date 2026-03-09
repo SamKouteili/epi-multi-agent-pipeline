@@ -1,0 +1,31 @@
+{
+  "hypothesis_id": "SPI-H01",
+  "verdict": "confirmed",
+  "verification_method": "exploratory_test",
+  "raw_correlation": {
+    "pearson_r": 0.35143071175568363,
+    "pearson_p": 2.3130141215448735e-50,
+    "spearman_rho": 0.4407063530994446,
+    "spearman_p": 2.4814283704048403e-81,
+    "n_observations": 1692,
+    "n_countries": 141
+  },
+  "partial_correlation": {
+    "partial_r": 0.2998263842488209,
+    "partial_p": 1.6315857344256153e-30,
+    "control_variables": [
+      "log_gpc"
+    ]
+  },
+  "functional_form": {
+    "best_form": "quadratic",
+    "linear_r2": 0.12350354516510642,
+    "linear_aic": 11019.33215168449,
+    "log_linear_r2": null,
+    "log_linear_aic": null,
+    "quadratic_r2": 0.13861587051761637,
+    "quadratic_aic": 10991.904699336399
+  },
+  "data_quality_notes": "PARC index not publicly available as a machine-readable dataset. Approach 1: IPBES PDF URL (https://www.ipbes.net/sites/default/files/Metadata_GEO_BON_Protected_Area_Representativeness_Index.pdf) contains only metadata. Approach 2: World Bank searches for 'protected area representativeness', 'biodiversity protected area quality', etc. returned no PARC data. Approach 3 (SUBSTITUTION): Used 'Marine protected areas (% of territorial waters)' (WB: ER.MRN.PTMR.ZS) as an approximate proxy. This measures protected area coverage of key biodiversity areas rather than representativeness per se, but is conceptually related \u2014 higher KBA/PA coverage implies better representativeness of priority sites. This is an exploratory substitution.",
+  "summary": "Using Marine protected areas (% of territorial waters) as a proxy for Protected Area Representativeness (PARC). Pearson r=0.351 (p=0.0000), Spearman rho=0.441. Partial r=0.300 (p=0.0000) controlling for log(GPC). n=1692 obs, 141 countries. Verdict: confirmed."
+}

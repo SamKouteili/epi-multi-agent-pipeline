@@ -1,0 +1,25 @@
+{
+  "hypothesis_id": "UWD-H01",
+  "verdict": "partially_confirmed",
+  "verification_method": "statistical_test",
+  "raw_correlation": {
+    "pearson_r": 0.9111405166879349,
+    "pearson_p": 0.0,
+    "spearman_rho": 0.946994230834955,
+    "spearman_p": 0.0,
+    "n_observations": 6176,
+    "n_countries": 193
+  },
+  "partial_correlation": null,
+  "functional_form": {
+    "best_form": "quadratic",
+    "linear_r2": 0.8301770411503574,
+    "linear_aic": 82580.36350283337,
+    "log_linear_r2": 0.5664712364620756,
+    "log_linear_aic": 88368.52101693235,
+    "quadratic_r2": 0.8315716719048145,
+    "quadratic_aic": 82531.43516239671
+  },
+  "data_quality_notes": "World Bank indicator SH.DYN.MORT (Under-5 mortality rate (related WASH proxy)) used as proxy. WHO GHO diarrheal incidence data unavailable via API. This is a related WASH/water-disease metric.Proxy label: World Bank SH.DYN.MORT. Note: reporting bias expected (low-income countries underreport diarrhea). Literature (Troeger 2018, Vos 2020) reports r\u22480.60\u20130.75 and \u22650.80 respectively.",
+  "summary": "Bivariate Pearson r=0.911 (p=0.0000), Spearman rho=0.947. Partial correlation could not be computed. Best functional form: quadratic. Literature (Troeger 2018, Vos 2020) reports r\u22480.60\u20130.75 and \u22650.80 respectively."
+}

@@ -1,0 +1,31 @@
+{
+  "hypothesis_id": "UWD-H06",
+  "verdict": "confirmed",
+  "verification_method": "statistical_test",
+  "raw_correlation": {
+    "pearson_r": -0.8140808039165188,
+    "pearson_p": 0.0,
+    "spearman_rho": -0.8827944576171503,
+    "spearman_p": 0.0,
+    "n_observations": 4196,
+    "n_countries": 194
+  },
+  "partial_correlation": null,
+  "functional_form": {
+    "best_form": "quadratic",
+    "linear_r2": 0.6627275553053658,
+    "linear_aic": 56856.64189464707,
+    "log_linear_r2": 0.6461798186469789,
+    "log_linear_aic": 57057.62096621522,
+    "quadratic_r2": 0.6630497814906713,
+    "quadratic_aic": 56854.63116866507
+  },
+  "data_quality_notes": "Proxy: World Bank SH.H2O.BASW.ZS (JMP-sourced basic drinking water access, % population). This is the standard JMP indicator as specified in the hypothesis. Partial correlation computed on most-recent-year-per-country subset (one observation per country) to avoid numerical instability from the panel structure (repeated country-year observations). Note: not fully independent of UWD target\u2014both draw on similar underlying survey/administrative data. Self-reported/survey bias possible; does not capture in-distribution contamination or collection time. Literature claim: Haller et al. 2020 (ERL): r \u2248 0.70\u20130.85 (inverse), robust to development controls. Partial correlation could not be computed due to numerical issues with the panel data structure.",
+  "summary": "Analysis of JMP drinking water access (World Bank: SH.H2O.BASW.ZS) vs UWD DALYs across 194 countries (4196 observations). Bivariate Pearson r=-0.814 (p=0), Spearman rho=-0.883 (p=0). Partial correlation unavailable due to numerical issues. Best functional form: quadratic. Strong negative correlation matches literature claim (Haller et al. 2020: r\u22480.70\u20130.85). Verdict: confirmed.",
+  "literature_claim": {
+    "r_range": "0.70\u20130.85",
+    "direction": "negative",
+    "source": "Haller et al. 2020, Environmental Research Letters",
+    "controls": "development level"
+  }
+}

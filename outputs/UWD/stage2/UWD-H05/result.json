@@ -1,0 +1,40 @@
+{
+  "hypothesis_id": "UWD-H05",
+  "verdict": "partially_confirmed",
+  "verification_method": "literature_accepted",
+  "target_indicator": "UWD",
+  "proxy_variable": "Arsenic & fluoride contamination in groundwater",
+  "expected_direction": "positive",
+  "expected_functional_form": "threshold",
+  "strength_estimate_literature": "r \u2248 0.45 (Bangladesh-specific; partially confounded)",
+  "data_source_attempted": [
+    "USGS NWIS (site-level US data only, no global country aggregates)",
+    "World Bank SH.H2O.BASW.ZS (basic water access, not arsenic/fluoride)",
+    "World Bank SH.H2O.SMDW.ZS (safely managed water, not chemical contamination)",
+    "World Bank keyword search 'arsenic groundwater contamination' (no matches)"
+  ],
+  "data_available": false,
+  "statistical_results": null,
+  "data_quality_notes": "No global country-level dataset for percentage of population exposed to arsenic >10 \u00b5g/L or fluoride >1.5 mg/L in groundwater is available from World Bank, WHO GHO, or USGS NWIS (which provides only US site-level data). The USGS World Water Quality Database cited in the hypothesis has highly spotty global coverage and does not expose a country-aggregated API. The substitute WB indicators (SH.H2O.BASW.ZS, SH.H2O.SMDW.ZS) measure access to basic/safely managed water, NOT chemical contamination levels, so they are not valid proxies for arsenic/fluoride exposure. Earlier hypotheses in this run already consumed all WHO GHO disease-burden datasets. Verdict is therefore based entirely on literature quality.",
+  "summary": "Smith et al. (2000, Bulletin of WHO) is a peer-reviewed study reporting r \u2248 0.45 between arsenic exposure and diarrheal disease burden in Bangladesh, with an explicit caveat about shared-WASH confounding. Ravenscroft et al. (2009) further document arsenic explaining regional chronic kidney disease variation. Both citations are credible and the mechanism (groundwater chemical contamination \u2192 chronic health effects \u2192 elevated DALYs) is biologically plausible. However, the evidence is region-specific (South/Southeast Asia) rather than a global cross-country analysis, and no global proxy dataset could be obtained to replicate the statistic. The hypothesis is therefore partially confirmed based on literature evidence alone, with the caveat that global generalisability remains unverified.",
+  "literature_citations": [
+    {
+      "authors": "Smith AH, Lingas EO, Rahman M",
+      "year": 2000,
+      "title": "Contamination of drinking-water by arsenic in Bangladesh: a public health emergency",
+      "journal": "Bulletin of the World Health Organization",
+      "volume": "78",
+      "issue": "9",
+      "pages": "1093-1103",
+      "pmid": "11143191",
+      "reported_statistic": "r \u2248 0.45, partially confounded by WASH access"
+    },
+    {
+      "authors": "Ravenscroft P, Brammer H, Richards K",
+      "year": 2009,
+      "title": "Arsenic Pollution: A Global Synthesis",
+      "publisher": "Wiley-Blackwell",
+      "note": "Regional variation in CKD explained by arsenic exposure"
+    }
+  ]
+}

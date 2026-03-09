@@ -1,0 +1,19 @@
+{
+  "no_synthetic_data": true,
+  "year_alignment_ok": true,
+  "hypothesis_interpretation_ok": false,
+  "data_source_authentic": false,
+  "country_coverage_adequate": true,
+  "outlier_concerns": true,
+  "mechanistic_explanation": "The hypothesis proposes that hepatitis A (HAV) epidemiology mirrors unsafe water and sanitation coverage because HAV is transmitted via the fecal-oral route, with high-HDI countries showing older age at infection (due to WASH improvements) and low-HDI countries showing early childhood infection via contaminated water. However, the verification script used WHO GHO WHS3_41, which is a generic disease notification indicator of unspecified content, not a validated HAV incidence or seroprevalence measure.",
+  "issues": [
+    "CRITICAL: Proxy variable mismatch. Hypothesis specifies 'reported acute hepatitis A cases per 100,000' or 'age-standardized seroprevalence (% with anti-HAV antibodies)'. Script used WHO GHO WHS3_41, which the data_quality_notes itself flags as 'may reflect general disease notifications, not exclusively Hepatitis A; verify exact indicator definition.' This is a fundamental substitution of an unvalidated indicator for a specific epidemiological measure.",
+    "CRITICAL: Data source not authentic. Hypothesis cites CDC/WHO Notifiable Diseases Surveillance System (NDSS) at https://www.cdc.gov/diseases-conditions/hepatitis-a/. Script acknowledged this 'provides PDFs only, not machine-readable data' but then used an undocumented WHO GHO indicator (WHS3_41) instead without clear justification that WHS3_41 is from NDSS or equivalent.",
+    "MAJOR: Severe correlation-hypothesis mismatch. Expected r≈0.55–0.70; observed Pearson r=0.072 (p<0.0001). This is a ~10-fold gap. Spearman rho=0.201 is similarly far below hypothesis expectation.",
+    "MAJOR: Outlier/masking concern. With 5046 observations across 196 countries and such a weak overall correlation despite statistically significant p-values, there are likely large country-level heterogeneities or ceiling/floor effects (e.g., universal vaccination in high-HDI countries masking the HAV-WASH signal). No outlier analysis or stratification by HDI/vaccination coverage was performed.",
+    "MODERATE: Partial correlation not computed. Script attempted to aggregate to country-level means but 'partial = None' in final output. Without GDP/capita control, cannot assess whether the weak correlation is confounded by development level.",
+    "MODERATE: Functional form untested. Script attempted test_functional_form() but 'functional_form = None' in final result. Hypothesis specifies nonlinear relationship; no evidence presented that linear form is adequate.",
+    "MINOR: Year alignment appears sound (merged on iso+year, 5046 rows from 196 countries suggests reasonable temporal coverage), but given the weak correlation, temporal misalignment of proxy to target cannot be ruled out as a contributing factor."
+  ],
+  "overall_assessment": "major_issues"
+}

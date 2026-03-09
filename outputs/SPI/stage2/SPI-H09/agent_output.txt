@@ -1,0 +1,578 @@
+=== Attempt 1 — Claude response ===
+```python
+import json
+import os
+import pandas as pd
+import numpy as np
+import requests
+
+from src.utils.stats import (
+    run_bivariate_correlation,
+    run_partial_correlation,
+    determine_verdict,
+    build_result_json,
+    test_functional_form,
+)
+from src.utils.data_utils import load_raw_indicator
+from src.utils.data_fetch import fetch_world_bank_indicator, search_world_bank
+
+output_path = "/Users/samkouteili/rose/epi/multi-agent/outputs/SPI/stage2/SPI-H09"
+os.makedirs(output_path, exist_ok=True)
+
+print("=== SPI-H09: Pesticide and Fertilizer Application Intensity vs SPI ===\n")
+
+# 1. Load EPI target data
+print("Loading SPI target data...")
+target = load_raw_indicator("SPI")
+print(f"  SPI shape: {target.shape}, years: {target['year'].min()}–{target['year'].max()}")
+
+# 2. Acquire proxy data — Pesticide/Fertilizer use from World Bank / FAO via World Bank API
+# FAO data is available through World Bank: AG.CON.FERT.ZS (fertilizer consumption kg/ha arable land)
+# and pesticide use is available as AG.CON.PEST.ZS or similar
+
+print("\nAttempting to fetch fertilizer consumption from World Bank (AG.CON.FERT.ZS)...")
+fertilizer = None
+try:
+    fertilizer = fetch_world_bank_indicator("AG.CON.FERT.ZS")
+    fertilizer = fertilizer.rename(columns={"value": "fertilizer_kg_ha"})
+    print(f"  Fertilizer data shape: {fertilizer.shape}")
+    print(f"  Years: {fertilizer['year'].min()}–{fertilizer['year'].max()}")
+    print(f"  Countries: {fertilizer['iso'].nunique()}")
+except Exception as e:
+    print(f"  Failed to fetch fertilizer data: {e}")
+
+print("\nAttempting to fetch pesticide use from World Bank (AG.CON.PEST.ZS)...")
+pesticide = None
+try:
+    pesticide = fetch_world_bank_indicator("AG.CON.PEST.ZS")
+    pesticide = pesticide.rename(columns={"value": "pesticide_kg_ha"})
+    print(f"  Pesticide data shape: {pesticide.shape}")
+    print(f"  Years: {pesticide['year'].min()}–{pesticide['year'].max()}")
+    print(f"  Countries: {pesticide['iso'].nunique()}")
+except Exception as e:
+    print(f"  Failed to fetch pesticide data (AG.CON.PEST.ZS): {e}")
+    # Try alternate pesticide indicator
+    print("  Trying alternate pesticide indicator...")
+    try:
+        results = search_world_bank("pesticide use agriculture")
+        print(f"  Search results: {results[:3] if results else 'None'}")
+    except Exception as e2:
+        print(f"  Search also failed: {e2}")
+
+# 3. Merge proxy data with target
+# Use fertilizer as primary proxy (better coverage than pesticide)
+# Create a combined agricultural chemical intensity index if both available
+
+proxy_df = None
+proxy_col = None
+proxy_notes = ""
+
+if fertilizer is not None and not fertilizer.empty:
+    print("\nUsing fertilizer consumption (kg/ha arable land) as primary proxy...")
+    
+    # Filter to relevant years and drop NaN
+    fertilizer_clean = fertilizer.dropna(subset=["fertilizer_kg_ha"])
+    print(f"  Clean fertilizer rows: {len(fertilizer_clean)}")
+    
+    if pesticide is not None and not pesticide.empty:
+        pesticide_clean = pesticide.dropna(subset=["pesticide_kg_ha"])
+        print(f"  Clean pesticide rows: {len(pesticide_clean)}")
+        
+        # Try to combine both
+        combined = fertilizer_clean.merge(pesticide_clean, on=["iso", "year"], how="inner")
+        print(f"  Combined (fertilizer + pesticide) rows: {len(combined)}")
+        
+        if len(combined) > 100:
+            # Normalize and combine
+            combined["fert_norm"] = (combined["fertilizer_kg_ha"] - combined["fertilizer_kg_ha"].mean()) / combined["fertilizer_kg_ha"].std()
+            combined["pest_norm"] = (combined["pesticide_kg_ha"] - combined["pesticide_kg_ha"].mean()) / combined["pesticide_kg_ha"].std()
+            combined["proxy_value"] = (combined["fert_norm"] + combined["pest_norm"]) / 2
+            proxy_df = combined[["iso", "year", "proxy_value"]]
+            proxy_col = "proxy_value"
+            proxy_notes = "Combined normalized index of fertilizer consumption (kg/ha arable land, WB AG.CON.FERT.ZS) and pesticide use (WB AG.CON.PEST.ZS). Both indicators from World Bank / FAO data."
+        else:
+            # Fall back to just fertilizer
+            proxy_df = fertilizer_clean[["iso", "year", "fertilizer_kg_ha"]].copy()
+            proxy_df = proxy_df.rename(columns={"fertilizer_kg_ha": "proxy_value"})
+            proxy_col = "proxy_value"
+            proxy_notes = "Fertilizer consumption (kg/ha arable land, WB AG.CON.FERT.ZS) from World Bank / FAO. Pesticide data had insufficient overlap. Note: this is a country-level aggregate and lacks spatial resolution for protected area catchment analysis."
+    else:
+        proxy_df = fertilizer_clean[["iso", "year", "fertilizer_kg_ha"]].copy()
+        proxy_df = proxy_df.rename(columns={"fertilizer_kg_ha": "proxy_value"})
+        proxy_col = "proxy_value"
+        proxy_notes = "Fertilizer consumption (kg/ha arable land, WB AG.CON.FERT.ZS) from World Bank / FAO. Pesticide data unavailable. Note: this is a country-level aggregate and lacks spatial resolution for protected area catchment analysis."
+
+elif pesticide is not None and not pesticide.empty:
+    print("\nFertilizer data unavailable, using pesticide data only...")
+    pesticide_clean = pesticide.dropna(subset=["pesticide_kg_ha"])
+    proxy_df = pesticide_clean[["iso", "year", "pesticide_kg_ha"]].copy()
+    proxy_df = proxy_df.rename(columns={"pesticide_kg_ha": "proxy_value"})
+    proxy_col = "proxy_value"
+    proxy_notes = "Pesticide use (WB AG.CON.PEST.ZS) from World Bank / FAO. Fertilizer data unavailable."
+
+else:
+    print("\nBoth fertilizer and pesticide World Bank data unavailable.")
+    print("Attempting to use FAO data via alternative source...")
+    
+    # Try FAO FAOSTAT API for fertilizer use
+    try:
+        fao_url = "https://fenix.fao.org/faostat/api/v1/en/data/RFN?area=&element=5157&item=3102&year=2010,2011,2012,2013,2014,2015,2016,2017,2018,2019,2020&output_type=csv"
+        resp = requests.get(fao_url, timeout=30)
+        if resp.status_code == 200:
+            print("  FAO FAOSTAT data fetched")
+        else:
+            print(f"  FAO FAOSTAT returned status {resp.status_code}")
+    except Exception as e:
+        print(f"  FAO FAOSTAT fetch failed: {e}")
+
+# If no proxy data available, write inconclusive result
+if proxy_df is None or proxy_df.empty:
+    print("\nNo proxy data available. Writing inconclusive result...")
+    
+    result = {
+        "hypothesis_id": "SPI-H09",
+        "verdict": "inconclusive",
+        "verification_method": "statistical_test",
+        "data_quality_notes": (
+            "Unable to retrieve proxy data for pesticide/fertilizer application intensity. "
+            "Attempted: (1) World Bank AG.CON.FERT.ZS (fertilizer consumption), "
+            "(2) World Bank AG.CON.PEST.ZS (pesticide use), "
+            "(3) FAO FAOSTAT API. All sources failed or returned empty data. "
+            "The hypothesis URL (worldometers.info) does not provide machine-accessible data."
+        ),
+        "summary": "Hypothesis could not be tested due to proxy data unavailability.",
+        "bivariate_correlation": None,
+        "partial_correlation": None,
+        "functional_form": None,
+    }
+    
+    output_file = f"{output_path}/result.json"
+    with open(output_file, "w") as f:
+        json.dump(result, f, indent=2)
+    print(f"Result written to {output_file}")
+    exit(0)
+
+# 4. Merge with target SPI data
+print(f"\nMerging proxy data with SPI target...")
+print(f"  Proxy rows: {len(proxy_df)}, unique countries: {proxy_df['iso'].nunique()}")
+print(f"  Target rows: {len(target)}, unique countries: {target['iso'].nunique()}")
+
+merged = target.merge(proxy_df, on=["iso", "year"])
+merged = merged.dropna(subset=["value", "proxy_value"])
+print(f"  Merged rows: {len(merged)}, unique countries: {merged['iso'].nunique()}")
+
+if len(merged) < 20:
+    print(f"\nInsufficient merged data (n={len(merged)}). Writing inconclusive result...")
+    result = {
+        "hypothesis_id": "SPI-H09",
+        "verdict": "inconclusive",
+        "verification_method": "statistical_test",
+        "data_quality_notes": (
+            f"Merged dataset has only {len(merged)} observations after joining proxy with SPI. "
+            f"Proxy data: {proxy_notes}"
+        ),
+        "summary": f"Insufficient data for statistical test (n={len(merged)}).",
+    }
+    output_file = f"{output_path}/result.json"
+    with open(output_file, "w") as f:
+        json.dump(result, f, indent=2)
+    print(f"Result written to {output_file}")
+    exit(0)
+
+# Use most recent year per country for cleaner cross-sectional analysis
+print("\nUsing most recent year per country for cross-sectional analysis...")
+merged_cs = merged.sort_values("year", ascending=False).drop_duplicates(subset="iso")
+print(f"  Cross-sectional rows: {len(merged_cs)}, countries: {merged_cs['iso'].nunique()}")
+
+# Decide which dataset to use
+analysis_df = merged_cs if len(merged_cs) >= 30 else merged
+print(f"  Using {'cross-sectional' if analysis_df is merged_cs else 'full panel'} data for correlation")
+
+# 5. Bivariate correlation
+print("\nRunning bivariate correlation...")
+corr = run_bivariate_correlation(
+    analysis_df["proxy_value"],
+    analysis_df["value"],
+    iso=analysis_df["iso"]
+)
+print(f"  Pearson r = {corr.pearson_r:.4f}, p = {corr.pearson_p:.4f}")
+print(f"  Spearman rho = {corr.spearman_rho:.4f}, p = {corr.spearman_p:.4f}")
+print(f"  n_observations = {corr.n_observations}, n_countries = {corr.n_countries}")
+
+# 6. Partial correlation controlling for log(GDP per capita)
+print("\nLoading GPC for partial correlation...")
+gpc = load_raw_indicator("GPC")
+merged_gpc = analysis_df.merge(
+    gpc[["iso", "year", "value"]].rename(columns={"value": "gpc"}),
+    on=["iso", "year"]
+)
+merged_gpc = merged_gpc.dropna(subset=["gpc"])
+merged_gpc["log_gpc"] = np.log(merged_gpc["gpc"].clip(lower=1))
+print(f"  Merged with GPC: {len(merged_gpc)} rows")
+
+partial = None
+if len(merged_gpc) >= 20:
+    print("Running partial correlation controlling for log(GPC)...")
+    partial = run_partial_correlation(merged_gpc, "proxy_value", "value", ["log_gpc"])
+    print(f"  Partial r = {partial.partial_r:.4f}, p = {partial.partial_p:.4f}")
+else:
+    print(f"  Insufficient data for partial correlation (n={len(merged_gpc)})")
+
+# 7. Functional form test
+print("\nTesting functional form...")
+form = test_functional_form(analysis_df["proxy_value"], analysis_df["value"])
+print(f"  Best form: {form.best_form.value}")
+print(f"  Linear R²={form.linear_r2:.4f}, AIC={form.linear_aic:.2f}")
+print(f"  Log-linear R²={form.log_linear_r2:.4f}, AIC={form.log_linear_aic:.2f}")
+print(f"  Quadratic R²={form.quadratic_r2:.4f}, AIC={form.quadratic_aic:.2f}")
+
+# 8. Verdict
+print("\nDetermining verdict...")
+verdict = determine_verdict(corr, partial, "negative")
+print(f"  Verdict: {verdict.value}")
+
+# 9. Build and write result
+summary = (
+    f"Tested Pesticide/Fertilizer Application Intensity (proxy: {proxy_notes[:80]}...) "
+    f"against SPI using {len(analysis_df)} observations across {analysis_df['iso'].nunique()} countries. "
+    f"Pearson r={corr.pearson_r:.3f} (p={corr.pearson_p:.3f}), "
+    f"Spearman rho={corr.spearman_rho:.3f} (p={corr.spearman_p:.3f}). "
+    f"{'Partial r=' + str(round(partial.partial_r, 3)) + ' (p=' + str(round(partial.partial_p, 3)) + ') controlling for log(GPC).' if partial else 'Partial correlation not computed.'} "
+    f"Best functional form: {form.best_form.value}. "
+    f"Hypothesis expected r=-0.55 to -0.70 (negative direction). "
+    f"Note: Country-level aggregate data lacks spatial resolution for protected area catchment-specific analysis."
+)
+
+result = build_result_json(
+    "SPI-H09",
+    verdict,
+    corr,
+    partial,
+    functional_form=form,
+    data_quality_notes=(
+        proxy_notes + " "
+        "Country-level aggregates lack spatial resolution for protected area catchment-specific analysis. "
+        "Global pesticide statistics from Worldometers.info were not machine-accessible; "
+        "World Bank/FAO data used instead. "
+        "Cross-sectional analysis (most recent year per country) used to reduce temporal autocorrelation."
+    ),
+    summary=summary,
+)
+
+result["verification_method"] = "statistical_test"
+
+output_file = f"{output_path}/result.json"
+with open(output_file, "w") as f:
+    json.dump(result, f, indent=2)
+
+print(f"\nResult written to {output_file}")
+print(f"Final verdict: {verdict.value}")
+```
+=== Attempt 1 — stdout ===
+=== SPI-H09: Pesticide and Fertilizer Application Intensity vs SPI ===
+
+Loading SPI target data...
+  SPI shape: (8010, 5), years: 1980–2024
+
+Attempting to fetch fertilizer consumption from World Bank (AG.CON.FERT.ZS)...
+  Fertilizer data shape: (6127, 3)
+  Years: 1990–2023
+  Countries: 196
+
+Attempting to fetch pesticide use from World Bank (AG.CON.PEST.ZS)...
+  Pesticide data shape: (0, 3)
+  Years: nan–nan
+  Countries: 0
+
+Using fertilizer consumption (kg/ha arable land) as primary proxy...
+  Clean fertilizer rows: 6127
+
+Merging proxy data with SPI target...
+  Proxy rows: 6127, unique countries: 196
+  Target rows: 8010, unique countries: 178
+  Merged rows: 5634, unique countries: 177
+
+Using most recent year per country for cross-sectional analysis...
+  Cross-sectional rows: 177, countries: 177
+  Using cross-sectional data for correlation
+
+Running bivariate correlation...
+  Pearson r = 0.0486, p = 0.5211
+  Spearman rho = 0.0707, p = 0.3495
+  n_observations = 177, n_countries = 177
+
+Loading GPC for partial correlation...
+  Merged with GPC: 3 rows
+  Insufficient data for partial correlation (n=3)
+
+Testing functional form...
+  Best form: linear
+  Linear R²=0.0024, AIC=1189.23
+
+=== Attempt 1 — stderr ===
+World Bank returned unexpected payload for AG.CON.PEST.ZS (possibly invalid code)
+Traceback (most recent call last):
+  File "/Users/samkouteili/rose/epi/multi-agent/outputs/SPI/stage2/SPI-H09/verify.py", line 224, in <module>
+    print(f"  Log-linear R²={form.log_linear_r2:.4f}, AIC={form.log_linear_aic:.2f}")
+                            ^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: unsupported format string passed to NoneType.__format__
+
+=== Attempt 2 — Claude response ===
+The issue is twofold:
+1. `test_functional_form` returns `None` for log_linear/quadratic R² when they can't be computed — need to handle that
+2. The GPC merge is failing because cross-sectional data uses a specific year but GPC might not have that exact year — need to fix the merge strategy
+
+```python
+import json
+import os
+import pandas as pd
+import numpy as np
+
+from src.utils.stats import (
+    run_bivariate_correlation,
+    run_partial_correlation,
+    determine_verdict,
+    build_result_json,
+    test_functional_form,
+)
+from src.utils.data_utils import load_raw_indicator
+from src.utils.data_fetch import fetch_world_bank_indicator
+
+output_path = "/Users/samkouteili/rose/epi/multi-agent/outputs/SPI/stage2/SPI-H09"
+os.makedirs(output_path, exist_ok=True)
+
+print("=== SPI-H09: Pesticide and Fertilizer Application Intensity vs SPI ===\n")
+
+# 1. Load EPI target data
+print("Loading SPI target data...")
+target = load_raw_indicator("SPI")
+print(f"  SPI shape: {target.shape}, years: {target['year'].min()}–{target['year'].max()}")
+
+# 2. Acquire proxy data — Fertilizer consumption from World Bank (AG.CON.FERT.ZS)
+print("\nFetching fertilizer consumption from World Bank (AG.CON.FERT.ZS)...")
+fertilizer = None
+try:
+    fertilizer = fetch_world_bank_indicator("AG.CON.FERT.ZS")
+    fertilizer = fertilizer.rename(columns={"value": "proxy_value"})
+    fertilizer = fertilizer.dropna(subset=["proxy_value"])
+    print(f"  Fertilizer data shape: {fertilizer.shape}")
+    print(f"  Years: {fertilizer['year'].min()}–{fertilizer['year'].max()}")
+    print(f"  Countries: {fertilizer['iso'].nunique()}")
+except Exception as e:
+    print(f"  Failed to fetch fertilizer data: {e}")
+
+if fertilizer is None or fertilizer.empty:
+    print("\nNo proxy data available. Writing inconclusive result...")
+    result = {
+        "hypothesis_id": "SPI-H09",
+        "verdict": "inconclusive",
+        "verification_method": "statistical_test",
+        "data_quality_notes": (
+            "Unable to retrieve proxy data for pesticide/fertilizer application intensity. "
+            "Attempted World Bank AG.CON.FERT.ZS (fertilizer consumption) but received empty data."
+        ),
+        "summary": "Hypothesis could not be tested due to proxy data unavailability.",
+    }
+    output_file = f"{output_path}/result.json"
+    with open(output_file, "w") as f:
+        json.dump(result, f, indent=2)
+    print(f"Result written to {output_file}")
+    exit(0)
+
+proxy_notes = (
+    "Fertilizer consumption (kg/ha arable land, World Bank AG.CON.FERT.ZS, sourced from FAO). "
+    "Pesticide-specific data (AG.CON.PEST.ZS) returned empty from World Bank API. "
+    "Country-level aggregates lack spatial resolution for protected area catchment analysis."
+)
+
+# 3. Merge proxy with target on iso + year (panel merge)
+print("\nMerging proxy data with SPI target (panel)...")
+merged = target.merge(fertilizer[["iso", "year", "proxy_value"]], on=["iso", "year"])
+merged = merged.dropna(subset=["value", "proxy_value"])
+print(f"  Merged rows: {len(merged)}, unique countries: {merged['iso'].nunique()}")
+
+if len(merged) < 20:
+    print(f"\nInsufficient merged data (n={len(merged)}). Writing inconclusive result...")
+    result = {
+        "hypothesis_id": "SPI-H09",
+        "verdict": "inconclusive",
+        "verification_method": "statistical_test",
+        "data_quality_notes": f"Only {len(merged)} observations after merging. " + proxy_notes,
+        "summary": f"Insufficient data for statistical test (n={len(merged)}).",
+    }
+    output_file = f"{output_path}/result.json"
+    with open(output_file, "w") as f:
+        json.dump(result, f, indent=2)
+    print(f"Result written to {output_file}")
+    exit(0)
+
+# 4. Create cross-sectional dataset (most recent year per country)
+print("\nCreating cross-sectional dataset (most recent year per country)...")
+merged_cs = merged.sort_values("year", ascending=False).drop_duplicates(subset="iso")
+print(f"  Cross-sectional rows: {len(merged_cs)}, countries: {merged_cs['iso'].nunique()}")
+
+# Use cross-sectional if enough data
+analysis_df = merged_cs if len(merged_cs) >= 30 else merged
+print(f"  Using {'cross-sectional' if analysis_df is merged_cs else 'full panel'} data")
+
+# 5. Bivariate correlation
+print("\nRunning bivariate correlation...")
+corr = run_bivariate_correlation(
+    analysis_df["proxy_value"],
+    analysis_df["value"],
+    iso=analysis_df["iso"]
+)
+print(f"  Pearson r = {corr.pearson_r:.4f}, p = {corr.pearson_p:.4f}")
+print(f"  Spearman rho = {corr.spearman_rho:.4f}, p = {corr.spearman_p:.4f}")
+print(f"  n_observations = {corr.n_observations}, n_countries = {corr.n_countries}")
+
+# 6. Partial correlation controlling for log(GDP per capita)
+# For cross-sectional: find nearest GPC year per country
+print("\nLoading GPC for partial correlation...")
+gpc = load_raw_indicator("GPC")
+gpc_clean = gpc.dropna(subset=["value"]).rename(columns={"value": "gpc"})
+
+# For each country in analysis_df, find GPC value from nearest available year
+print("  Matching GPC to analysis countries via nearest-year join...")
+gpc_matched_rows = []
+for _, row in analysis_df.iterrows():
+    iso = row["iso"]
+    yr = row["year"]
+    country_gpc = gpc_clean[gpc_clean["iso"] == iso]
+    if country_gpc.empty:
+        continue
+    # Find nearest year
+    idx = (country_gpc["year"] - yr).abs().idxmin()
+    best_row = country_gpc.loc[idx]
+    gpc_matched_rows.append({
+        "iso": iso,
+        "year": yr,
+        "proxy_value": row["proxy_value"],
+        "value": row["value"],
+        "gpc": best_row["gpc"],
+    })
+
+merged_gpc = pd.DataFrame(gpc_matched_rows)
+merged_gpc = merged_gpc.dropna(subset=["gpc"])
+merged_gpc = merged_gpc[merged_gpc["gpc"] > 0]
+merged_gpc["log_gpc"] = np.log(merged_gpc["gpc"])
+print(f"  Merged with GPC (nearest year): {len(merged_gpc)} rows")
+
+partial = None
+if len(merged_gpc) >= 20:
+    print("Running partial correlation controlling for log(GPC)...")
+    partial = run_partial_correlation(merged_gpc, "proxy_value", "value", ["log_gpc"])
+    print(f"  Partial r = {partial.partial_r:.4f}, p = {partial.partial_p:.4f}")
+else:
+    print(f"  Insufficient data for partial correlation (n={len(merged_gpc)})")
+
+# 7. Functional form test
+print("\nTesting functional form...")
+form = test_functional_form(analysis_df["proxy_value"], analysis_df["value"])
+print(f"  Best form: {form.best_form.value}")
+print(f"  Linear     R²={form.linear_r2:.4f},     AIC={form.linear_aic:.2f}")
+# Handle None values for log_linear and quadratic
+if form.log_linear_r2 is not None:
+    print(f"  Log-linear R²={form.log_linear_r2:.4f}, AIC={form.log_linear_aic:.2f}")
+else:
+    print("  Log-linear: not computed (None)")
+if form.quadratic_r2 is not None:
+    print(f"  Quadratic  R²={form.quadratic_r2:.4f},  AIC={form.quadratic_aic:.2f}")
+else:
+    print("  Quadratic: not computed (None)")
+
+# 8. Verdict
+print("\nDetermining verdict...")
+verdict = determine_verdict(corr, partial, "negative")
+print(f"  Verdict: {verdict.value}")
+
+# 9. Build summary
+log_linear_str = f"log-linear R²={form.log_linear_r2:.4f}" if form.log_linear_r2 is not None else "log-linear R²=N/A"
+quadratic_str = f"quadratic R²={form.quadratic_r2:.4f}" if form.quadratic_r2 is not None else "quadratic R²=N/A"
+partial_str = (
+    f"Partial r={partial.partial_r:.3f} (p={partial.partial_p:.3f}) controlling for log(GPC)."
+    if partial else "Partial correlation not computed (insufficient overlap with GPC data)."
+)
+
+summary = (
+    f"Tested fertilizer consumption intensity (World Bank AG.CON.FERT.ZS, kg/ha arable land) "
+    f"against SPI using {len(analysis_df)} country observations. "
+    f"Pearson r={corr.pearson_r:.3f} (p={corr.pearson_p:.3f}), "
+    f"Spearman rho={corr.spearman_rho:.3f} (p={corr.spearman_p:.3f}). "
+    f"{partial_str} "
+    f"Best functional form: {form.best_form.value} (linear R²={form.linear_r2:.4f}, {log_linear_str}, {quadratic_str}). "
+    f"Hypothesis expected negative correlation (r=-0.55 to -0.70). "
+    f"Observed r={corr.pearson_r:.3f} is near zero and not significant, failing to confirm the hypothesis. "
+    f"Country-level fertilizer aggregates likely too coarse to capture protected area catchment-specific impacts."
+)
+
+# 10. Write result
+result = build_result_json(
+    "SPI-H09",
+    verdict,
+    corr,
+    partial,
+    functional_form=form,
+    data_quality_notes=(
+        proxy_notes + " "
+        "Pesticide-specific World Bank indicator (AG.CON.PEST.ZS) returned no data; "
+        "fertilizer consumption used as sole proxy. "
+        "Cross-sectional analysis (most recent year per country) used. "
+        "GPC matched via nearest available year for partial correlation. "
+        "Spatial mismatch between country-level aggregates and protected area catchments "
+        "likely attenuates any true relationship."
+    ),
+    summary=summary,
+)
+
+result["verification_method"] = "statistical_test"
+
+output_file = f"{output_path}/result.json"
+with open(output_file, "w") as f:
+    json.dump(result, f, indent=2)
+
+print(f"\nResult written to {output_file}")
+print(f"Final verdict: {verdict.value}")
+```
+=== Attempt 2 — stdout ===
+=== SPI-H09: Pesticide and Fertilizer Application Intensity vs SPI ===
+
+Loading SPI target data...
+  SPI shape: (8010, 5), years: 1980–2024
+
+Fetching fertilizer consumption from World Bank (AG.CON.FERT.ZS)...
+  Fertilizer data shape: (6127, 3)
+  Years: 1990–2023
+  Countries: 196
+
+Merging proxy data with SPI target (panel)...
+  Merged rows: 5634, unique countries: 177
+
+Creating cross-sectional dataset (most recent year per country)...
+  Cross-sectional rows: 177, countries: 177
+  Using cross-sectional data
+
+Running bivariate correlation...
+  Pearson r = 0.0486, p = 0.5211
+  Spearman rho = 0.0707, p = 0.3495
+  n_observations = 177, n_countries = 177
+
+Loading GPC for partial correlation...
+  Matching GPC to analysis countries via nearest-year join...
+  Merged with GPC (nearest year): 177 rows
+Running partial correlation controlling for log(GPC)...
+  Partial r = -0.0084, p = 0.9115
+
+Testing functional form...
+  Best form: linear
+  Linear     R²=0.0024,     AIC=1189.23
+  Log-linear: not computed (None)
+  Quadratic  R²=0.0028,  AIC=1191.16
+
+Determining verdict...
+  Verdict: rejected
+
+Result written to /Users/samkouteili/rose/epi/multi-agent/outputs/SPI/stage2/SPI-H09/result.json
+Final verdict: rejected
+
+=== Attempt 2 — stderr ===

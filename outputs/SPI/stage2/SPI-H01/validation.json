@@ -1,0 +1,17 @@
+{
+  "no_synthetic_data": true,
+  "year_alignment_ok": true,
+  "hypothesis_interpretation_ok": false,
+  "data_source_authentic": false,
+  "country_coverage_adequate": true,
+  "outlier_concerns": false,
+  "mechanistic_explanation": "The hypothesis posits that Protected Area Representativeness Index (PARC)—measuring how well protected area networks represent ecosystem types and species diversity—should correlate positively with the Species Protection Index (SPI). The mechanism is that countries achieving high representativeness across priority ecosystems simultaneously protect endemic species concentrated in those ecosystems. However, the script substituted marine protected area coverage (ER.MRN.PTMR.ZS) for PARC, which measures a fundamentally different concept: the percentage of territorial waters under marine protection, not representativeness of ecosystem types or connectivity.",
+  "issues": [
+    "CRITICAL: The proxy variable is materially different from the hypothesis. PARC measures representativeness and connectivity of protected area networks across ecosystem types; ER.MRN.PTMR.ZS measures only marine PA coverage as a percentage. These are conceptually distinct—coverage ≠ representativeness.",
+    "CRITICAL: Data source mismatch. The hypothesis specifies PARC from GEO BON/IPBES; the script used World Bank marine PA data (ER.MRN.PTMR.ZS). The substitution was documented in data_quality_notes but represents a fundamental proxy swap, not a reasonable substitute.",
+    "The script's own data_quality_notes acknowledge this is an 'exploratory substitution' and that the proxy 'measures protected area coverage...rather than representativeness per se.' This admission of conceptual divergence should have triggered a hypothesis_interpretation_ok=false flag.",
+    "The mechanistic explanation provided in the hypothesis explicitly references 'representativeness and connectivity components' and 'endemic species concentrated in [priority] ecosystem types.' Marine PA coverage cannot test these mechanisms.",
+    "The result verdict is 'confirmed' based on a proxy that does not test the actual hypothesis. A positive correlation with marine PA coverage does not validate a hypothesis about representativeness indices."
+  ],
+  "overall_assessment": "major_issues"
+}

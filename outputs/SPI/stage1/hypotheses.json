@@ -1,0 +1,403 @@
+{
+  "indicator_tla": "SPI",
+  "causal_map_summary": "SPI variation reflects complex interactions between biological factors (species endemism, habitat distribution), institutional capacity (protected area management, enforcement), and economic pressures (agricultural expansion, land-use conversion). High SPI values predict meaningful progress toward reducing extinction risk across diverse species assemblages, while inadequate species protection translates to ecosystem function degradation and reduced ecosystem services. Countries with naturally higher endemism face steeper conservation challenges but also greater potential impact from effective protected area placement.",
+  "hypotheses": [
+    {
+      "id": "SPI-H01",
+      "context": {
+        "geographic_scope": "global",
+        "time_period": "2000-present",
+        "subpopulations": null
+      },
+      "target_variable": "SPI",
+      "proxy_variable": "Protected Area Representativeness Index (PARC)",
+      "proxy_description": "Measures how adequately protected area networks represent ecosystem types and species diversity, with both representativeness and connectivity components",
+      "relationship": {
+        "direction": "positive",
+        "functional_form": "linear",
+        "strength_estimate": "strong (direct conceptual alignment)"
+      },
+      "mechanism": "PARC and SPI both measure representativeness rather than area alone. Countries achieving high PARC scores across priority ecosystem types simultaneously achieve higher SPI values for endemic species concentrated in those ecosystem types.",
+      "data_source": {
+        "name": "Protected Area Representativeness & Connectedness (PARC) Indices",
+        "organization": "GEO BON, IPBES",
+        "url": "https://www.ipbes.net/sites/default/files/Metadata_GEO_BON_Protected_Area_Representativeness_Index.pdf",
+        "format": "CSV/Excel",
+        "accessibility": "free_account",
+        "coverage": "Variable by country, more comprehensive in developed nations and megadiverse countries"
+      },
+      "confidence": "literature_backed",
+      "evidence_type": "manual_data_needed",
+      "literature_evidence": "Direct conceptual alignment with SPI; studies comparing protected area networks using representativeness criteria show purely area-based targets frequently fail to capture adequate representation (UN Environment Programme World Conservation Monitoring Centre)",
+      "caveats": [
+        "PARC data completeness varies substantially by country",
+        "Different ecosystem classification systems may yield divergent values",
+        "Connectivity components measure landscape configuration which differs from habitat representativeness"
+      ],
+      "references": [
+        "https://www.ipbes.net/sites/default/files/Metadata_GEO_BON_Protected_Area_Representativeness_Index.pdf"
+      ]
+    },
+    {
+      "id": "SPI-H02",
+      "context": {
+        "geographic_scope": "global",
+        "time_period": "2001-present",
+        "subpopulations": null
+      },
+      "target_variable": "SPI",
+      "proxy_variable": "Local Biodiversity Intactness Index (LBII)",
+      "proxy_description": "Estimates how much of a terrestrial site's original biodiversity remains in the face of human land use and related pressures, combining site-level biodiversity survey data with high-resolution global land-use data",
+      "relationship": {
+        "direction": "positive",
+        "functional_form": "threshold",
+        "strength_estimate": "strong (estimated r>0.65)"
+      },
+      "mechanism": "LBII measures local species persistence and ecosystem intactness, outcomes that correlate strongly with protected area effectiveness. Countries with high land-use pressure and low local species intactness would show moderate-to-low SPI if protected areas are scattered through heavily used landscapes.",
+      "data_source": {
+        "name": "Local Biodiversity Intactness Index",
+        "organization": "GEO BON, UN Biodiversity Lab",
+        "url": "https://files.ipbes.net/ipbes-web-prod-public-files/Metadata_GEO_BON_PREDICTS_Local_Biodiversity_Intactness_Index.pdf",
+        "format": "Raster/GeoTIFF",
+        "accessibility": "open",
+        "coverage": "Global comprehensive, 1km resolution, annual 2001-present"
+      },
+      "confidence": "literature_backed",
+      "evidence_type": "programmatic_verify",
+      "literature_evidence": "LBII responds to both increases and decreases in threats and detects change in area and integrity using coral reef ecosystem simulation models (Newbold et al. 2015, Science)",
+      "caveats": [
+        "Taxonomic bias toward vertebrates and plants in PREDICTS database",
+        "Land-use classification prone to errors in complex landscapes",
+        "Does not explicitly account for protected area designation"
+      ],
+      "references": [
+        "https://files.ipbes.net/ipbes-web-prod-public-files/Metadata_GEO_BON_PREDICTS_Local_Biodiversity_Intactness_Index.pdf"
+      ]
+    },
+    {
+      "id": "SPI-H03",
+      "context": {
+        "geographic_scope": "global",
+        "time_period": "2001-present",
+        "subpopulations": null
+      },
+      "target_variable": "SPI",
+      "proxy_variable": "Species Habitat Index (SHI)",
+      "proxy_description": "Measures changes in the estimated size and quality of ecologically intact areas supporting species populations, aggregating multi-species habitat estimates from remote sensing and species occurrence data",
+      "relationship": {
+        "direction": "positive",
+        "functional_form": "linear",
+        "strength_estimate": "r>0.70"
+      },
+      "mechanism": "SHI focuses on the extent and integrity of remaining suitable habitat (the denominator in SPI calculations), while SPI measures the proportion of that habitat within protected areas. Countries with high SHI have greater opportunity to achieve high SPI through strategic protected area placement.",
+      "data_source": {
+        "name": "Species Habitat Index",
+        "organization": "Map of Life, Environmental Performance Index",
+        "url": "https://geobon.org/ebvs/indicators/species-habitat-index-shi/",
+        "format": "CSV/Raster",
+        "accessibility": "open",
+        "coverage": "Global comprehensive, 1km resolution, annual 2001-present, covers ~32,000 vertebrate species"
+      },
+      "confidence": "literature_backed",
+      "evidence_type": "programmatic_verify",
+      "literature_evidence": "SHI and SPI are sibling indicators within the EPI framework, expected correlation coefficient likely >0.70 in cross-country analysis (Jetz et al. 2019, Nature Ecology & Evolution)",
+      "caveats": [
+        "Does not distinguish between intact habitat inside versus outside protected areas",
+        "Requires species occurrence records from GBIF introducing geographic bias",
+        "Different species groups have different habitat requirements"
+      ],
+      "references": [
+        "https://geobon.org/ebvs/indicators/species-habitat-index-shi/",
+        "https://epi.yale.edu/measure/2024/SHI"
+      ]
+    },
+    {
+      "id": "SPI-H04",
+      "context": {
+        "geographic_scope": "global",
+        "time_period": "ongoing with quarterly updates",
+        "subpopulations": null
+      },
+      "target_variable": "SPI",
+      "proxy_variable": "Red List Index of Species Survival (RLI)",
+      "proxy_description": "Tracks changes in the average extinction risk of assessed species based on IUCN Red List categories, converting categorical assessments into a continuous 0-1 scale",
+      "relationship": {
+        "direction": "positive",
+        "functional_form": "linear",
+        "strength_estimate": "strong with lag effect"
+      },
+      "mechanism": "Countries achieving high SPI values should show improving or stable RLI values, as representative protected area networks reduce extinction risk. Species protected in recent years may require 5-10 years to demonstrate population recovery.",
+      "data_source": {
+        "name": "IUCN Red List of Threatened Species",
+        "organization": "IUCN",
+        "url": "https://www.iucnredlist.org",
+        "format": "CSV/Shapefile/GeoPackage",
+        "accessibility": "open",
+        "coverage": ">169,400 species assessed, quarterly updates, ~150 countries with species data"
+      },
+      "confidence": "literature_backed",
+      "evidence_type": "programmatic_verify",
+      "literature_evidence": "Cross-country analysis in EPI 2024 framework demonstrates that protected area effectiveness predicts Red List Index trends (EPI 2024 report)",
+      "caveats": [
+        "Data Deficient species excluded, biasing toward well-known vertebrates",
+        "Assessment depends on expert availability and funding",
+        "Time lag between protected area establishment and species recovery detection"
+      ],
+      "references": [
+        "https://www.iucnredlist.org",
+        "https://epi.yale.edu/downloads/2024-epi-report-20250106.pdf"
+      ]
+    },
+    {
+      "id": "SPI-H05",
+      "context": {
+        "geographic_scope": "global",
+        "time_period": "1992-2024",
+        "subpopulations": null
+      },
+      "target_variable": "SPI",
+      "proxy_variable": "Percentage Terrestrial Habitat Protected (PTHP)",
+      "proxy_description": "Simple percentage of terrestrial land area designated as protected area, measured at national level",
+      "relationship": {
+        "direction": "positive",
+        "functional_form": "log-linear",
+        "strength_estimate": "moderate with substantial scatter"
+      },
+      "mechanism": "Initial increases in protected area percentage yield large SPI gains as protected areas capture unprotected habitat hotspots. Beyond approximately 20-30% land protection, additional gains diminish as remaining suitable habitat becomes marginal.",
+      "data_source": {
+        "name": "Terrestrial protected areas (% of total land area)",
+        "organization": "World Bank",
+        "url": "https://data.worldbank.org/indicator/ER.LND.PTLD.ZS",
+        "format": "CSV/Excel",
+        "accessibility": "open",
+        "coverage": "All countries, annual updates 1992-2024"
+      },
+      "confidence": "literature_backed",
+      "evidence_type": "programmatic_verify",
+      "literature_evidence": "Studies comparing protected area networks show positive but scattered relationship, reflecting the 'gap analysis' problem where high area protection does not guarantee representativeness (literature cited in report)",
+      "caveats": [
+        "Includes protected areas of all IUCN categories, many permit extractive use",
+        "Designation does not ensure effective management",
+        "Does not account for marine protected areas or other effective conservation measures"
+      ],
+      "references": [
+        "https://data.worldbank.org/indicator/ER.LND.PTLD.ZS",
+        "https://www.protectedplanet.net/en/thematic-areas/wdpa"
+      ]
+    },
+    {
+      "id": "SPI-H06",
+      "context": {
+        "geographic_scope": "global",
+        "time_period": "2000-present",
+        "subpopulations": null
+      },
+      "target_variable": "SPI",
+      "proxy_variable": "Habitat Fragmentation and Edge Effects",
+      "proxy_description": "Landscape-scale metrics quantifying spatial configuration of habitat patches, including mean patch size, edge density, core area index, perimeter-to-area ratio, and nearest-neighbor distances",
+      "relationship": {
+        "direction": "negative",
+        "functional_form": "threshold",
+        "strength_estimate": "strong for specialist species"
+      },
+      "mechanism": "Habitat fragmentation directly impacts species persistence, particularly for specialist species requiring large minimum viable populations. Severe fragmentation drastically reduces species persistence regardless of protected area designation, with critical transitions where mean patch size falls below species minimum viable habitat size.",
+      "data_source": {
+        "name": "ESA Climate Change Initiative Land Cover, MODIS land cover",
+        "organization": "ESA, NASA",
+        "url": "https://modis.gsfc.nasa.gov/sci_team/meetings/200101/Presentations/l2_townshend.pdf",
+        "format": "Raster/derived metrics",
+        "accessibility": "open",
+        "coverage": "Global, annual 300-500m resolution from 2000 onward, requires computational processing"
+      },
+      "confidence": "literature_backed",
+      "evidence_type": "manual_data_needed",
+      "literature_evidence": "Research on European wildcats demonstrates that landscape-wide connectivity explains variation in genetic connectivity, with road density providing the strongest individual effect (Schadt et al. 2008)",
+      "caveats": [
+        "Metrics are scale-dependent and species-dependent",
+        "Measures habitat patterns but not directly protected area effectiveness",
+        "Computing metrics at high resolution globally is data-intensive"
+      ],
+      "references": [
+        "https://modis.gsfc.nasa.gov/sci_team/meetings/200101/Presentations/l2_townshend.pdf"
+      ]
+    },
+    {
+      "id": "SPI-H07",
+      "context": {
+        "geographic_scope": "selective countries with METT assessments",
+        "time_period": "multi-year snapshots",
+        "subpopulations": "primarily developing countries"
+      },
+      "target_variable": "SPI",
+      "proxy_variable": "Average Protected Area Management Effectiveness Score (PAME)",
+      "proxy_description": "Country average score from Management Effectiveness Tracking Tool (METT-4) assessments, quantifying actual management quality across dimensions including legal status, planning, staffing, budgeting, enforcement, and stakeholder engagement",
+      "relationship": {
+        "direction": "positive",
+        "functional_form": "threshold",
+        "strength_estimate": "r=0.60-0.75 (estimated)"
+      },
+      "mechanism": "Countries achieving both high protected area coverage AND high average PAME scores show higher SPI because protected areas actually conserve habitat and support species populations rather than existing as 'paper parks'. Management effectiveness directly determines whether habitat degradation inside protected areas constrains species persistence.",
+      "data_source": {
+        "name": "Global Database for Protected Area Management Effectiveness (GD-PAME)",
+        "organization": "UNEP-WCMC",
+        "url": "https://rris.biopama.org/node/20639",
+        "format": "PDF/Excel",
+        "accessibility": "free_account",
+        "coverage": "127 countries with METT-4 implementation, ~30% coverage globally, sporadic temporal updates"
+      },
+      "confidence": "speculative",
+      "evidence_type": "manual_data_needed",
+      "literature_evidence": null,
+      "caveats": [
+        "Country-level aggregated scores not uniformly publicly available",
+        "Implementation concentrated in developing countries with conservation program support",
+        "Repeat assessments every 2-5 years at best"
+      ],
+      "references": [
+        "https://rris.biopama.org/node/20639"
+      ]
+    },
+    {
+      "id": "SPI-H08",
+      "context": {
+        "geographic_scope": "global",
+        "time_period": "2000-present",
+        "subpopulations": null
+      },
+      "target_variable": "SPI",
+      "proxy_variable": "Area of Habitat Remaining within Fragmented Landscape Patches",
+      "proxy_description": "Proportion of potential species habitat that remains in patches larger than species' minimum viable habitat size, integrating habitat loss and fragmentation into a single 'effective habitat' measure",
+      "relationship": {
+        "direction": "positive",
+        "functional_form": "threshold",
+        "strength_estimate": "r=0.65-0.85 (estimated)"
+      },
+      "mechanism": "Countries with large intact habitat patches can protect representative species assemblages efficiently, while countries where remaining habitat occurs in fragmented patches require disproportionate protected area expansion to achieve equivalent SPI. Large habitat patches enable strategic protected area placement for high SPI achievement.",
+      "data_source": {
+        "name": "Global Forest Watch, ESA Climate Change Initiative",
+        "organization": "WRI, ESA",
+        "url": "https://www.wri.org/insights/forest-loss-drivers-data-trends",
+        "format": "Raster/derived metrics",
+        "accessibility": "open",
+        "coverage": "Global coverage using Landsat data from 1984 onward, requires computational processing"
+      },
+      "confidence": "speculative",
+      "evidence_type": "manual_data_needed",
+      "literature_evidence": null,
+      "caveats": [
+        "Requires geospatial processing capability",
+        "Computing time significant for global datasets",
+        "Learning curve substantial for users without GIS experience"
+      ],
+      "references": [
+        "https://www.wri.org/insights/forest-loss-drivers-data-trends"
+      ]
+    },
+    {
+      "id": "SPI-H09",
+      "context": {
+        "geographic_scope": "global country-level",
+        "time_period": "annual",
+        "subpopulations": null
+      },
+      "target_variable": "SPI",
+      "proxy_variable": "Pesticide and Fertilizer Application Intensity",
+      "proxy_description": "Heavy pesticide and fertilizer use in agricultural regions adjacent to protected areas, measuring agricultural runoff impacts on protected area habitat quality",
+      "relationship": {
+        "direction": "negative",
+        "functional_form": "linear",
+        "strength_estimate": "r=-0.55 to -0.70 (estimated)"
+      },
+      "mechanism": "Heavy chemical use in agricultural regions creates water quality and soil degradation impacts that penetrate into protected areas through groundwater and surface water flows. Protected areas within agricultural catchments experience eutrophication and chemical pollution that directly reduce aquatic species richness and abundance.",
+      "data_source": {
+        "name": "FAO pesticide statistics",
+        "organization": "FAO, Worldometer",
+        "url": "https://www.worldometers.info/food-agriculture/pesticides-by-country/",
+        "format": "CSV/Excel",
+        "accessibility": "open",
+        "coverage": "Global country-level, annual updates, lacks spatial resolution for protected area catchment-specific analysis"
+      },
+      "confidence": "speculative",
+      "evidence_type": "programmatic_verify",
+      "literature_evidence": null,
+      "caveats": [
+        "Global aggregates lack spatial resolution to identify protected area catchment-specific application",
+        "Subnational data sparse and inconsistently collected",
+        "Chemical toxicity effects may show threshold responses"
+      ],
+      "references": [
+        "https://www.worldometers.info/food-agriculture/pesticides-by-country/"
+      ]
+    },
+    {
+      "id": "SPI-H10",
+      "context": {
+        "geographic_scope": "scattered countries with research programs",
+        "time_period": "2010s-2020s",
+        "subpopulations": "high-income countries with research infrastructure"
+      },
+      "target_variable": "SPI",
+      "proxy_variable": "Environmental DNA (eDNA) Detection Diversity",
+      "proxy_description": "Species community composition and diversity detected through environmental DNA sampling in protected areas, enabling non-invasive species presence assessment",
+      "relationship": {
+        "direction": "positive",
+        "functional_form": "linear",
+        "strength_estimate": "r>0.75 (estimated)"
+      },
+      "mechanism": "eDNA sampling generates direct measure of species presence, absence, and community composition change over time. Protected areas with high species diversity detected through eDNA sampling, combined with stable or improving detection, indicate effective species protection and should correlate strongly with SPI habitat representativeness measures.",
+      "data_source": {
+        "name": "Conservation Genetics Labs eDNA programs",
+        "organization": "U.S. Fish and Wildlife Service, various research institutions",
+        "url": "https://www.fws.gov/project/environmental-dna-edna",
+        "format": "Database/research papers",
+        "accessibility": "restricted",
+        "coverage": "<5% countries with systematic programs, concentrated in North America, Australia, northern Europe"
+      },
+      "confidence": "speculative",
+      "evidence_type": "manual_data_needed",
+      "literature_evidence": null,
+      "caveats": [
+        "Requires specialized laboratory equipment limiting accessibility",
+        "Minimal implementation in tropical developing regions where species diversity is highest",
+        "Temporal coverage typically 2-10 years per study location"
+      ],
+      "references": [
+        "https://www.fws.gov/project/environmental-dna-edna"
+      ]
+    },
+    {
+      "id": "SPI-H11",
+      "context": {
+        "geographic_scope": "variable by region",
+        "time_period": "multi-year to decades",
+        "subpopulations": "migratory species with transnational routes"
+      },
+      "target_variable": "SPI",
+      "proxy_variable": "Transnational Migratory Species Population Trends",
+      "proxy_description": "Population stability or trends in species with transnational migration routes, providing integrated tests of protected area network function across political boundaries",
+      "relationship": {
+        "direction": "positive",
+        "functional_form": "linear",
+        "strength_estimate": "r=0.55-0.70 (estimated)"
+      },
+      "mechanism": "Species with transnational migration routes must traverse protected area systems in origin and destination countries plus intermediate regions. Stable or increasing populations indicate that protected area networks provide meaningful habitat representation across entire geographic ranges, while declining populations suggest inadequate protection in critical bottleneck regions.",
+      "data_source": {
+        "name": "Breeding Bird Survey, eBird, BirdLife International",
+        "organization": "Cornell Lab of Ornithology, BirdLife International, USGS",
+        "url": null,
+        "format": "CSV/occurrence records",
+        "accessibility": "open",
+        "coverage": "Comprehensive for North American birds (BBS since 1966), global eBird coverage variable by region, marine tracking concentrated on large vertebrates"
+      },
+      "confidence": "speculative",
+      "evidence_type": "programmatic_verify",
+      "literature_evidence": null,
+      "caveats": [
+        "eBird coverage highly variable by region with better coverage in developed nations",
+        "Marine tracking data concentrated on large vertebrates and well-funded fisheries",
+        "No unified platform for global migratory species assessment currently exists"
+      ],
+      "references": []
+    }
+  ]
+}

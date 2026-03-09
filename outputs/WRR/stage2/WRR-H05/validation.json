@@ -1,0 +1,19 @@
+{
+  "no_synthetic_data": true,
+  "year_alignment_ok": true,
+  "hypothesis_interpretation_ok": false,
+  "data_source_authentic": false,
+  "country_coverage_adequate": true,
+  "outlier_concerns": true,
+  "mechanistic_explanation": "The hypothesis proposes that adoption of AI-based optical sorting and robotic systems in Material Recovery Facilities (MRFs) reduces sorting errors and contamination, enabling recovery of marginal material streams and improving overall recovery rates from 85% to 90%. However, the verification script substituted a completely different proxy—medium/high-tech manufacturing share (% of manufacturing value added)—which measures industrial technology sophistication at the country level, not MRF automation adoption. While industrial development may correlate with MRF technology investment, this proxy is conceptually distant from the actual mechanism (facility-level sorting equipment), introducing substantial measurement error and confounding.",
+  "issues": [
+    "CRITICAL: Proxy substitution is not reasonable. Hypothesis specifies 'proportion of MRFs equipped with AI-based optical sorting, robotic systems, or hyperspectral imaging' but script uses 'medium/high-tech manufacturing share (% of manufacturing value added)'. These are fundamentally different variables—one is facility-level equipment adoption in waste management, the other is aggregate manufacturing sector composition. This is not a documented trade-off; it is a material deviation from the hypothesis.",
+    "Data source mismatch: Hypothesis cites specific organization (Resource Recycling) and facility-level data (Ecostar, 130+ facilities). Script uses World Bank manufacturing indicators, which are neither from the specified source nor measure MRF automation. The data_quality_notes acknowledge this but do not justify why the correlation should be interpreted as evidence for the MRF hypothesis.",
+    "Confounding by development level: The strong bivariate correlation (r=0.645, p<0.0001) likely reflects that wealthier, more industrialized countries both (a) have higher manufacturing tech adoption AND (b) have higher waste recovery rates due to overall economic development, not MRF automation specifically. Partial correlation controlling for log(GDP/capita) 'could not be computed (numerical error)', removing the key confound check.",
+    "Outlier influence: With 113 countries and r=0.645 driving verdict to 'confirmed', risk that a few wealthy countries (e.g., Germany, Japan, Netherlands with high both MFT% and WRR) are driving the signal. Script does not visually inspect or flag potential outliers.",
+    "Literature-data mismatch: Resource Recycling article describes facility-level improvements (85%→90%) from Ecostar HDDS across specific facilities—not country-level aggregates. Correlating country-level manufacturing tech % with country-level WRR does not directly test the facility-level claim in the hypothesis.",
+    "Verdict severity: Script issues 'confirmed' verdict based on a substituted proxy with known confounding and failed robustness check (partial correlation error). This overstates confidence given the severe proxy substitution.",
+    "No attempt to source authentic data: Script searches World Bank but does not attempt to locate actual MRF automation data (e.g., from IFR robot density, Ecostar facility lists, or industry surveys), despite the hypothesis providing specific facility count (130+ Ecostar facilities) suggesting such data might exist."
+  ],
+  "overall_assessment": "major_issues"
+}

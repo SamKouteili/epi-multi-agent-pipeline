@@ -1,0 +1,32 @@
+{
+  "hypothesis_id": "OEB-H03",
+  "verdict": "confirmed",
+  "verification_method": "statistical_test",
+  "raw_correlation": {
+    "pearson_r": 0.3046753579384338,
+    "pearson_p": 2.1993809482527447e-74,
+    "spearman_rho": 0.18277064920549402,
+    "spearman_p": 4.491150012918757e-27,
+    "n_observations": 3420,
+    "n_countries": 190
+  },
+  "partial_correlation": {
+    "partial_r": 0.5013144339937928,
+    "partial_p": 2.167046441542121e-211,
+    "control_variables": [
+      "log_gpc"
+    ]
+  },
+  "functional_form": {
+    "best_form": "quadratic",
+    "linear_r2": 0.09282707373491295,
+    "linear_aic": -26524.819828604024,
+    "log_linear_r2": 0.05517325188872302,
+    "log_linear_aic": -26385.733606457223,
+    "quadratic_r2": 0.10899145146633638,
+    "quadratic_aic": -26584.308239820944
+  },
+  "data_quality_notes": "Used World Bank PM2.5 mean annual exposure (EN.ATM.PM25.MC.M3) as proxy for ground-based air pollutants.",
+  "summary": "Used World Bank PM2.5 mean annual exposure as proxy for ground-based air pollutant concentrations (WAQI not accessible without API token). Pearson r=0.305 (p=2.199e-74), Spearman rho=0.183 (p=4.491e-27), n=3420 obs across 190 countries. Partial r=0.501 (p=0.0) controlling for log(GPC). Best functional form: quadratic.",
+  "proxy_source": "PM2.5 (EN.ATM.PM25.MC.M3)"
+}

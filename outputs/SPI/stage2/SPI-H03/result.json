@@ -1,0 +1,31 @@
+{
+  "hypothesis_id": "SPI-H03",
+  "verdict": "rejected",
+  "verification_method": "statistical_test",
+  "raw_correlation": {
+    "pearson_r": -0.1472801110648606,
+    "pearson_p": 9.77436690040775e-19,
+    "spearman_rho": -0.22689576832114122,
+    "spearman_p": 7.699187503127051e-43,
+    "n_observations": 3564,
+    "n_countries": 162
+  },
+  "partial_correlation": {
+    "partial_r": -0.14574914194704372,
+    "partial_p": 2.837998384035881e-18,
+    "control_variables": [
+      "log_gpc"
+    ]
+  },
+  "functional_form": {
+    "best_form": "quadratic",
+    "linear_r2": 0.021691431115277826,
+    "linear_aic": 23474.578026718216,
+    "log_linear_r2": 0.02121188812030006,
+    "log_linear_aic": 23476.324584550643,
+    "quadratic_r2": 0.02618762604589875,
+    "quadratic_aic": 23460.16053257924
+  },
+  "data_quality_notes": "SHI data loaded from local EPI raw files (Map of Life source). Note: SHI does not distinguish intact habitat inside versus outside protected areas; relies on GBIF occurrence records introducing geographic bias toward well-sampled regions; different species groups have different habitat requirements affecting country-level aggregation. Pearson r=-0.147 is NEGATIVE, opposite to the expected positive direction, suggesting that countries with higher SHI (more intact habitat) do not necessarily have higher SPI (protected area coverage). This may reflect that SHI measures remaining intact habitat broadly while SPI measures the fraction within formal protected areas \u2014 countries with large intact areas may have low protected-area designation rates.",
+  "summary": "SHI vs SPI bivariate: Pearson r=-0.147 (p=0.0000), Spearman rho=-0.227 (p=0.0000), n=3564 observations across 162 countries. Partial r=-0.146 (p=0.0000) controlling for log GDP/capita. Best functional form: quadratic. Verdict: rejected. The correlation is negative and significant, opposite to the hypothesized positive direction. The hypothesis that SHI positively predicts SPI is REJECTED by the data."
+}

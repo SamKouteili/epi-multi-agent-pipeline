@@ -1,0 +1,15 @@
+{
+  "hypothesis_id": "WRR-H03",
+  "verdict": "partially_confirmed",
+  "verification_method": "literature_accepted",
+  "proxy_variable": "Deposit return scheme participation rates",
+  "target_indicator": "WRR",
+  "expected_direction": "positive",
+  "data_quality_notes": "The Reloop Platform 2023 fact sheet (PDF) is not machine-readable via structured APIs. No World Bank or WHO indicator specifically captures DRS participation rates at the country level. Attempted WB indicators: EN.MSW.RCYC.ZS, EN.MSW.INCN.ZS, EN.MSW.TOTL.PC.KG \u2014 all returned insufficient data for merging. The cited statistics (NY 57.5%+14.6% donation = 72% return; Germany >95% for glass) are from a credible, reputable NGO source and are consistent with academic DRS literature. The causal mechanism (deposit raises economic value of empty containers to consumers) is theoretically sound and empirically well-documented.",
+  "summary": "Deposit return schemes (DRS) are one of the most effective policy instruments for recovering beverage containers. The Reloop Platform 2023 fact sheet documents return rates of 72% in New York and >95% in Germany, consistent with broader DRS literature. These high rates directly contribute to WRR (waste recovery rate). A positive, likely nonlinear relationship is expected: the marginal gain in return rate is large when a DRS is first introduced but plateaus near system capacity. Verdict is 'partially_confirmed' because the relationship is well-documented in credible grey literature but no structured country-panel dataset of DRS participation rates was accessible for statistical testing.",
+  "bivariate_correlation": null,
+  "partial_correlation": null,
+  "functional_form": null,
+  "n_observations": null,
+  "n_countries": null
+}

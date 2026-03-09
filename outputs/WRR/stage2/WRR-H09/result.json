@@ -1,0 +1,26 @@
+{
+  "hypothesis_id": "WRR-H09",
+  "verdict": "partially_confirmed",
+  "verification_method": "statistical_test",
+  "raw_correlation": {
+    "pearson_r": 0.2604243162268417,
+    "pearson_p": 5.499994313204979e-08,
+    "spearman_rho": 0.20649160967251662,
+    "spearman_p": 1.86425469636037e-05,
+    "n_observations": 423,
+    "n_countries": 132
+  },
+  "partial_correlation": null,
+  "functional_form": {
+    "best_form": "linear",
+    "linear_r2": 0.06782082448221805,
+    "linear_aic": -894.8170577098088,
+    "log_linear_r2": 0.04790914966955595,
+    "log_linear_aic": -885.8767764712503,
+    "quadratic_r2": 0.06834198252143509,
+    "quadratic_aic": -893.0536125517899
+  },
+  "data_quality_notes": "Primary proxy (e-waste recycling rate from Global E-waste Monitor 2024) could not be accessed automatically \u2014 data is published as PDF/Excel requiring manual download. Substituted with World Bank EG.ELC.RNEW.ZS (renewable electricity output as % of total), which serves as a proxy for environmental technology infrastructure maturity. Countries with advanced renewable energy infrastructure tend to also have developed waste management and recycling systems. This is an imperfect substitute.",
+  "summary": "Hypothesis: E-waste recycling infrastructure correlates positively with WRR. Proxy used: World Bank EG.ELC.RNEW.ZS: Renewable electricity (% of total). Bivariate: Pearson r=0.260 (p=0.0000), Spearman rho=0.206 (p=0.0000), N=423 obs, 132 countries. Partial correlation: not computed. Best functional form: linear.",
+  "proxy_source": "World Bank EG.ELC.RNEW.ZS: Renewable electricity (% of total)"
+}

@@ -1,0 +1,933 @@
+=== Attempt 1 — Claude response ===
+```python
+import json
+import os
+import requests
+import pandas as pd
+import numpy as np
+
+from src.utils.stats import (
+    run_bivariate_correlation,
+    run_partial_correlation,
+    determine_verdict,
+    build_result_json,
+    test_functional_form,
+)
+from src.utils.data_utils import load_raw_indicator
+from src.utils.data_fetch import (
+    fetch_world_bank_indicator,
+    search_world_bank,
+    list_local_indicators,
+)
+
+output_path = "/Users/samkouteili/rose/epi/multi-agent/outputs/SPI/stage2/SPI-H03"
+os.makedirs(output_path, exist_ok=True)
+
+HYPOTHESIS_ID = "SPI-H03"
+EXPECTED_DIRECTION = "positive"
+
+print("=" * 60)
+print(f"Hypothesis: {HYPOTHESIS_ID}")
+print("Proxy: Species Habitat Index (SHI)")
+print("=" * 60)
+
+# ── 1. Load EPI target ──────────────────────────────────────────
+print("\n[1] Loading SPI target data...")
+target = load_raw_indicator("SPI")
+print(f"    Target rows: {len(target)}, countries: {target['iso'].nunique()}")
+
+# ── 2. Attempt to acquire SHI data ─────────────────────────────
+# SHI is a specialized biodiversity index from Map of Life / GEO BON.
+# It is NOT available via World Bank API. The canonical source is
+# https://geobon.org/ebvs/indicators/species-habitat-index-shi/
+# We will try a few public endpoints / mirrors.
+
+shi_df = None
+
+# --- Attempt A: EPI raw data (SHI may be bundled) ---------------
+print("\n[2a] Checking for SHI in local EPI raw files...")
+local_indicators = list_local_indicators()
+print(f"     Local indicators: {local_indicators}")
+
+SHI_CANDIDATES = ["SHI"]
+for tla in SHI_CANDIDATES:
+    if tla in local_indicators:
+        print(f"     Found local indicator: {tla}")
+        shi_df = load_raw_indicator(tla).rename(columns={"value": "proxy_value"})
+        break
+
+# --- Attempt B: direct CSV from known public repositories --------
+if shi_df is None:
+    print("\n[2b] Attempting direct download from public repositories...")
+    urls_to_try = [
+        # GEO BON / Map of Life public data exports
+        "https://mol.org/indicators/species-habitat-index/data/shi_country_data.csv",
+        "https://raw.githubusercontent.com/MapofLife/SHI/main/data/SHI_country_scores.csv",
+        "https://geobon.org/wp-content/uploads/2023/01/SHI_country_level.csv",
+    ]
+    for url in urls_to_try:
+        try:
+            print(f"     Trying: {url}")
+            resp = requests.get(url, timeout=20)
+            if resp.status_code == 200:
+                from io import StringIO
+                shi_raw = pd.read_csv(StringIO(resp.text))
+                print(f"     SUCCESS. Columns: {list(shi_raw.columns)}")
+                # Try to parse — look for iso/country and year and value columns
+                shi_raw.columns = [c.strip().lower() for c in shi_raw.columns]
+                iso_col = next((c for c in shi_raw.columns if c in ["iso", "iso3", "country_code", "iso_code"]), None)
+                year_col = next((c for c in shi_raw.columns if c in ["year", "yr", "date"]), None)
+                val_col = next((c for c in shi_raw.columns if "shi" in c or "value" in c or "score" in c), None)
+                if iso_col and val_col:
+                    shi_df = shi_raw.rename(columns={iso_col: "iso", val_col: "proxy_value"})
+                    if year_col:
+                        shi_df = shi_df.rename(columns={year_col: "year"})
+                    shi_df = shi_df[["iso"] + (["year"] if year_col else []) + ["proxy_value"]].dropna()
+                    print(f"     Parsed SHI data: {len(shi_df)} rows")
+                    break
+        except Exception as e:
+            print(f"     Failed: {e}")
+
+# --- Attempt C: World Bank proxies for habitat/biodiversity ------
+if shi_df is None:
+    print("\n[2c] Searching World Bank for habitat / biodiversity proxies...")
+    # SHI is not on WB, but let's try related indicators
+    search_terms = [
+        "species habitat index",
+        "biodiversity habitat",
+        "terrestrial habitat",
+        "forest area biodiversity",
+    ]
+    for term in search_terms:
+        results = search_world_bank(term)
+        if results:
+            print(f"     Search '{term}' returned: {results[:3]}")
+
+    # Try known WB indicators related to habitat integrity
+    wb_candidates = [
+        ("ER.LND.PTLD.ZS", "terrestrial protected areas"),
+        ("AG.LND.FRST.ZS", "forest area pct"),
+        ("ER.PTD.TOTL.ZS", "protected areas total"),
+    ]
+    # We'll note but not substitute — SHI is the specified proxy
+
+# ── 3. Handle case where SHI data unavailable ───────────────────
+if shi_df is None:
+    print("\n[!] Could not acquire Species Habitat Index (SHI) data.")
+    print("    The SHI is a specialized indicator from Map of Life / GEO BON.")
+    print("    It is not available via World Bank, WHO GHO, or known public CSV endpoints.")
+    print("    Reporting verdict=inconclusive.")
+
+    result = build_result_json(
+        HYPOTHESIS_ID,
+        "inconclusive",  # verdict as string since no data
+        corr=None,
+        partial=None,
+        functional_form=None,
+        data_quality_notes=(
+            "Could not acquire Species Habitat Index (SHI) data. "
+            "SHI is produced by Map of Life / GEO BON (https://geobon.org/ebvs/indicators/species-habitat-index-shi/) "
+            "and is not available via World Bank API, WHO GHO, or known public CSV repositories. "
+            "Attempted URLs: geobon.org, MapofLife GitHub, mol.org. "
+            "The Local Biodiversity Intactness Index (LBII) was already used by SPI-H02 and cannot be reused. "
+            "No suitable alternative proxy for SHI was found in available data sources."
+        ),
+        summary=(
+            "Hypothesis SPI-H03 posits that the Species Habitat Index (SHI) positively correlates "
+            "with the Species Protection Index (SPI). This is theoretically sound — countries with "
+            "more intact habitat have greater opportunity to achieve high SPI through protected area "
+            "placement. However, SHI data could not be obtained from any accessible public source, "
+            "so statistical verification was not possible."
+        ),
+        verification_method="statistical_test",
+    )
+
+    out_file = f"{output_path}/result.json"
+    with open(out_file, "w") as f:
+        json.dump(result, f, indent=2)
+    print(f"\nResult written to: {out_file}")
+    print(json.dumps(result, indent=2))
+
+else:
+    # ── 4. Merge ────────────────────────────────────────────────
+    print(f"\n[3] SHI data loaded: {len(shi_df)} rows")
+    if "year" not in shi_df.columns:
+        # If no year column, use most recent year match
+        # Get most recent SPI year per country
+        target_latest = (
+            target.sort_values("year").groupby("iso").last().reset_index()
+        )
+        merged = target_latest.merge(
+            shi_df[["iso", "proxy_value"]], on="iso"
+        )
+    else:
+        shi_df["year"] = shi_df["year"].astype(int)
+        merged = target.merge(shi_df[["iso", "year", "proxy_value"]], on=["iso", "year"])
+
+    merged = merged.dropna(subset=["value", "proxy_value"])
+    print(f"    Merged rows: {len(merged)}, countries: {merged['iso'].nunique()}")
+
+    if len(merged) < 20:
+        print("[!] Too few observations for reliable correlation. Reporting inconclusive.")
+        result = build_result_json(
+            HYPOTHESIS_ID,
+            "inconclusive",
+            corr=None,
+            partial=None,
+            functional_form=None,
+            data_quality_notes=(
+                f"Only {len(merged)} observations after merging SHI and SPI. "
+                "Insufficient data for reliable statistical inference (n < 20)."
+            ),
+            summary="Insufficient data overlap between SHI and SPI for meaningful analysis.",
+            verification_method="statistical_test",
+        )
+    else:
+        # ── 5. Bivariate correlation ─────────────────────────────
+        print("\n[4] Running bivariate correlation...")
+        corr = run_bivariate_correlation(
+            merged["proxy_value"], merged["value"], iso=merged["iso"]
+        )
+        print(f"    Pearson r={corr.pearson_r:.3f} (p={corr.pearson_p:.4f})")
+        print(f"    Spearman rho={corr.spearman_rho:.3f} (p={corr.spearman_p:.4f})")
+        print(f"    n={corr.n_observations}, countries={corr.n_countries}")
+
+        # ── 6. Partial correlation controlling for log(GPC) ──────
+        print("\n[5] Running partial correlation (controlling for log GDP/capita)...")
+        gpc = load_raw_indicator("GPC")
+        if "year" in merged.columns:
+            merged_gpc = merged.merge(
+                gpc[["iso", "year", "value"]].rename(columns={"value": "gpc"}),
+                on=["iso", "year"],
+            )
+        else:
+            gpc_latest = gpc.sort_values("year").groupby("iso").last().reset_index()
+            merged_gpc = merged.merge(
+                gpc_latest[["iso", "value"]].rename(columns={"value": "gpc"}),
+                on="iso",
+            )
+        merged_gpc = merged_gpc.dropna(subset=["gpc"])
+        merged_gpc["log_gpc"] = np.log(merged_gpc["gpc"].replace(0, np.nan))
+        merged_gpc = merged_gpc.dropna(subset=["log_gpc"])
+        print(f"    n for partial correlation: {len(merged_gpc)}")
+
+        if len(merged_gpc) >= 20:
+            partial = run_partial_correlation(
+                merged_gpc, "proxy_value", "value", ["log_gpc"]
+            )
+            print(f"    Partial r={partial.partial_r:.3f} (p={partial.partial_p:.4f})")
+        else:
+            partial = None
+            print("    Too few observations for partial correlation.")
+
+        # ── 7. Functional form ────────────────────────────────────
+        print("\n[6] Testing functional form...")
+        form = test_functional_form(merged["proxy_value"], merged["value"])
+        print(f"    Best form: {form.best_form.value}")
+        print(f"    Linear R²={form.linear_r2:.3f}, Log-linear R²={form.log_linear_r2:.3f}")
+
+        # ── 8. Verdict ────────────────────────────────────────────
+        print("\n[7] Determining verdict...")
+        verdict = determine_verdict(corr, partial, EXPECTED_DIRECTION)
+        print(f"    Verdict: {verdict.value}")
+
+        result = build_result_json(
+            HYPOTHESIS_ID,
+            verdict,
+            corr,
+            partial,
+            functional_form=form,
+            data_quality_notes=(
+                "SHI data was obtained from available sources. "
+                "Note: SHI does not distinguish intact habitat inside versus outside protected areas, "
+                "and relies on GBIF occurrence records which introduce geographic bias toward "
+                "well-sampled regions. Different species groups have different habitat requirements "
+                "which may affect country-level aggregation."
+            ),
+            summary=(
+                f"SHI vs SPI correlation: Pearson r={corr.pearson_r:.3f} (p={corr.pearson_p:.4f}), "
+                f"Spearman rho={corr.spearman_rho:.3f}, n={corr.n_observations} observations "
+                f"across {corr.n_countries} countries. "
+                f"{'Partial r=' + str(round(partial.partial_r, 3)) + ' (p=' + str(round(partial.partial_p, 4)) + ') controlling for log GDP/capita.' if partial else 'Partial correlation not computed.'} "
+                f"Best functional form: {form.best_form.value}. "
+                f"Verdict: {verdict.value}. "
+                "The hypothesis that SHI positively predicts SPI is theoretically grounded in the "
+                "mechanism that intact habitat (SHI) provides the substrate for effective protected "
+                "area coverage (SPI)."
+            ),
+            verification_method="statistical_test",
+        )
+
+    out_file = f"{output_path}/result.json"
+    with open(out_file, "w") as f:
+        json.dump(result, f, indent=2)
+    print(f"\nResult written to: {out_file}")
+    print(json.dumps(result, indent=2))
+```
+=== Attempt 1 — stdout ===
+============================================================
+Hypothesis: SPI-H03
+Proxy: Species Habitat Index (SHI)
+============================================================
+
+[1] Loading SPI target data...
+    Target rows: 8010, countries: 178
+
+[2a] Checking for SHI in local EPI raw files...
+     Local indicators: [{'tla': 'GDP', 'description': 'GDP [PPP, constant 2017 international]', 'type': 'Auxiliary', 'source': 'WB_IMF'}, {'tla': 'GPC', 'description': 'GDP / POP', 'type': 'Auxiliary', 'source': 'WB_IMF'}, {'tla': 'POP', 'description': 'Population', 'type': 'Auxiliary', 'source': 'WB_IMF'}, {'tla': 'PPO', 'description': 'Population projected to year 2050', 'type': 'Auxiliary', 'source': 'WB_IMF'}, {'tla': 'PDN', 'description': 'Population Density (population/sq. km)', 'type': 'Auxiliary', 'source': 'WB'}, {'tla': 'URB', 'description': '% of population in urban areas', 'type': 'Auxiliary', 'source': 'WB'}, {'tla': 'GOE', 'description': 'Government Effectiveness', 'type': 'Driver', 'source': 'WGI'}, {'tla': 'ROL', 'description': 'Rule of Law', 'type': 'Driver', 'source': 'WGI'}, {'tla': 'RQU', 'description': 'Regulatory Quality', 'type': 'Driver', 'source': 'WGI'}, {'tla': 'OEB', 'description': "Mean annual exposure to ozone across a country's Key Biodiversity Areas", 'type': 'Indicator', 'source': 'Copernicus/Bird Life'}, {'tla': 'OEC', 'description': "Mean annual exposure to ozone across a country's croplands", 'type': 'Indicator', 'source': 'Copernicus/GLAD'}, {'tla': 'NXA', 'description': 'NOx intensity trend, 10 years', 'type': 'Indicator', 'source': 'CEDS'}, {'tla': 'SDA', 'description': 'SO2 intensity trend, 10 years', 'type': 'Indicator', 'source': 'CEDS'}, {'tla': 'SNM', 'description': 'Sustainable Nitrogen Management Index', 'type': 'Indicator', 'source': 'XZUMD'}, {'tla': 'PSU', 'description': 'Phosphorus Surpluss (Inputs - Outputs)', 'type': 'Indicator', 'source': 'FAOSTAT'}, {'tla': 'PRS', 'description': 'Pesticide risk scores', 'type': 'Indicator', 'source': 'Nature Geoscience'}, {'tla': 'RCY', 'description': 'Mean Agricultural Yield Relative to Maximum Attainable Yield of Major Crops', 'type': 'Indicator', 'source': 'FAOSTAT'}, {'tla': 'MKP', 'description': 'Percentage of Marine Key Biodiversity Areas covered by MPAs', 'type': 'Indicator', 'source': 'KBA/WDPA'}, {'tla': 'MHP', 'description': 'Percentage of Important Marine Habitats covered by MPAs', 'type': 'Indicator', 'source': 'WDPA/WCMC'}, {'tla': 'MPE', 'description': 'Ratio of fishing effort inside and outside MPAs', 'type': 'Indicator', 'source': 'WDPA/GFW'}, {'tla': 'PAR', 'description': 'Protected Areas Representativeness Index', 'type': 'Indicator', 'source': 'CSIRO'}, {'tla': 'BER', 'description': 'Bioclimatic Ecosystem Resilience Index', 'type': 'Indicator', 'source': 'CSIRO'}, {'tla': 'SHI', 'description': 'Species Habitat Index', 'type': 'Indicator', 'source': 'MOL'}, {'tla': 'SPI', 'description': 'Species Protection Index', 'type': 'Indicator', 'source': 'MOL'}, {'tla': 'PAE', 'description': 'Percentage of protected areas where the cropland and built environment is growing more than 0.5% per year', 'type': 'Indicator', 'source': 'Dynamic World'}, {'tla': 'PHL', 'description': 'Percentage of protected area NOT covered by cropland and buildings', 'type': 'Indicator', 'source': 'Dynamic World'}, {'tla': 'TBN', 'description': 'Terrestrial Biome Protection - National weights', 'type': 'Indicator', 'source': 'WDPA'}, {'tla': 'TKP', 'description': 'Percentage of Terrestrial Key Biodiversity Areas covered by protected areas', 'type': 'Indicator', 'source': 'KBA/WDPA'}, {'tla': 'RLI', 'description': 'Red List Index', 'type': 'Indicator', 'source': 'IUCN'}, {'tla': 'PFL', 'description': '5-year moving average of the percentage of primary forest lost relative to a baseline in 2001', 'type': 'Indicator', 'source': 'GFW'}, {'tla': 'IFL', 'description': '5-year moving average of the percentage of intact forest landscape lost relative to a baseline in 2001', 'type': 'Indicator', 'source': 'GFW'}, {'tla': 'FCL', 'description': 'Total tree cover loss (min. 30% canopy cover) weighted by the permancency of the loss', 'type': 'Indicator', 'source': 'GFW'}, {'tla': 'TCG', 'description': 'Percent of net change in tree cover between 2000 and 2020, including both losses and gains', 'type': 'Indicator', 'source': 'GFW'}, {'tla': 'FLI', 'description': "Mean value of the Forest Landscape Integrity Index across a country's territory", 'type': 'Indicator', 'source': 'FLII'}, {'tla': 'FSS', 'description': 'Proportion of fish stocks that are Collapsed or Over-exploited', 'type': 'Indicator', 'source': 'SAU'}, {'tla': 'FCD', 'description': 'Proportion of total catch that is discarded instead of used', 'type': 'Indicator', 'source': 'SAU'}, {'tla': 'BTZ', 'description': "Proportion of fish caught by a country's EEZ by all fishing entities using bottom trawling or dredging", 'type': 'Indicator', 'source': 'SAU'}, {'tla': 'BTO', 'description': 'Proportion of fish caught by a given country using bottom trawling or dredging across global ocean', 'type': 'Indicator', 'source': 'SAU'}, {'tla': 'RMS', 'description': 'Proportion of the peak rMTI value in the time series', 'type': 'Indicator', 'source': 'SAU'}, {'tla': 'WWG', 'description': 'Wastewater produced per capita', 'type': 'Indicator', 'source': 'Jones et al 2020, UNSD'}, {'tla': 'WWC', 'description': 'Proportion of wastewater collected', 'type': 'Indicator', 'source': 'Jones et al 2020, UNSD, Eurostat, OECD'}, {'tla': 'WWT', 'description': 'Proportion of wastewater treated', 'type': 'Indicator', 'source': 'Jones et al 2020, UNSD, OECD'}, {'tla': 'WWR', 'description': 'Proportion of reused wastewater', 'type': 'Indicator', 'source': 'Jones et al 2020'}, {'tla': 'COE', 'description': 'Population-weighted country average CO exposure', 'type': 'Indicator', 'source': 'Copernicus'}, {'tla': 'HFD', 'description': 'Health burden from exposure to household air pollution from solid fuels', 'type': 'Indicator', 'source': 'IHME'}, {'tla': 'HFX', 'description': "Proportion of a country's population that uses household solid fuels", 'type': 'Indicator', 'source': 'IHME'}, {'tla': 'NOD', 'description': 'Health burden from NO2 exposure', 'type': 'Indicator', 'source': 'IHME'}, {'tla': 'NOE', 'description': 'Population-weighted country average NOx exposure', 'type': 'Indicator', 'source': 'Copernicus'}, {'tla': 'OZD', 'description': 'Health burden from ozone exposure', 'type': 'Indicator', 'source': 'IHME'}, {'tla': 'OZE', 'description': 'Population-weighted country average ozone exposure', 'type': 'Indicator', 'source': 'IHME'}, {'tla': 'HPE', 'description': 'Population-weighted country average fine particulate matter exposure from anthropogenic sources', 'type': 'Indicator', 'source': 'WUSTL'}, {'tla': 'SOE', 'description': 'Population-weighted country average SO2 exposure', 'type': 'Indicator', 'source': 'Copernicus'}, {'tla': 'VOE', 'description': 'Population-weighted country average VOC exposure', 'type': 'Indicator', 'source': 'Copernicus'}, {'tla': 'LED', 'description': 'Lead Exposure Health Burden', 'type': 'Indicator', 'source': 'IHME'}, {'tla': 'LEX', 'description': 'Lead Exposure ', 'type': 'Indicator', 'source': 'IHME'}, {'tla': 'WPC', 'description': 'Municipal solid waste generated divided by population', 'type': 'Indicator', 'source': 'Various'}, {'tla': 'WRR', 'description': 'Rate of recovery of energy of materials from waste (proportion composted, recycled, or incinerated with energy recovery_', 'type': 'Indicator', 'source': 'Various'}, {'tla': 'SMW', 'description': 'Proportion of solid waste managed in a way that mitigates environmental impacts', 'type': 'Indicator', 'source': 'Various'}, {'tla': 'USD', 'description': 'Unsafe Sanitation [DALYs]', 'type': 'Indicator', 'source': 'IHME'}, {'tla': 'UWD', 'description': 'Unsafe Water [DALYs]', 'type': 'Indicator', 'source': 'IHME'}, {'tla': 'USX', 'description': 'Unsafe Sanitation [exposure]', 'type': 'Indicator', 'source': 'IHME'}, {'tla': 'UWX', 'description': 'Unsafe Water [exposure]', 'type': 'Indicator', 'source': 'IHME'}, {'tla': 'CDA', 'description': 'CO2 intensity trend, 10 years', 'type': 'Indicator', 'source': 'GCP'}, {'tla': 'CDF', 'description': 'CO2 intensity trend, 10 years, with country specific targets determined by their fair share of the remaining carbon budget', 'type': 'Indicator', 'source': 'GCP'}, {'tla': 'CHA', 'description': 'Methane intensity trend, 10 years', 'type': 'Indicator', 'source': 'PIK'}, {'tla': 'FGA', 'description': 'F-gasses intensity trend, 10 years', 'type': 'Indicator', 'source': 'PIK'}, {'tla': 'NDA', 'description': 'N2O intensity trend, 10 years', 'type': 'Indicator', 'source': 'PIK'}, {'tla': 'BCA', 'description': 'Black Carbon intensity trend, 10 years', 'type': 'Indicator', 'source': 'CEDS'}, {'tla': 'GHN', 'description': 'Projected GHG emissions by 2050', 'type': 'Indicator', 'source': 'PIK'}, {'tla': 'GHI', 'description': 'GHG /GDP', 'type': 'Indicator', 'source': 'PIK'}, {'tla': 'GHP', 'description': 'GHG emissions per capita', 'type': 'Indicator', 'source': 'PIK'}, {'tla': 'GHA', 'description': 'GHG emissions per capita growth rate over last decade', 'type': 'Indicator', 'source': 'PIK'}, {'tla': 'LUF', 'description': "Net flux of carbon from LULCF over the last decade divided by country's forest area in 2000", 'type': 'Indicator', 'source': 'GCP'}, {'tla': 'GTI', 'description': 'GHG growth rate adjusted by proximity to GHG intensity target', 'type': 'Indicator', 'source': 'GCP/PIK'}, {'tla': 'GTP', 'description': 'GHG growth rate adjusted by proximity to GHG per capita target', 'type': 'Indicator', 'source': 'GCP/PIK'}, {'tla': 'CBP', 'description': "Projected cumulative GHG emissions up to 2050 relative to countries' fair share of the carbon budget", 'type': 'Indicator', 'source': 'GCP/PIK'}, {'tla': 'PTI', 'description': 'Phosphorus total inputs', 'type': 'Precursor', 'source': 'FAOSTAT'}, {'tla': 'PCR', 'description': 'Phosphorus Crop Removal', 'type': 'Precursor', 'source': 'FAOSTAT'}, {'tla': 'NTI', 'description': 'Nitrogen total inputs', 'type': 'Precursor', 'source': 'FAOSTAT'}, {'tla': 'NCR', 'description': 'Nitrogen Crop Removal', 'type': 'Precursor', 'source': 'FAOSTAT'}, {'tla': 'PF5', 'description': 'Primary forest loss, 5-year', 'type': 'Precursor', 'source': 'GFW'}, {'tla': 'PFA', 'description': 'Primary forest area', 'type': 'Precursor', 'source': 'GFW'}, {'tla': 'PFC', 'description': 'Primary forest loss, annual', 'type': 'Precursor', 'source': 'GFW'}, {'tla': 'IF5', 'description': 'Intact forest landscape loss, 5-year', 'type': 'Precursor', 'source': 'GFW'}, {'tla': 'IFA', 'description': 'Intact forest landscape area', 'type': 'Precursor', 'source': 'GFW'}, {'tla': 'IFC', 'description': 'Intact forest landscape loss, annual', 'type': 'Precursor', 'source': 'GFW'}, {'tla': 'TC5', 'description': 'Tree cover loss, 5-year (30% canopy cover)', 'type': 'Precursor', 'source': 'GFW'}, {'tla': 'TCA', 'description': 'Tree cover area (30% canopy cover)', 'type': 'Precursor', 'source': 'GFW'}, {'tla': 'TCC', 'description': 'Tree cover loss, annual (30% canopy cover)', 'type': 'Precursor', 'source': 'GFW'}, {'tla': 'GHG', 'description': 'Sum of CO2, N2O, CH4, and F-gasses', 'type': 'Precursor', 'source': 'PIK'}, {'tla': 'CH4', 'description': 'Methane emissions [Gg]', 'type': 'Precursor', 'source': 'PIK'}, {'tla': 'FOG', 'description': 'F-gasses emissions [Gg CO2-eq.]', 'type': 'Precursor', 'source': 'PIK'}, {'tla': 'NOT', 'description': 'N2O emissions [Gg]', 'type': 'Precursor', 'source': 'PIK'}, {'tla': 'CDO', 'description': 'CO2 emissions [Gg]', 'type': 'Precursor', 'source': 'PIK'}, {'tla': 'BLC', 'description': 'Black Carbon emissions [Gg]', 'type': 'Precursor', 'source': 'CEDS'}, {'tla': 'CXN', 'description': 'Proportion of population connected to wastewater system', 'type': 'Precursor', 'source': nan}, {'tla': 'WST', 'description': 'Proportion of waterwater collected that is treated', 'type': 'Precursor', 'source': nan}, {'tla': 'PMD', 'description': 'DALY rates from exposure to ambient fine particulate matter exposure (PM2.5)', 'type': 'Precursor', 'source': 'IHME'}, {'tla': 'PME', 'description': 'Population-weighted country average fine particulate matter exposure', 'type': 'Precursor', 'source': 'WUSTL'}, {'tla': 'CHP', 'description': 'Methane emissions [Gg] per Capita', 'type': 'Precursor', 'source': 'PIK'}, {'tla': 'FGP', 'description': 'F-gasses emissions [Gg CO2-eq.] per Capita', 'type': 'Precursor', 'source': 'PIK'}, {'tla': 'NDP', 'description': 'N2O emissions [Gg] per Capita', 'type': 'Precursor', 'source': 'PIK'}, {'tla': 'CDP', 'description': 'CO2 emissions [Gg] per Capita', 'type': 'Precursor', 'source': 'PIK'}, {'tla': 'CHG', 'description': 'Methane emissions [Gg] per GDP [PPP, constant 2017 international]', 'type': 'Precursor', 'source': 'PIK'}, {'tla': 'FGG', 'description': 'F-gasses emissions [Gg CO2-eq.] per GDP [PPP, constant 2017 international]', 'type': 'Precursor', 'source': 'PIK'}, {'tla': 'NDG', 'description': 'N2O emissions [Gg] per GDP [PPP, constant 2017 international]', 'type': 'Precursor', 'source': 'PIK'}, {'tla': 'CDG', 'description': 'CO2 emissions [Gg] per GDP [PPP, constant 2017 international]', 'type': 'Precursor', 'source': 'PIK'}, {'tla': 'BCP', 'description': 'Black Carbon emissions [Gg] per Capita', 'type': 'Precursor', 'source': 'PIK'}, {'tla': 'BCG', 'description': 'Black Carbon emissions [Gg] per GDP [PPP, constant 2017 international]', 'type': 'Precursor', 'source': 'PIK'}]
+
+[2b] Attempting direct download from public repositories...
+     Trying: https://mol.org/indicators/species-habitat-index/data/shi_country_data.csv
+     Failed: Error tokenizing data. C error: Expected 1 fields in line 6, saw 2
+
+     Trying: https://raw.githubusercontent.com/MapofLife/SHI/main/data/SHI_country_scores.csv
+     Trying: https://geobon.org/wp-content/uploads/2023/01/SHI_country_level.csv
+
+[2c] Searching World Bank for habitat / biodiversity proxies...
+     Search 'species habitat index' returned: [{'id': '1.0.HCount.1.90usd', 'name': 'Poverty Headcount ($1.90 a day)', 'source': 'LAC Equity Lab'}, {'id': '1.0.HCount.2.5usd', 'name': 'Poverty Headcount ($2.50 a day)', 'source': 'LAC Equity Lab'}, {'id': '1.0.HCount.Mid10to50', 'name': 'Middle Class ($10-50 a day) Headcount', 'source': 'LAC Equity Lab'}]
+     Search 'biodiversity habitat' returned: [{'id': '1.0.HCount.1.90usd', 'name': 'Poverty Headcount ($1.90 a day)', 'source': 'LAC Equity Lab'}, {'id': '1.0.HCount.2.5usd', 'name': 'Poverty Headcount ($2.50 a day)', 'source': 'LAC Equity Lab'}, {'id': '1.0.HCount.Mid10to50', 'name': 'Middle Class ($10-50 a day) Headcount', 'source': 'LAC Equity Lab'}]
+     Search 'terrestrial habitat' returned: [{'id': '1.0.HCount.1.90usd', 'name': 'Poverty Headcount ($1.90 a day)', 'source': 'LAC Equity Lab'}, {'id': '1.0.HCount.2.5usd', 'name': 'Poverty Headcount ($2.50 a day)', 'source': 'LAC Equity Lab'}, {'id': '1.0.HCount.Mid10to50', 'name': 'Middle Class ($10-50 a day) Headcount', 'source': 'LAC Equity Lab'}]
+     Search 'forest area biodiversity' returned: [{'id': '1.0.HCount.1.90usd', 'name': 'Poverty Headcount ($1.90 a day)', 'source': 'LAC Equity Lab'}, {'id': '1.0.HCount.2.5usd', 'name': 'Poverty Headcount ($2.50 a day)', 'source': 'LAC Equity Lab'}, {'id': '1.0.HCount.Mid10to50', 'name': 'Middle Class ($10-50 a day) Headcount', 'source': 'LAC Equity Lab'}]
+
+[!] Could not acquire Species Habitat Index (SHI) data.
+    The SHI is a specialized indicator from Map of Life / GEO BON.
+    It is not available via World Bank, WHO GHO, or known public CSV endpoints.
+    Reporting verdict=inconclusive.
+
+=== Attempt 1 — stderr ===
+Traceback (most recent call last):
+  File "/Users/samkouteili/rose/epi/multi-agent/outputs/SPI/stage2/SPI-H03/verify.py", line 119, in <module>
+    result = build_result_json(
+             ^^^^^^^^^^^^^^^^^^
+TypeError: build_result_json() got an unexpected keyword argument 'partial'
+
+=== Attempt 2 — Claude response ===
+The error is that `build_result_json()` doesn't accept a `partial` keyword argument directly — the signature is different. Let me fix the script with the correct function signature.
+
+```python
+import json
+import os
+import requests
+import pandas as pd
+import numpy as np
+
+from src.utils.stats import (
+    run_bivariate_correlation,
+    run_partial_correlation,
+    determine_verdict,
+    build_result_json,
+    test_functional_form,
+)
+from src.utils.data_utils import load_raw_indicator
+from src.utils.data_fetch import (
+    fetch_world_bank_indicator,
+    search_world_bank,
+    list_local_indicators,
+)
+
+output_path = "/Users/samkouteili/rose/epi/multi-agent/outputs/SPI/stage2/SPI-H03"
+os.makedirs(output_path, exist_ok=True)
+
+HYPOTHESIS_ID = "SPI-H03"
+EXPECTED_DIRECTION = "positive"
+
+print("=" * 60)
+print(f"Hypothesis: {HYPOTHESIS_ID}")
+print("Proxy: Species Habitat Index (SHI)")
+print("=" * 60)
+
+# ── 1. Load EPI target ──────────────────────────────────────────
+print("\n[1] Loading SPI target data...")
+target = load_raw_indicator("SPI")
+print(f"    Target rows: {len(target)}, countries: {target['iso'].nunique()}")
+
+# ── 2. Attempt to acquire SHI data ─────────────────────────────
+# SHI is a specialized biodiversity index from Map of Life / GEO BON.
+# It is NOT available via World Bank API.
+
+shi_df = None
+
+# --- Attempt A: Check local EPI raw files ----------------------
+print("\n[2a] Checking for SHI in local EPI raw files...")
+local_indicators = list_local_indicators()
+local_tlas = [ind['tla'] for ind in local_indicators]
+print(f"     Local TLAs: {local_tlas}")
+
+if "SHI" in local_tlas:
+    print("     Found SHI locally!")
+    shi_df = load_raw_indicator("SHI").rename(columns={"value": "proxy_value"})
+
+# --- Attempt B: direct CSV from known public repositories --------
+if shi_df is None:
+    print("\n[2b] Attempting direct download from public repositories...")
+    urls_to_try = [
+        "https://mol.org/indicators/species-habitat-index/data/shi_country_data.csv",
+        "https://raw.githubusercontent.com/MapofLife/SHI/main/data/SHI_country_scores.csv",
+        "https://geobon.org/wp-content/uploads/2023/01/SHI_country_level.csv",
+    ]
+    for url in urls_to_try:
+        try:
+            print(f"     Trying: {url}")
+            resp = requests.get(url, timeout=20)
+            if resp.status_code == 200:
+                from io import StringIO
+                shi_raw = pd.read_csv(StringIO(resp.text))
+                print(f"     SUCCESS. Columns: {list(shi_raw.columns)}")
+                shi_raw.columns = [c.strip().lower() for c in shi_raw.columns]
+                iso_col = next((c for c in shi_raw.columns if c in ["iso", "iso3", "country_code", "iso_code"]), None)
+                year_col = next((c for c in shi_raw.columns if c in ["year", "yr", "date"]), None)
+                val_col = next((c for c in shi_raw.columns if "shi" in c or "value" in c or "score" in c), None)
+                if iso_col and val_col:
+                    shi_df = shi_raw.rename(columns={iso_col: "iso", val_col: "proxy_value"})
+                    if year_col:
+                        shi_df = shi_df.rename(columns={year_col: "year"})
+                    keep_cols = ["iso"] + (["year"] if year_col else []) + ["proxy_value"]
+                    shi_df = shi_df[keep_cols].dropna()
+                    print(f"     Parsed SHI data: {len(shi_df)} rows")
+                    break
+        except Exception as e:
+            print(f"     Failed ({url}): {e}")
+
+# --- Attempt C: World Bank related indicators --------------------
+if shi_df is None:
+    print("\n[2c] Searching World Bank for habitat/biodiversity proxies...")
+    wb_candidates = [
+        ("ER.PTD.TOTL.ZS", "terrestrial and marine protected areas pct"),
+        ("ER.LND.PTLD.ZS", "terrestrial protected areas pct"),
+        ("AG.LND.FRST.ZS", "forest area pct of land"),
+    ]
+    for wb_code, desc in wb_candidates:
+        try:
+            print(f"     Trying WB indicator {wb_code} ({desc})...")
+            candidate = fetch_world_bank_indicator(wb_code)
+            if candidate is not None and len(candidate) > 100:
+                print(f"     Got {len(candidate)} rows for {wb_code}")
+                # Don't use as substitute — SHI is the specified proxy
+                break
+        except Exception as e:
+            print(f"     Failed: {e}")
+
+# ── 3. Handle case where SHI data unavailable ───────────────────
+if shi_df is None:
+    print("\n[!] Could not acquire Species Habitat Index (SHI) data.")
+    print("    SHI is from Map of Life / GEO BON and not in any accessible API.")
+    print("    Reporting verdict=inconclusive.")
+
+    result = build_result_json(
+        hypothesis_id=HYPOTHESIS_ID,
+        verdict="inconclusive",
+        corr=None,
+        partial=None,
+        functional_form=None,
+        data_quality_notes=(
+            "Could not acquire Species Habitat Index (SHI) data. "
+            "SHI is produced by Map of Life / GEO BON "
+            "(https://geobon.org/ebvs/indicators/species-habitat-index-shi/) "
+            "and is not available via World Bank API, WHO GHO, or known public CSV repositories. "
+            "Attempted direct downloads from mol.org, MapofLife GitHub, and geobon.org — all failed. "
+            "The Local Biodiversity Intactness Index (LBII) was already used by SPI-H02 and cannot "
+            "be reused per protocol. No suitable alternative proxy for SHI was found."
+        ),
+        summary=(
+            "Hypothesis SPI-H03 posits that the Species Habitat Index (SHI) positively correlates "
+            "with the Species Protection Index (SPI). This is theoretically well-grounded: countries "
+            "with more intact suitable habitat (high SHI) have greater opportunity to achieve high "
+            "SPI through strategic protected area placement. However, SHI data could not be obtained "
+            "from any accessible public source, so statistical verification was not possible. "
+            "Verdict: inconclusive due to data unavailability."
+        ),
+        verification_method="statistical_test",
+    )
+
+    out_file = f"{output_path}/result.json"
+    with open(out_file, "w") as f:
+        json.dump(result, f, indent=2)
+    print(f"\nResult written to: {out_file}")
+    print(json.dumps(result, indent=2))
+
+else:
+    # ── 4. Merge ────────────────────────────────────────────────
+    print(f"\n[3] SHI data loaded: {len(shi_df)} rows")
+
+    if "year" not in shi_df.columns:
+        # No year column — use most recent SPI value per country
+        target_latest = (
+            target.sort_values("year").groupby("iso").last().reset_index()
+        )
+        merged = target_latest.merge(
+            shi_df[["iso", "proxy_value"]], on="iso"
+        )
+    else:
+        shi_df["year"] = shi_df["year"].astype(int)
+        merged = target.merge(shi_df[["iso", "year", "proxy_value"]], on=["iso", "year"])
+
+    merged = merged.dropna(subset=["value", "proxy_value"])
+    print(f"    Merged rows: {len(merged)}, countries: {merged['iso'].nunique()}")
+
+    if len(merged) < 20:
+        print("[!] Too few observations for reliable correlation. Reporting inconclusive.")
+        result = build_result_json(
+            hypothesis_id=HYPOTHESIS_ID,
+            verdict="inconclusive",
+            corr=None,
+            partial=None,
+            functional_form=None,
+            data_quality_notes=(
+                f"Only {len(merged)} observations after merging SHI and SPI. "
+                "Insufficient data for reliable statistical inference (n < 20)."
+            ),
+            summary="Insufficient data overlap between SHI and SPI for meaningful analysis.",
+            verification_method="statistical_test",
+        )
+    else:
+        # ── 5. Bivariate correlation ─────────────────────────────
+        print("\n[4] Running bivariate correlation...")
+        corr = run_bivariate_correlation(
+            merged["proxy_value"], merged["value"], iso=merged["iso"]
+        )
+        print(f"    Pearson r={corr.pearson_r:.3f} (p={corr.pearson_p:.4f})")
+        print(f"    Spearman rho={corr.spearman_rho:.3f} (p={corr.spearman_p:.4f})")
+        print(f"    n={corr.n_observations}, countries={corr.n_countries}")
+
+        # ── 6. Partial correlation controlling for log(GPC) ──────
+        print("\n[5] Running partial correlation (controlling for log GDP/capita)...")
+        gpc = load_raw_indicator("GPC")
+
+        if "year" in merged.columns:
+            merged_gpc = merged.merge(
+                gpc[["iso", "year", "value"]].rename(columns={"value": "gpc"}),
+                on=["iso", "year"],
+            )
+        else:
+            gpc_latest = gpc.sort_values("year").groupby("iso").last().reset_index()
+            merged_gpc = merged.merge(
+                gpc_latest[["iso", "value"]].rename(columns={"value": "gpc"}),
+                on="iso",
+            )
+
+        merged_gpc = merged_gpc.dropna(subset=["gpc"])
+        merged_gpc["log_gpc"] = np.log(merged_gpc["gpc"].replace(0, np.nan))
+        merged_gpc = merged_gpc.dropna(subset=["log_gpc"])
+        print(f"    n for partial correlation: {len(merged_gpc)}")
+
+        if len(merged_gpc) >= 20:
+            partial = run_partial_correlation(
+                merged_gpc, "proxy_value", "value", ["log_gpc"]
+            )
+            print(f"    Partial r={partial.partial_r:.3f} (p={partial.partial_p:.4f})")
+        else:
+            partial = None
+            print("    Too few observations for partial correlation.")
+
+        # ── 7. Functional form ────────────────────────────────────
+        print("\n[6] Testing functional form...")
+        form = test_functional_form(merged["proxy_value"], merged["value"])
+        print(f"    Best form: {form.best_form.value}")
+        print(f"    Linear R²={form.linear_r2:.3f}, Log-linear R²={form.log_linear_r2:.3f}")
+
+        # ── 8. Verdict ────────────────────────────────────────────
+        print("\n[7] Determining verdict...")
+        verdict = determine_verdict(corr, partial, EXPECTED_DIRECTION)
+        print(f"    Verdict: {verdict.value}")
+
+        partial_summary = ""
+        if partial is not None:
+            partial_summary = (
+                f"Partial r={partial.partial_r:.3f} (p={partial.partial_p:.4f}) "
+                "controlling for log GDP/capita. "
+            )
+
+        result = build_result_json(
+            hypothesis_id=HYPOTHESIS_ID,
+            verdict=verdict,
+            corr=corr,
+            partial=partial,
+            functional_form=form,
+            data_quality_notes=(
+                "SHI data obtained from available sources. "
+                "Note: SHI does not distinguish intact habitat inside versus outside protected areas, "
+                "relies on GBIF occurrence records introducing geographic bias toward well-sampled "
+                "regions, and different species groups have different habitat requirements affecting "
+                "country-level aggregation."
+            ),
+            summary=(
+                f"SHI vs SPI correlation: Pearson r={corr.pearson_r:.3f} (p={corr.pearson_p:.4f}), "
+                f"Spearman rho={corr.spearman_rho:.3f}, n={corr.n_observations} observations "
+                f"across {corr.n_countries} countries. "
+                f"{partial_summary}"
+                f"Best functional form: {form.best_form.value}. "
+                f"Verdict: {verdict.value}."
+            ),
+            verification_method="statistical_test",
+        )
+
+    out_file = f"{output_path}/result.json"
+    with open(out_file, "w") as f:
+        json.dump(result, f, indent=2)
+    print(f"\nResult written to: {out_file}")
+    print(json.dumps(result, indent=2))
+```
+=== Attempt 2 — stdout ===
+============================================================
+Hypothesis: SPI-H03
+Proxy: Species Habitat Index (SHI)
+============================================================
+
+[1] Loading SPI target data...
+    Target rows: 8010, countries: 178
+
+[2a] Checking for SHI in local EPI raw files...
+     Local TLAs: ['GDP', 'GPC', 'POP', 'PPO', 'PDN', 'URB', 'GOE', 'ROL', 'RQU', 'OEB', 'OEC', 'NXA', 'SDA', 'SNM', 'PSU', 'PRS', 'RCY', 'MKP', 'MHP', 'MPE', 'PAR', 'BER', 'SHI', 'SPI', 'PAE', 'PHL', 'TBN', 'TKP', 'RLI', 'PFL', 'IFL', 'FCL', 'TCG', 'FLI', 'FSS', 'FCD', 'BTZ', 'BTO', 'RMS', 'WWG', 'WWC', 'WWT', 'WWR', 'COE', 'HFD', 'HFX', 'NOD', 'NOE', 'OZD', 'OZE', 'HPE', 'SOE', 'VOE', 'LED', 'LEX', 'WPC', 'WRR', 'SMW', 'USD', 'UWD', 'USX', 'UWX', 'CDA', 'CDF', 'CHA', 'FGA', 'NDA', 'BCA', 'GHN', 'GHI', 'GHP', 'GHA', 'LUF', 'GTI', 'GTP', 'CBP', 'PTI', 'PCR', 'NTI', 'NCR', 'PF5', 'PFA', 'PFC', 'IF5', 'IFA', 'IFC', 'TC5', 'TCA', 'TCC', 'GHG', 'CH4', 'FOG', 'NOT', 'CDO', 'BLC', 'CXN', 'WST', 'PMD', 'PME', 'CHP', 'FGP', 'NDP', 'CDP', 'CHG', 'FGG', 'NDG', 'CDG', 'BCP', 'BCG']
+     Found SHI locally!
+
+[3] SHI data loaded: 3894 rows
+    Merged rows: 3564, countries: 162
+
+[4] Running bivariate correlation...
+    Pearson r=-0.147 (p=0.0000)
+    Spearman rho=-0.227 (p=0.0000)
+    n=3564, countries=162
+
+[5] Running partial correlation (controlling for log GDP/capita)...
+    n for partial correlation: 3543
+    Partial r=-0.146 (p=0.0000)
+
+[6] Testing functional form...
+    Best form: quadratic
+    Linear R²=0.022, Log-linear R²=0.021
+
+[7] Determining verdict...
+    Verdict: rejected
+
+=== Attempt 2 — stderr ===
+Traceback (most recent call last):
+  File "/Users/samkouteili/rose/epi/multi-agent/outputs/SPI/stage2/SPI-H03/verify.py", line 233, in <module>
+    result = build_result_json(
+             ^^^^^^^^^^^^^^^^^^
+TypeError: build_result_json() got an unexpected keyword argument 'partial'
+
+=== Attempt 3 — Claude response ===
+The issue is that `build_result_json()` doesn't accept `partial` as a keyword argument. Let me check the correct signature and fix it.
+
+```python
+import json
+import os
+import requests
+import pandas as pd
+import numpy as np
+
+from src.utils.stats import (
+    run_bivariate_correlation,
+    run_partial_correlation,
+    determine_verdict,
+    build_result_json,
+    test_functional_form,
+)
+from src.utils.data_utils import load_raw_indicator
+from src.utils.data_fetch import (
+    fetch_world_bank_indicator,
+    search_world_bank,
+    list_local_indicators,
+)
+
+output_path = "/Users/samkouteili/rose/epi/multi-agent/outputs/SPI/stage2/SPI-H03"
+os.makedirs(output_path, exist_ok=True)
+
+HYPOTHESIS_ID = "SPI-H03"
+EXPECTED_DIRECTION = "positive"
+
+print("=" * 60)
+print(f"Hypothesis: {HYPOTHESIS_ID}")
+print("Proxy: Species Habitat Index (SHI)")
+print("=" * 60)
+
+# ── 1. Load EPI target ──────────────────────────────────────────
+print("\n[1] Loading SPI target data...")
+target = load_raw_indicator("SPI")
+print(f"    Target rows: {len(target)}, countries: {target['iso'].nunique()}")
+
+# ── 2. Load SHI from local EPI files ───────────────────────────
+print("\n[2] Checking for SHI in local EPI raw files...")
+local_indicators = list_local_indicators()
+local_tlas = [ind['tla'] for ind in local_indicators]
+
+if "SHI" not in local_tlas:
+    print("    SHI not found locally. Reporting inconclusive.")
+    result = build_result_json(
+        HYPOTHESIS_ID,
+        "inconclusive",
+        None,
+        None,
+        data_quality_notes=(
+            "SHI not found in local EPI raw files and not available via public APIs."
+        ),
+        summary="Data unavailable.",
+        verification_method="statistical_test",
+    )
+    out_file = f"{output_path}/result.json"
+    with open(out_file, "w") as f:
+        json.dump(result, f, indent=2)
+    print(json.dumps(result, indent=2))
+    exit(0)
+
+print("    Found SHI locally!")
+shi_df = load_raw_indicator("SHI").rename(columns={"value": "proxy_value"})
+print(f"    SHI rows: {len(shi_df)}, countries: {shi_df['iso'].nunique()}")
+
+# ── 3. Merge on iso + year ──────────────────────────────────────
+print("\n[3] Merging SHI with SPI...")
+merged = target.merge(shi_df[["iso", "year", "proxy_value"]], on=["iso", "year"])
+merged = merged.dropna(subset=["value", "proxy_value"])
+print(f"    Merged rows: {len(merged)}, countries: {merged['iso'].nunique()}")
+
+if len(merged) < 20:
+    print("[!] Too few observations. Reporting inconclusive.")
+    result = build_result_json(
+        HYPOTHESIS_ID,
+        "inconclusive",
+        None,
+        None,
+        data_quality_notes=f"Only {len(merged)} observations after merging SHI and SPI.",
+        summary="Insufficient data overlap.",
+        verification_method="statistical_test",
+    )
+    out_file = f"{output_path}/result.json"
+    with open(out_file, "w") as f:
+        json.dump(result, f, indent=2)
+    print(json.dumps(result, indent=2))
+    exit(0)
+
+# ── 4. Bivariate correlation ────────────────────────────────────
+print("\n[4] Running bivariate correlation...")
+corr = run_bivariate_correlation(
+    merged["proxy_value"], merged["value"], iso=merged["iso"]
+)
+print(f"    Pearson r={corr.pearson_r:.3f} (p={corr.pearson_p:.4f})")
+print(f"    Spearman rho={corr.spearman_rho:.3f} (p={corr.spearman_p:.4f})")
+print(f"    n={corr.n_observations}, countries={corr.n_countries}")
+
+# ── 5. Partial correlation controlling for log(GPC) ─────────────
+print("\n[5] Running partial correlation (controlling for log GDP/capita)...")
+gpc = load_raw_indicator("GPC")
+merged_gpc = merged.merge(
+    gpc[["iso", "year", "value"]].rename(columns={"value": "gpc"}),
+    on=["iso", "year"],
+)
+merged_gpc = merged_gpc.dropna(subset=["gpc"])
+merged_gpc["log_gpc"] = np.log(merged_gpc["gpc"].replace(0, np.nan))
+merged_gpc = merged_gpc.dropna(subset=["log_gpc"])
+print(f"    n for partial correlation: {len(merged_gpc)}")
+
+if len(merged_gpc) >= 20:
+    partial = run_partial_correlation(
+        merged_gpc, "proxy_value", "value", ["log_gpc"]
+    )
+    print(f"    Partial r={partial.partial_r:.3f} (p={partial.partial_p:.4f})")
+else:
+    partial = None
+    print("    Too few observations for partial correlation.")
+
+# ── 6. Functional form ──────────────────────────────────────────
+print("\n[6] Testing functional form...")
+form = test_functional_form(merged["proxy_value"], merged["value"])
+print(f"    Best form: {form.best_form.value}")
+print(f"    Linear R²={form.linear_r2:.3f}, Log-linear R²={form.log_linear_r2:.3f}, Quadratic R²={form.quadratic_r2:.3f}")
+
+# ── 7. Verdict ──────────────────────────────────────────────────
+print("\n[7] Determining verdict...")
+verdict = determine_verdict(corr, partial, EXPECTED_DIRECTION)
+print(f"    Verdict: {verdict.value}")
+
+# ── 8. Build result — inspect build_result_json signature ───────
+import inspect
+sig = inspect.signature(build_result_json)
+print(f"\n[8] build_result_json signature: {sig}")
+
+# Call with positional args to avoid keyword conflicts
+# Signature from system prompt: build_result_json(hypothesis_id, verdict, corr, partial, ...)
+# But the error shows 'partial' is not accepted — try without it
+
+partial_summary = ""
+if partial is not None:
+    partial_summary = (
+        f"Partial r={partial.partial_r:.3f} (p={partial.partial_p:.4f}) "
+        "controlling for log GDP/capita. "
+    )
+
+data_quality_notes = (
+    "SHI data loaded from local EPI raw files (Map of Life source). "
+    "Note: SHI does not distinguish intact habitat inside versus outside protected areas; "
+    "relies on GBIF occurrence records introducing geographic bias toward well-sampled regions; "
+    "different species groups have different habitat requirements affecting country-level aggregation. "
+    f"Pearson r={corr.pearson_r:.3f} is NEGATIVE, opposite to the expected positive direction, "
+    "suggesting that countries with higher SHI (more intact habitat) do not necessarily have "
+    "higher SPI (protected area coverage). This may reflect that SHI measures remaining intact "
+    "habitat broadly while SPI measures the fraction within formal protected areas — countries "
+    "with large intact areas may have low protected-area designation rates."
+)
+
+summary = (
+    f"SHI vs SPI bivariate: Pearson r={corr.pearson_r:.3f} (p={corr.pearson_p:.4f}), "
+    f"Spearman rho={corr.spearman_rho:.3f} (p={corr.spearman_p:.4f}), "
+    f"n={corr.n_observations} observations across {corr.n_countries} countries. "
+    f"{partial_summary}"
+    f"Best functional form: {form.best_form.value}. "
+    f"Verdict: {verdict.value}. "
+    "The correlation is negative and significant, opposite to the hypothesized positive direction. "
+    "The hypothesis that SHI positively predicts SPI is REJECTED by the data."
+)
+
+# Try different call patterns based on actual signature
+params = list(sig.parameters.keys())
+print(f"    Parameters: {params}")
+
+try:
+    # Pattern 1: positional (hypothesis_id, verdict, corr, partial_corr, functional_form, ...)
+    result = build_result_json(
+        HYPOTHESIS_ID,
+        verdict,
+        corr,
+        partial,
+        form,
+        data_quality_notes=data_quality_notes,
+        summary=summary,
+        verification_method="statistical_test",
+    )
+    print("    Used pattern 1 (positional: id, verdict, corr, partial, form)")
+except TypeError as e1:
+    print(f"    Pattern 1 failed: {e1}")
+    try:
+        # Pattern 2: no partial positional arg
+        result = build_result_json(
+            HYPOTHESIS_ID,
+            verdict,
+            corr,
+            form,
+            data_quality_notes=data_quality_notes,
+            summary=summary,
+            verification_method="statistical_test",
+        )
+        print("    Used pattern 2 (positional: id, verdict, corr, form)")
+    except TypeError as e2:
+        print(f"    Pattern 2 failed: {e2}")
+        try:
+            # Pattern 3: only required args
+            result = build_result_json(
+                HYPOTHESIS_ID,
+                verdict,
+                corr,
+            )
+            # Then manually add extra fields
+            result["partial_correlation"] = {
+                "partial_r": partial.partial_r if partial else None,
+                "partial_p": partial.partial_p if partial else None,
+                "control_variables": partial.control_variables if partial else [],
+            }
+            result["functional_form"] = {
+                "best_form": form.best_form.value,
+                "linear_r2": form.linear_r2,
+                "log_linear_r2": form.log_linear_r2,
+                "quadratic_r2": form.quadratic_r2,
+            }
+            result["data_quality_notes"] = data_quality_notes
+            result["summary"] = summary
+            result["verification_method"] = "statistical_test"
+            print("    Used pattern 3 (minimal positional, manual extras)")
+        except TypeError as e3:
+            print(f"    Pattern 3 failed: {e3}")
+            # Pattern 4: pure keyword args — inspect actual param names
+            kwargs = {}
+            for p in params:
+                if p in ["hypothesis_id", "id"]:
+                    kwargs[p] = HYPOTHESIS_ID
+                elif p == "verdict":
+                    kwargs[p] = verdict
+                elif p in ["corr", "correlation", "bivariate"]:
+                    kwargs[p] = corr
+                elif p in ["partial", "partial_corr", "partial_correlation"]:
+                    kwargs[p] = partial
+                elif p in ["functional_form", "form"]:
+                    kwargs[p] = form
+            kwargs["data_quality_notes"] = data_quality_notes
+            kwargs["summary"] = summary
+            kwargs["verification_method"] = "statistical_test"
+            result = build_result_json(**kwargs)
+            print(f"    Used pattern 4 (keyword mapping): {list(kwargs.keys())}")
+
+# ── 9. Write output ─────────────────────────────────────────────
+out_file = f"{output_path}/result.json"
+with open(out_file, "w") as f:
+    json.dump(result, f, indent=2)
+print(f"\nResult written to: {out_file}")
+print(json.dumps(result, indent=2))
+```
+=== Attempt 3 — stdout ===
+============================================================
+Hypothesis: SPI-H03
+Proxy: Species Habitat Index (SHI)
+============================================================
+
+[1] Loading SPI target data...
+    Target rows: 8010, countries: 178
+
+[2] Checking for SHI in local EPI raw files...
+    Found SHI locally!
+    SHI rows: 3894, countries: 177
+
+[3] Merging SHI with SPI...
+    Merged rows: 3564, countries: 162
+
+[4] Running bivariate correlation...
+    Pearson r=-0.147 (p=0.0000)
+    Spearman rho=-0.227 (p=0.0000)
+    n=3564, countries=162
+
+[5] Running partial correlation (controlling for log GDP/capita)...
+    n for partial correlation: 3543
+    Partial r=-0.146 (p=0.0000)
+
+[6] Testing functional form...
+    Best form: quadratic
+    Linear R²=0.022, Log-linear R²=0.021, Quadratic R²=0.026
+
+[7] Determining verdict...
+    Verdict: rejected
+
+[8] build_result_json signature: (hypothesis_id: 'str', verdict: 'Verdict', corr: 'CorrelationResult', partial_corr: 'Optional[PartialCorrelationResult]' = None, functional_form: 'Optional[FunctionalFormResult]' = None, data_quality_notes: 'str' = '', summary: 'str' = '', verification_method: 'Optional[str]' = None) -> 'dict'
+    Parameters: ['hypothesis_id', 'verdict', 'corr', 'partial_corr', 'functional_form', 'data_quality_notes', 'summary', 'verification_method']
+    Used pattern 1 (positional: id, verdict, corr, partial, form)
+
+Result written to: /Users/samkouteili/rose/epi/multi-agent/outputs/SPI/stage2/SPI-H03/result.json
+{
+  "hypothesis_id": "SPI-H03",
+  "verdict": "rejected",
+  "verification_method": "statistical_test",
+  "raw_correlation": {
+    "pearson_r": -0.1472801110648606,
+    "pearson_p": 9.77436690040775e-19,
+    "spearman_rho": -0.22689576832114122,
+    "spearman_p": 7.699187503127051e-43,
+    "n_observations": 3564,
+    "n_countries": 162
+  },
+  "partial_correlation": {
+    "partial_r": -0.14574914194704372,
+    "partial_p": 2.837998384035881e-18,
+    "control_variables": [
+      "log_gpc"
+    ]
+  },
+  "functional_form": {
+    "best_form": "quadratic",
+    "linear_r2": 0.021691431115277826,
+    "linear_aic": 23474.578026718216,
+    "log_linear_r2": 0.02121188812030006,
+    "log_linear_aic": 23476.324584550643,
+    "quadratic_r2": 0.02618762604589875,
+    "quadratic_aic": 23460.16053257924
+  },
+  "data_quality_notes": "SHI data loaded from local EPI raw files (Map of Life source). Note: SHI does not distinguish intact habitat inside versus outside protected areas; relies on GBIF occurrence records introducing geographic bias toward well-sampled regions; different species groups have different habitat requirements affecting country-level aggregation. Pearson r=-0.147 is NEGATIVE, opposite to the expected positive direction, suggesting that countries with higher SHI (more intact habitat) do not necessarily have higher SPI (protected area coverage). This may reflect that SHI measures remaining intact habitat broadly while SPI measures the fraction within formal protected areas \u2014 countries with large intact areas may have low protected-area designation rates.",
+  "summary": "SHI vs SPI bivariate: Pearson r=-0.147 (p=0.0000), Spearman rho=-0.227 (p=0.0000), n=3564 observations across 162 countries. Partial r=-0.146 (p=0.0000) controlling for log GDP/capita. Best functional form: quadratic. Verdict: rejected. The correlation is negative and significant, opposite to the hypothesized positive direction. The hypothesis that SHI positively predicts SPI is REJECTED by the data."
+}
+
+=== Attempt 3 — stderr ===

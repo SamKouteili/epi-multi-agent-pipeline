@@ -1,0 +1,26 @@
+{
+  "hypothesis_id": "UWD-H08",
+  "verdict": "inconclusive",
+  "verification_method": "statistical_test",
+  "proxy_attempted": "Satellite-derived NDTI/SSC (Landsat 8 / Sentinel-2)",
+  "proxy_available": false,
+  "data_sources_tried": [
+    "USGS EarthExplorer (requires GIS pipeline, not accessible via API)",
+    "World Bank search (4 queries) \u2014 no country-level turbidity index found",
+    "WB SH.H2O.BASW.ZS: Basic drinking water services (%) (available but measures water access, not turbidity)",
+    "WB ER.H2O.FWDM.ZS: Water productivity, total (available but measures water access, not turbidity)",
+    "WHO GHO WSH_SANITATION_SAFELY_MANAGED: available but measures water access, not turbidity",
+    "WHO GHO WSH_WATER_SAFELY_MANAGED: available but measures water access, not turbidity",
+    "WHO GHO WHS3_41: available but measures water access, not turbidity"
+  ],
+  "bivariate_correlation": null,
+  "partial_correlation": null,
+  "functional_form": null,
+  "data_quality_notes": "The primary proxy (satellite-derived NDTI / SSC from Landsat 8 / Sentinel-2) requires authenticated GIS processing pipelines (USGS EarthExplorer, Copernicus Open Access Hub) that are not accessible via simple API calls. No country-level, pre-processed annual turbidity or suspended sediment concentration dataset was found through: (1) USGS EarthExplorer direct download \u2014 requires GIS pipeline; (2) World Bank API search across multiple turbidity/sediment query terms \u2014 no matching country-level annual turbidity index found; (3) WHO GHO API \u2014 water safety access metrics available but these measure water service coverage (negative direction vs UWD), not physical turbidity. World Bank water access indicators (SH.H2O.BASW.ZS, ER.H2O.FWDM.ZS, etc.) are available but measure water SERVICE ACCESS, not the hypothesized physical turbidity. Verdict: inconclusive due to data inaccessibility. To properly verify this hypothesis, a global country-level annual mean NDTI or SSC composite derived from Landsat/Sentinel imagery (e.g., from Google Earth Engine) would be required.",
+  "summary": "Hypothesis UWD-H08 posits that satellite-derived water turbidity (NDTI/SSC from Landsat 8/Sentinel-2) is positively correlated with unsafe water DALYs. This is a theoretically plausible mechanism: high suspended sediment loads indicate potential fecal/pathogen contamination. However, the proxy data requires specialized GIS processing of petabyte-scale satellite imagery and is not available through any accessible API or pre-processed country-level dataset. Verdict is inconclusive due to data inaccessibility, not because the hypothesis is implausible.",
+  "expected_direction": "positive",
+  "expected_functional_form": "log-linear",
+  "confidence_prior": "speculative",
+  "n_observations": null,
+  "n_countries": null
+}

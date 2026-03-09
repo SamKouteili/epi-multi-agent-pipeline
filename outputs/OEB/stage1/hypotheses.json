@@ -1,0 +1,589 @@
+{
+  "indicator_tla": "OEB",
+  "causal_map_summary": "Ground-level ozone forms through photochemical reactions between nitrogen oxides (NOx) and volatile organic compounds (VOCs) in the presence of sunlight. Upstream drivers include anthropogenic emissions from vehicles, industry, and power generation, as well as biogenic VOC emissions from vegetation. Physical transport processes, meteorological conditions (temperature, solar radiation, boundary layer height), and atmospheric chemistry determine where ozone accumulates. Downstream effects include reduced plant photosynthesis, ecosystem productivity losses, altered biodiversity, and economic damage to agriculture.",
+  "hypotheses": [
+    {
+      "id": "OEB-H01",
+      "context": {
+        "geographic_scope": "global",
+        "time_period": "2003-2024",
+        "subpopulations": null
+      },
+      "target_variable": "OEB",
+      "proxy_variable": "Tropospheric NO\u2082 Column Density",
+      "proxy_description": "Satellite measurements of tropospheric nitrogen dioxide concentration integrated through the atmospheric column, measured in molecules cm\u207b\u00b2",
+      "relationship": {
+        "direction": "positive",
+        "functional_form": "linear",
+        "strength_estimate": "r = 0.5-0.7 in NOx-limited regions"
+      },
+      "mechanism": "NO\u2082 is a primary precursor to ozone formation through photochemical reactions. In NOx-limited regimes (most rural areas and KBAs), increased NO\u2082 availability directly increases ozone formation rates.",
+      "data_source": {
+        "name": "CAMS Global Reanalysis",
+        "organization": "Copernicus Atmosphere Monitoring Service",
+        "url": "https://www.ecmwf.int/en/forecasts/dataset/cams-global-reanalysis",
+        "format": "NetCDF",
+        "accessibility": "open",
+        "coverage": "Global, 80km resolution, 2003-2024, sub-daily"
+      },
+      "confidence": "literature_backed",
+      "evidence_type": "programmatic_verify",
+      "literature_evidence": "Vehicle NOx emissions have direct correlation with ground-level ozone formation (EPA Ground-Level Ozone Basics)",
+      "caveats": [
+        "Satellite NO\u2082 retrievals have systematic uncertainties of \u00b115-20%",
+        "Column measurements may not capture boundary-layer dynamics most relevant to surface ozone",
+        "Relationship depends on local NOx vs VOC limitation regime",
+        "Negative correlation possible in VOC-limited urban areas"
+      ],
+      "references": [
+        "https://www.ecmwf.int/en/forecasts/dataset/cams-global-reanalysis",
+        "https://resourcewatch.org/data/explore/Air-Quality-Measurements-TROPOMI-NO",
+        "https://www.epa.gov/ground-level-ozone-pollution/ground-level-ozone-basics"
+      ]
+    },
+    {
+      "id": "OEB-H02",
+      "context": {
+        "geographic_scope": "global",
+        "time_period": "1979-present",
+        "subpopulations": null
+      },
+      "target_variable": "OEB",
+      "proxy_variable": "Planetary Boundary Layer Height",
+      "proxy_description": "Mean annual planetary boundary layer height in meters, derived from radiosonde profiles or reanalysis data",
+      "relationship": {
+        "direction": "negative",
+        "functional_form": "log-linear",
+        "strength_estimate": "r = -0.5 to -0.7"
+      },
+      "mechanism": "Lower PBL height suppresses vertical mixing, concentrating ozone and precursors near the surface. Shallow mixing heights are explicitly linked to ozone accumulation in boundary layers.",
+      "data_source": {
+        "name": "ERA5 Reanalysis",
+        "organization": "ECMWF/Copernicus",
+        "url": null,
+        "format": "NetCDF",
+        "accessibility": "open",
+        "coverage": "Global gridded, daily, 31km resolution"
+      },
+      "confidence": "literature_backed",
+      "evidence_type": "programmatic_verify",
+      "literature_evidence": "Mediterranean summertime ozone maximum attributed to suppressed vertical mixing and shallow mixing heights caused by anticyclonic conditions (Atmos. Chem. Phys. 2013)",
+      "caveats": [
+        "Radiosonde networks spatially sparse in developing countries",
+        "Reanalysis PBL heights may have systematic biases",
+        "PBL height correlates with many other meteorological variables"
+      ],
+      "references": [
+        "https://acp.copernicus.org/articles/13/2331/2013/acp-13-2331-2013.pdf"
+      ]
+    },
+    {
+      "id": "OEB-H03",
+      "context": {
+        "geographic_scope": "developed countries with monitoring networks",
+        "time_period": "real-time to historical",
+        "subpopulations": null
+      },
+      "target_variable": "OEB",
+      "proxy_variable": "Ground-based NO\u2082 and PM\u2082.\u2085 Concentrations",
+      "proxy_description": "Annual mean concentrations of nitrogen dioxide and fine particulate matter from air quality monitoring stations",
+      "relationship": {
+        "direction": "positive",
+        "functional_form": "linear",
+        "strength_estimate": "r = 0.6-0.8 for NO\u2082, r = 0.5-0.7 for PM\u2082.\u2085"
+      },
+      "mechanism": "NO\u2082 and PM\u2082.\u2085 share common emission sources with ozone precursors and co-occur in photochemical smog episodes. NO\u2082 is directly involved in ozone formation chemistry.",
+      "data_source": {
+        "name": "World Air Quality Index",
+        "organization": "WAQI",
+        "url": "https://waqi.info",
+        "format": "JSON API",
+        "accessibility": "open",
+        "coverage": ">10,000 monitoring stations globally, sparse in rural areas"
+      },
+      "confidence": "literature_backed",
+      "evidence_type": "programmatic_verify",
+      "literature_evidence": "Vehicle emissions contribute majority of NOx in most developed countries, with traffic identified as dominant NOx source in urban areas (ICCT Vehicle NOx Emissions)",
+      "caveats": [
+        "Monitoring stations sparse in rural KBAs",
+        "Limited coverage in developing countries",
+        "Temporal coverage varies by station"
+      ],
+      "references": [
+        "https://waqi.info",
+        "https://theicct.org/stack/vehicle-nox-emissions-the-basics/"
+      ]
+    },
+    {
+      "id": "OEB-H04",
+      "context": {
+        "geographic_scope": "global",
+        "time_period": "1970-2022",
+        "subpopulations": null
+      },
+      "target_variable": "OEB",
+      "proxy_variable": "Industrial Energy Consumption",
+      "proxy_description": "Sectoral fuel consumption and industrial production metrics including cement, petroleum refining, and chemical manufacturing capacity",
+      "relationship": {
+        "direction": "positive",
+        "functional_form": "linear",
+        "strength_estimate": "r = 0.4-0.7"
+      },
+      "mechanism": "Industrial production, particularly energy-intensive sectors like cement, steel, and chemicals, directly produces NOx and VOC emissions through fuel combustion and chemical processes.",
+      "data_source": {
+        "name": "EDGAR Emissions Inventory",
+        "organization": "EC Joint Research Centre",
+        "url": "https://edgar.jrc.ec.europa.eu/emissions_data_and_maps",
+        "format": "NetCDF",
+        "accessibility": "open",
+        "coverage": "Global, 0.1\u00b0 \u00d7 0.1\u00b0 gridded, 1970-2022"
+      },
+      "confidence": "literature_backed",
+      "evidence_type": "programmatic_verify",
+      "literature_evidence": "EPA 1996 ozone criteria document estimated national-level crop losses exceeding $1 billion annually, linked to industrial NOx emissions in agricultural regions",
+      "caveats": [
+        "Reporting delays of 2-3 years",
+        "Country-level aggregation obscures spatial heterogeneity",
+        "Relationship depends on emission control technology adoption"
+      ],
+      "references": [
+        "https://edgar.jrc.ec.europa.eu/emissions_data_and_maps",
+        "https://www.nrcs.usda.gov/sites/default/files/2022-10/Ozone-Research-Review.pdf"
+      ]
+    },
+    {
+      "id": "OEB-H05",
+      "context": {
+        "geographic_scope": "global",
+        "time_period": "monthly, 2000-present",
+        "subpopulations": null
+      },
+      "target_variable": "OEB",
+      "proxy_variable": "Biogenic VOC Emission Potential",
+      "proxy_description": "Modeled isoprene and monoterpene emissions from vegetation at standard temperature and light conditions, in nmol m\u207b\u00b2 s\u207b\u00b9",
+      "relationship": {
+        "direction": "positive",
+        "functional_form": "linear",
+        "strength_estimate": "r = 0.3-0.5 in NOx-limited regions"
+      },
+      "mechanism": "Biogenic volatile organic compounds from vegetation react with anthropogenic NOx to form ozone. In NOx-limited regions, increased biogenic VOCs enhance ozone formation rates.",
+      "data_source": {
+        "name": "MEGAN 2.1 Model",
+        "organization": "NCAR",
+        "url": null,
+        "format": "NetCDF",
+        "accessibility": "open",
+        "coverage": "Global gridded, 0.5\u00b0 resolution, monthly"
+      },
+      "confidence": "literature_backed",
+      "evidence_type": "manual_data_needed",
+      "literature_evidence": "20% reduction in biogenic VOC emissions leads to 0.96 ppbv average ozone reduction over Mediterranean basin (Atmos. Chem. Phys. 2013)",
+      "caveats": [
+        "MEGAN estimates depend on uncertain temperature and light parameterization",
+        "Relationship is NOx-VOC regime dependent",
+        "High model uncertainty in tropical regions"
+      ],
+      "references": [
+        "https://acp.copernicus.org/articles/13/2331/2013/acp-13-2331-2013.pdf",
+        "https://bg.copernicus.org/articles/18/2487/2021/"
+      ]
+    },
+    {
+      "id": "OEB-H06",
+      "context": {
+        "geographic_scope": "global",
+        "time_period": "annual, varies by country",
+        "subpopulations": null
+      },
+      "target_variable": "OEB",
+      "proxy_variable": "Vehicle Fleet Size and Fuel Consumption",
+      "proxy_description": "National vehicle ownership rate (vehicles per 1,000 people) and total vehicle fuel consumption in metric tonnes",
+      "relationship": {
+        "direction": "positive",
+        "functional_form": "linear",
+        "strength_estimate": "r = 0.3-0.5"
+      },
+      "mechanism": "Vehicle emissions are the primary anthropogenic source of NOx in most countries. Higher vehicle ownership correlates with greater NOx emissions, which drive ozone formation.",
+      "data_source": {
+        "name": "International Organization of Motor Vehicle Manufacturers",
+        "organization": "OICA",
+        "url": null,
+        "format": "Excel",
+        "accessibility": "restricted",
+        "coverage": "Global vehicle ownership statistics by country"
+      },
+      "confidence": "literature_backed",
+      "evidence_type": "manual_data_needed",
+      "literature_evidence": "Vehicle emissions contribute majority of NOx in most developed countries, with studies consistently identifying traffic as dominant NOx source in urban areas",
+      "caveats": [
+        "Vehicle ownership is lagging indicator of actual emissions",
+        "Fleet composition and emission standards vary dramatically",
+        "Relationship breaks down where vehicle emissions are not dominant source"
+      ],
+      "references": [
+        "https://electroiq.com/stats/car-ownership-statistics/",
+        "https://theicct.org/stack/vehicle-nox-emissions-the-basics/"
+      ]
+    },
+    {
+      "id": "OEB-H07",
+      "context": {
+        "geographic_scope": "global",
+        "time_period": "monthly, 2000-present",
+        "subpopulations": null
+      },
+      "target_variable": "OEB",
+      "proxy_variable": "Solar Radiation Intensity",
+      "proxy_description": "Annual count of cloud-free days or direct normal irradiance measurements in W m\u207b\u00b2, derived from satellite instruments",
+      "relationship": {
+        "direction": "positive",
+        "functional_form": "threshold",
+        "strength_estimate": "r = 0.4-0.6"
+      },
+      "mechanism": "Solar radiation intensity directly drives photochemical reactions that produce ozone from NOx and VOCs. Higher radiation increases ozone formation rates up to a saturation point.",
+      "data_source": {
+        "name": "CERES",
+        "organization": "NASA",
+        "url": "https://www.ncei.noaa.gov/products/climate-data-records/total-solar-irradiance",
+        "format": "NetCDF",
+        "accessibility": "open",
+        "coverage": "Global, 1\u00b0 resolution, monthly/annual averages"
+      },
+      "confidence": "literature_backed",
+      "evidence_type": "programmatic_verify",
+      "literature_evidence": "Ozone is most likely to reach unhealthy levels on hot sunny days, indicating strong sensitivity to radiation availability (EPA Ground-Level Ozone Basics)",
+      "caveats": [
+        "Satellite solar radiation estimates have \u00b15-10% uncertainty",
+        "Relationship assumes NOx and VOC availability",
+        "Non-linear saturation effects above ~600 W m\u207b\u00b2"
+      ],
+      "references": [
+        "https://www.epa.gov/ground-level-ozone-pollution/ground-level-ozone-basics",
+        "https://www.ncei.noaa.gov/products/climate-data-records/total-solar-irradiance"
+      ]
+    },
+    {
+      "id": "OEB-H08",
+      "context": {
+        "geographic_scope": "agricultural regions globally",
+        "time_period": "annual, 1961-present",
+        "subpopulations": "ozone-sensitive crops (wheat, soybeans, rice, maize)"
+      },
+      "target_variable": "OEB",
+      "proxy_variable": "Crop Yield Reductions",
+      "proxy_description": "National average crop yields for ozone-sensitive crops measured in tonnes per hectare, reflecting integrated ozone damage",
+      "relationship": {
+        "direction": "negative",
+        "functional_form": "linear",
+        "strength_estimate": "r = -0.3 to -0.5"
+      },
+      "mechanism": "Ground-level ozone reduces net photosynthesis, accelerates senescence, and reduces biomass allocation to grain, thereby reducing harvestable yield in sensitive crops.",
+      "data_source": {
+        "name": "FAO FAOSTAT",
+        "organization": "Food and Agriculture Organization",
+        "url": "https://ourworldindata.org/crop-yields",
+        "format": "CSV",
+        "accessibility": "open",
+        "coverage": "Country-level crop yields, annual, 1961-present"
+      },
+      "confidence": "literature_backed",
+      "evidence_type": "programmatic_verify",
+      "literature_evidence": "Wheat yield losses 8.4% comparing ambient vs pre-industrial ozone; soybean yield reductions 10% over 5-year periods; global staple crop losses 3-16% attributed to ozone (PMC 2020)",
+      "caveats": [
+        "Crop yields affected by multiple environmental factors beyond ozone",
+        "Yield data not specific to Key Biodiversity Areas",
+        "Reverse causality concerns using downstream effects as proxies"
+      ],
+      "references": [
+        "https://ourworldindata.org/crop-yields",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC7536038/"
+      ]
+    },
+    {
+      "id": "OEB-H09",
+      "context": {
+        "geographic_scope": "global forested regions",
+        "time_period": "monthly, 2000-present",
+        "subpopulations": null
+      },
+      "target_variable": "OEB",
+      "proxy_variable": "Net Primary Productivity",
+      "proxy_description": "MODIS-derived Net Primary Productivity in g C m\u207b\u00b2 day\u207b\u00b9, reflecting photosynthetic capacity and ozone stress",
+      "relationship": {
+        "direction": "negative",
+        "functional_form": "linear",
+        "strength_estimate": "r = -0.5 to -0.8"
+      },
+      "mechanism": "Ozone impairs photosynthesis by causing oxidative stress, reducing leaf area and transpiration, ultimately decreasing net primary productivity and biomass accumulation.",
+      "data_source": {
+        "name": "MODIS NPP",
+        "organization": "NASA",
+        "url": "https://svs.gsfc.nasa.gov/30380/",
+        "format": "HDF4",
+        "accessibility": "open",
+        "coverage": "Global, 1km resolution, monthly, February 2000-present"
+      },
+      "confidence": "literature_backed",
+      "evidence_type": "programmatic_verify",
+      "literature_evidence": "Elevated ozone shows 11% reductions in tree biomass and reduced NPP in fumigation experiments (PMC 2020)",
+      "caveats": [
+        "MODIS NPP estimates have \u00b120-30% uncertainty",
+        "NPP affected by multiple environmental variables beyond ozone",
+        "Monthly temporal resolution may obscure acute ozone damage"
+      ],
+      "references": [
+        "https://svs.gsfc.nasa.gov/30380/",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC7536038/"
+      ]
+    },
+    {
+      "id": "OEB-H10",
+      "context": {
+        "geographic_scope": "agricultural regions globally",
+        "time_period": "1970-2022",
+        "subpopulations": null
+      },
+      "target_variable": "OEB",
+      "proxy_variable": "Ammonia Emissions and Livestock Density",
+      "proxy_description": "National ammonia emissions from livestock and agricultural soils in kilotonnes per year, or livestock stocking density",
+      "relationship": {
+        "direction": "positive",
+        "functional_form": "linear",
+        "strength_estimate": "r = 0.2-0.4"
+      },
+      "mechanism": "Ammonia emissions react with NOx to form compounds participating in ozone formation chemistry. Livestock systems contribute reactive nitrogen availability that drives ozone formation.",
+      "data_source": {
+        "name": "EDGAR Emissions Inventory",
+        "organization": "EC Joint Research Centre",
+        "url": "https://edgar.jrc.ec.europa.eu/emissions_data_and_maps",
+        "format": "NetCDF",
+        "accessibility": "open",
+        "coverage": "Global, 0.1\u00b0 \u00d7 0.1\u00b0 gridded, 1970-2022"
+      },
+      "confidence": "speculative",
+      "evidence_type": "programmatic_verify",
+      "literature_evidence": null,
+      "caveats": [
+        "Correlation strongest in intensive agricultural regions",
+        "Weak or absent correlation in non-agricultural areas",
+        "Mechanism depends on regional NOx availability"
+      ],
+      "references": [
+        "https://edgar.jrc.ec.europa.eu/emissions_data_and_maps",
+        "https://acsess.onlinelibrary.wiley.com/doi/10.1002/jeq2.20259"
+      ]
+    },
+    {
+      "id": "OEB-H11",
+      "context": {
+        "geographic_scope": "tropical and forested regions",
+        "time_period": "annual, 2000-present",
+        "subpopulations": null
+      },
+      "target_variable": "OEB",
+      "proxy_variable": "Deforestation Rate",
+      "proxy_description": "Annual deforestation rate in hectares per year or proportion of land area converted from forest to other uses",
+      "relationship": {
+        "direction": "nonlinear",
+        "functional_form": "threshold",
+        "strength_estimate": "r = 0.2-0.3 (unclear sign)"
+      },
+      "mechanism": "Deforestation reduces biogenic VOC emissions but typically increases anthropogenic activity (roads, agriculture). Net effect on ozone depends on whether loss of biogenic emissions outweighs increased human activity.",
+      "data_source": {
+        "name": "Global Forest Watch",
+        "organization": "World Resources Institute",
+        "url": "https://ourworldindata.org/deforestation",
+        "format": "GeoTIFF",
+        "accessibility": "open",
+        "coverage": "Global, 30m resolution, annual since 2000"
+      },
+      "confidence": "speculative",
+      "evidence_type": "programmatic_verify",
+      "literature_evidence": null,
+      "caveats": [
+        "Directionally ambiguous effect on ozone",
+        "Depends on type of land-use conversion",
+        "Temporal lag between deforestation and emission changes"
+      ],
+      "references": [
+        "https://ourworldindata.org/deforestation"
+      ]
+    },
+    {
+      "id": "OEB-H12",
+      "context": {
+        "geographic_scope": "global",
+        "time_period": "daily/annual",
+        "subpopulations": null
+      },
+      "target_variable": "OEB",
+      "proxy_variable": "Heat Wave and Stagnation Episode Frequency",
+      "proxy_description": "Annual count of heat-wave days (temperature >35\u00b0C or >2 SD above normal) and stagnation episodes (anticyclonic days, wind <1.5 m/s)",
+      "relationship": {
+        "direction": "positive",
+        "functional_form": "linear",
+        "strength_estimate": "r = 0.4-0.6"
+      },
+      "mechanism": "Photochemical ozone formation accelerates at higher temperatures. Heat extremes coincide with high solar radiation and suppressed vertical mixing, creating ideal conditions for ozone accumulation.",
+      "data_source": {
+        "name": "ERA5 Reanalysis",
+        "organization": "ECMWF/Copernicus",
+        "url": null,
+        "format": "NetCDF",
+        "accessibility": "open",
+        "coverage": "Global gridded, daily, calculated from temperature and wind data"
+      },
+      "confidence": "speculative",
+      "evidence_type": "programmatic_verify",
+      "literature_evidence": null,
+      "caveats": [
+        "Climate variables correlate with many other environmental outcomes",
+        "Heat wave definition varies by region",
+        "Requires statistical calculation from meteorological data"
+      ],
+      "references": [
+        "https://www.c2es.org/content/heat-waves-and-climate-change/"
+      ]
+    },
+    {
+      "id": "OEB-H13",
+      "context": {
+        "geographic_scope": "global",
+        "time_period": "monthly/annual, 2012-present",
+        "subpopulations": null
+      },
+      "target_variable": "OEB",
+      "proxy_variable": "Nighttime Lights Intensity",
+      "proxy_description": "Annual average nighttime radiance in nanoWatts per steradian per cm\u00b2 from satellite instruments, indicating economic activity and energy use",
+      "relationship": {
+        "direction": "positive",
+        "functional_form": "log-linear",
+        "strength_estimate": "r = 0.3-0.5"
+      },
+      "mechanism": "Nighttime lights correlate with urbanization, industrial activity, vehicle traffic, and electricity consumption\u2014all sources of NOx and VOCs that drive ozone formation.",
+      "data_source": {
+        "name": "VIIRS DNB Nighttime Lights",
+        "organization": "NOAA Earth Observation Group",
+        "url": null,
+        "format": "GeoTIFF",
+        "accessibility": "open",
+        "coverage": "Global, 500m resolution, monthly/annual composites"
+      },
+      "confidence": "speculative",
+      "evidence_type": "programmatic_verify",
+      "literature_evidence": null,
+      "caveats": [
+        "Correlation may be confounded by GDP per capita",
+        "Saturation in very bright urban areas",
+        "Indirect relationship through multiple intermediate variables"
+      ],
+      "references": []
+    },
+    {
+      "id": "OEB-H14",
+      "context": {
+        "geographic_scope": "global forested regions",
+        "time_period": "2019-present",
+        "subpopulations": null
+      },
+      "target_variable": "OEB",
+      "proxy_variable": "Forest Biomass Accumulation Rate",
+      "proxy_description": "Change in forest above-ground biomass per year in tonnes C ha\u207b\u00b9 yr\u207b\u00b9 from GEDI lidar and optical remote sensing",
+      "relationship": {
+        "direction": "negative",
+        "functional_form": "linear",
+        "strength_estimate": "r = -0.3 to -0.6"
+      },
+      "mechanism": "Ozone reduces net carbon assimilation by impairing photosynthesis. Forests in high-ozone regions should accumulate biomass more slowly than those in low-ozone regions.",
+      "data_source": {
+        "name": "NASA GEDI",
+        "organization": "NASA ORNL DAAC",
+        "url": null,
+        "format": "HDF5",
+        "accessibility": "open",
+        "coverage": "\u00b151.6\u00b0 latitude, 25m resolution, 2019-present"
+      },
+      "confidence": "speculative",
+      "evidence_type": "manual_data_needed",
+      "literature_evidence": null,
+      "caveats": [
+        "Many factors affect biomass accumulation beyond ozone",
+        "Limited temporal depth since 2019",
+        "High residual variance from other environmental drivers"
+      ],
+      "references": []
+    },
+    {
+      "id": "OEB-H15",
+      "context": {
+        "geographic_scope": "fire-prone regions globally",
+        "time_period": "monthly, 2000-present",
+        "subpopulations": null
+      },
+      "target_variable": "OEB",
+      "proxy_variable": "Wildfire Emissions",
+      "proxy_description": "Annual area burned by wildfires in hectares or carbon emissions from biomass burning in megatonnes CO\u2082",
+      "relationship": {
+        "direction": "positive",
+        "functional_form": "log-linear",
+        "strength_estimate": "r = 0.3-0.5"
+      },
+      "mechanism": "Wildfires emit large quantities of NOx, VOCs, and organic aerosols that participate in ozone chemistry. Biomass burning can be a major source of ozone precursors during fire seasons.",
+      "data_source": {
+        "name": "MODIS Burnt Area (MCD64A1)",
+        "organization": "NASA Land Processes DAAC",
+        "url": null,
+        "format": "HDF4",
+        "accessibility": "open",
+        "coverage": "Global, 500m resolution, monthly since 2000"
+      },
+      "confidence": "speculative",
+      "evidence_type": "programmatic_verify",
+      "literature_evidence": null,
+      "caveats": [
+        "Strongest correlation in fire-prone regions only",
+        "Potential reverse causality (ozone damage increases fire risk)",
+        "Seasonal and inter-annual variability in fire patterns"
+      ],
+      "references": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC3763857/"
+      ]
+    },
+    {
+      "id": "OEB-H16",
+      "context": {
+        "geographic_scope": "Europe, North America, limited elsewhere",
+        "time_period": "annual to weekly",
+        "subpopulations": "ozone-sensitive allergenic taxa"
+      },
+      "target_variable": "OEB",
+      "proxy_variable": "Pollen Production",
+      "proxy_description": "Annual pollen counts in grains per cubic meter for ozone-sensitive taxa like ragweed, grasses, and oak",
+      "relationship": {
+        "direction": "negative",
+        "functional_form": "log-linear",
+        "strength_estimate": "r = -0.2 to -0.4"
+      },
+      "mechanism": "Ozone inhibits pollen tube growth, reduces pollen viability, and accelerates plant senescence, potentially shortening breeding seasons and reducing reproductive output.",
+      "data_source": {
+        "name": "European Aerobiology Network",
+        "organization": "International Association of Aerobiology",
+        "url": null,
+        "format": "CSV, Excel",
+        "accessibility": "open",
+        "coverage": "Dense in Europe/North America, sparse elsewhere"
+      },
+      "confidence": "speculative",
+      "evidence_type": "manual_data_needed",
+      "literature_evidence": null,
+      "caveats": [
+        "Extremely sparse coverage in KBAs and developing regions",
+        "High variability due to temperature and precipitation effects",
+        "Pollen season timing varies by species and climate"
+      ],
+      "references": [
+        "https://www.nrcs.usda.gov/sites/default/files/2022-10/Ozone-Research-Review.pdf"
+      ]
+    }
+  ]
+}

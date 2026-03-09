@@ -1,0 +1,25 @@
+{
+  "hypothesis_id": "WRR-H06",
+  "verdict": "partially_confirmed",
+  "verification_method": "statistical_test",
+  "raw_correlation": {
+    "pearson_r": 0.4921023260394516,
+    "pearson_p": 8.112896437680762e-27,
+    "spearman_rho": 0.5004098195679212,
+    "spearman_p": 8.245204893137065e-28,
+    "n_observations": 417,
+    "n_countries": 125
+  },
+  "partial_correlation": null,
+  "functional_form": {
+    "best_form": "quadratic",
+    "linear_r2": 0.24216469929343876,
+    "linear_aic": -963.1540459143404,
+    "log_linear_r2": null,
+    "log_linear_aic": null,
+    "quadratic_r2": 0.2490642803973031,
+    "quadratic_aic": -964.9679385958198
+  },
+  "data_quality_notes": "Proxy used: WB:TX.VAL.MANF.ZS.UN \u2014 Manufactures exports (% of merchandise exports). NOTE: UN Comtrade direct recycled material trade flow data (the originally specified proxy) requires authenticated API access and was not available. The hypothesis specifies recycled material trade flows (metals, paper, plastics, glass as % of total material consumption) from UN Comtrade. This script uses a World Bank substitute indicator which is an imperfect proxy. China's 2018 import ban is a major structural break in recycled material trade. HS code inconsistency and price volatility are additional data quality concerns. Confounding with GDP/wealth is strong \u2014 wealthier countries both trade more AND have higher recycling rates. Using WB indicator TX.VAL.MANF.ZS.UN (Manufactures exports (% of merchandise exports)) as substitute for recycled material trade flows (UN Comtrade unavailable without auth) | Partial correlation computation failed: 'p-val' | Functional form test failed: unsupported format string passed to NoneType.__format__",
+  "summary": "Using WB:TX.VAL.MANF.ZS.UN \u2014 Manufactures exports (% of merchandise exports) as substitute for recycled material trade flows (UN Comtrade unavailable without authentication). Bivariate: Pearson r=0.492 (p=0.000), Spearman rho=0.500 (p=0.000), n=417 obs across 125 countries. Partial correlation not computed (computation failed or insufficient data). Best functional form: quadratic. Verdict: partially_confirmed."
+}

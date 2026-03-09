@@ -1,0 +1,17 @@
+{
+  "no_synthetic_data": true,
+  "year_alignment_ok": true,
+  "hypothesis_interpretation_ok": false,
+  "data_source_authentic": false,
+  "country_coverage_adequate": true,
+  "outlier_concerns": false,
+  "mechanistic_explanation": "The hypothesis proposes that environmental detection of fecal indicator organisms (E. coli, enterococcus, viral markers) in surface water predicts unsafe water and sanitation outcomes because these organisms are direct markers of fecal contamination risk. However, the verification script substitutes open defecation rate—a behavioral/infrastructure measure—for the direct pathogen detection proxy. While related conceptually, open defecation rate measures sanitation coverage gaps rather than actual pathogen presence in water, fundamentally shifting the causal mechanism from 'detected pathogens cause unsafe water' to 'poor sanitation correlates with unsafe water.'",
+  "issues": [
+    "CRITICAL: Proxy variable substitution is material and unwarranted. The hypothesis specifies 'E. coli, enterococcus, or viral markers in surface water samples' or 'fecal contamination index'—direct environmental measurements. The script substitutes 'Open defecation rate' (WB indicator SH.STA.ODFC.ZS), which is a behavioral/infrastructure proxy, not an environmental pathogen detection measure. These are conceptually different variables.",
+    "CRITICAL: Data source is not authentic. The hypothesis cites 'WHO/UNICEF Environmental Pathogen Surveillance Network' but the script uses World Bank indicators (WB code SH.STA.ODFC.ZS). The data_quality_notes acknowledge 'Direct E. coli/enterococcus monitoring data (original hypothesis proxy) is not available in any global database with sufficient country coverage,' but the substitute is documented only as a necessity fallback, not as equivalent to the hypothesis proxy.",
+    "HIGH: The functional form test used 'quadratic' with only modest improvement over linear (R² 0.540 vs 0.523, AIC 57224 vs 57378). With n=4125 observations across 194 countries, even tiny effect improvements reach statistical significance. The quadratic form may be an artifact of the substituted proxy rather than evidence of a threshold mechanism as hypothesized.",
+    "MODERATE: Partial correlation controlling for log(GPC) failed with error 'p-val' and was not computed. The summary notes this as 'not computed' without explaining the failure. Economic development confounds the relationship between sanitation and UWD; the inability to separate this makes causal interpretation unreliable.",
+    "MODERATE: The 194 countries with 4125 observations appear to include all EPI countries. However, the hypothesis explicitly states ~20–30 countries with robust data for the *actual proxy* (pathogen surveillance). The script's 194-country dataset reflects the availability of sanitation data, not the geographic scope appropriate for the original hypothesis."
+  ],
+  "overall_assessment": "major_issues"
+}

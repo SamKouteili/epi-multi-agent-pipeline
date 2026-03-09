@@ -1,0 +1,17 @@
+{
+  "no_synthetic_data": true,
+  "year_alignment_ok": true,
+  "hypothesis_interpretation_ok": false,
+  "data_source_authentic": false,
+  "country_coverage_adequate": true,
+  "outlier_concerns": false,
+  "mechanistic_explanation": "The hypothesis posits that food waste legislation (segregation mandates, donation requirements, landfill bans) directly increases waste recovery rates by forcing organic waste toward composting pathways. However, the verification script substituted 'safely managed sanitation services' (SH.STA.SMSS.ZS) — a water/sanitation governance indicator — as the proxy, which is conceptually distant from food waste legislation and measures a different environmental domain entirely. The connection between sanitation infrastructure and waste recovery is indirect and mediated through general governance capacity, not through the specific mechanism of food waste diversion mandates.",
+  "issues": [
+    "CRITICAL: Proxy variable substitution is not reasonable. The hypothesis specifies a binary/ordinal indicator of food waste legislation (segregation mandates, donation requirements, landfill bans). The script used SH.STA.SMSS.ZS (safely managed sanitation %), which measures water/sanitation access, not food waste policy. This is a materially different variable from different policy domain.",
+    "CRITICAL: Data source not authentic. The hypothesis requires REFASH legislative database or equivalent food waste legislation tracking. The script substituted a World Bank sanitation indicator without documenting this as a forced substitution due to data unavailability. The data_quality_notes acknowledges the approximation but the verdict was still marked 'confirmed' (r=0.686), which conflates sanitation governance correlation with food waste legislation effectiveness.",
+    "MAJOR: Hypothesis interpretation compromised. Testing sanitation services as a proxy for food waste legislation is not a reasonable substitution — it measures different infrastructure, different policy mechanisms, and different environmental outcomes. Sanitation is about human health/water safety; food waste legislation is about circular economy/waste diversion. The causal mechanisms are distinct.",
+    "Data source mismatch documented in notes but verdict not downgraded. The script correctly identifies in data_quality_notes that 'the original hypothesis required a binary dataset of food waste segregation mandates from REFASH legislative database, which is not machine-readable' and marks it as 'approximate proxy'. However, the verdict remains 'confirmed' with strong correlation (r=0.686, p<0.001) based on an unrelated indicator. This is misleading — a strong sanitation–WRR correlation does not validate a food waste legislation hypothesis.",
+    "Mechanistic implausibility obscured by strong statistical association. The correlation is strong (r=0.686) but spurious relative to the stated hypothesis. Both WRR and sanitation services are driven by general environmental governance/economic capacity, creating confounding rather than causal evidence. No partial correlation controlling for GDP was successfully run (n=369 merged observations but GPC merge failed), so the confounding cannot be assessed."
+  ],
+  "overall_assessment": "major_issues"
+}

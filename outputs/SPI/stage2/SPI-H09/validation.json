@@ -1,0 +1,16 @@
+{
+  "no_synthetic_data": true,
+  "year_alignment_ok": true,
+  "hypothesis_interpretation_ok": false,
+  "data_source_authentic": false,
+  "country_coverage_adequate": true,
+  "outlier_concerns": false,
+  "mechanistic_explanation": "Heavy fertilizer and pesticide use in agricultural regions creates nutrient runoff and chemical pollution that contaminates water bodies and soils, including those within protected areas through groundwater and surface water connectivity. This pollution causes eutrophication and toxicity that reduce aquatic and terrestrial species richness and abundance within protected ecosystems. However, country-level agricultural chemical aggregates are too coarse to capture the spatially heterogeneous impacts on protected area catchments, likely explaining the near-zero observed correlation.",
+  "issues": [
+    "hypothesis_interpretation_ok: The hypothesis specifies 'Pesticide and Fertilizer Application Intensity' as the proxy, with explicit emphasis on pesticide use. The script uses only fertilizer consumption (AG.CON.FERT.ZS) as the primary proxy after pesticide data (AG.CON.PEST.ZS) returned empty. This is a material substitution—pesticides and fertilizers have different chemical toxicity profiles and environmental pathways, and the hypothesis mechanism specifically emphasizes 'heavy pesticide use' and 'chemical pollution.' Using fertilizer alone does not adequately represent the proxy variable as described.",
+    "data_source_authentic: The hypothesis specifies FAO pesticide statistics (https://www.worldometers.info/food-agriculture/pesticides-by-country/) as the data source. The script attempts World Bank indicators (AG.CON.FERT.ZS and AG.CON.PEST.ZS) instead. While these are FAO-sourced data delivered through World Bank, the specific Worldometers source was not accessed, and the substitution to fertilizer-only was not explicitly documented in data_quality_notes as a necessary adaptation (it is mentioned, but framed as a fallback rather than a documented limitation of accessing the original source).",
+    "year_alignment_ok: The script uses cross-sectional analysis (most recent year per country) but matches GPC via 'nearest available year' rather than exact year match. For cross-sectional analysis, this nearest-year join is reasonable, but it introduces temporal slippage. The script does not clearly flag this as a potential source of error in causal inference, particularly when the nearest year may be several years apart.",
+    "country_coverage_adequate: While n=177 countries appears adequate, the cross-sectional design (most recent year per country) collapses temporal variation and may mask important dynamics. The script switches between full panel (n=177) and cross-sectional designs without clear justification for the 30-observation threshold chosen."
+  ],
+  "overall_assessment": "major_issues"
+}

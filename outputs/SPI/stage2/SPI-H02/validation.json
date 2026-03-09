@@ -1,0 +1,19 @@
+{
+  "no_synthetic_data": true,
+  "year_alignment_ok": false,
+  "hypothesis_interpretation_ok": false,
+  "data_source_authentic": false,
+  "country_coverage_adequate": true,
+  "outlier_concerns": false,
+  "mechanistic_explanation": "The hypothesis posits that local biodiversity intactness (LBII) correlates positively with national species protection effectiveness (SPI): countries preserving more of their original biodiversity through intact ecosystems should show stronger protected area outcomes. However, the verification used EN.CLC.MDAT.ZS (mean area protected in biodiversity-important sites), which directly measures protected area coverage rather than biodiversity intactness—a fundamentally different construct that conflates the proxy with a component of the target variable itself.",
+  "issues": [
+    "CRITICAL: Proxy substitution is conceptually invalid. LBII measures biodiversity persistence under land-use pressure; EN.CLC.MDAT.ZS measures the percentage of important biodiversity sites that are protected. These are not equivalent. EN.CLC.MDAT.ZS is itself a protection metric (similar to what SPI measures), creating circular reasoning rather than testing a causal mechanism.",
+    "CRITICAL: True LBII was never accessed. The hypothesis explicitly specifies LBII from GEO BON/UN Biodiversity Lab (raster/GeoTIFF, 1km resolution, 2001-present). The script attempted only World Bank indicators after failing to download the original source, then settled on EN.CLC.MDAT.ZS without documenting this fundamental substitution in mechanistic terms.",
+    "CRITICAL: Year alignment issue. The script uses the 'latest year per country' for both proxy and target (cross-sectional snapshot), collapsing all temporal variation. The hypothesis specifies a time period of '2001-present,' but the verification discards the temporal dimension entirely, making it impossible to test the hypothesis as stated.",
+    "Year alignment detail: By selecting only the most recent non-null observation per country for both variables, the script does not ensure proxy and target years match. If SPI's most recent year is 2020 for country A and the EN.CLC.MDAT.ZS most recent year is 2015, they are merged without temporal alignment, introducing a systematic bias.",
+    "Data source mismatch not transparently flagged. The data_quality_notes acknowledge that 'True LBII (raster product at 1km resolution) was not accessible as country-level tabular data,' but this is buried. The mechanism section should have stated upfront that EN.CLC.MDAT.ZS is a poor proxy because it measures protection, not intactness.",
+    "Negative correlation result (-r=0.145, p=0.07) contradicts the hypothesis's predicted positive direction, but this outcome is largely an artifact of the proxy substitution rather than evidence against the true LBII mechanism.",
+    "No attempt to aggregate LBII raster data to country level. The script could have downloaded the GeoTIFF, computed country-level mean intactness values, and merged with SPI. Instead, it gave up and used an unrelated World Bank indicator."
+  ],
+  "overall_assessment": "major_issues"
+}

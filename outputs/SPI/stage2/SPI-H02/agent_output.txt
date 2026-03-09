@@ -1,0 +1,774 @@
+=== Attempt 1 — Claude response ===
+```python
+"""
+SPI-H02: Verify hypothesis that Local Biodiversity Intactness Index (LBII)
+correlates positively with Species Protection Index (SPI).
+
+The primary LBII data source is a raster/GeoTIFF from GEO BON / UN Biodiversity Lab,
+which is not directly downloadable as tabular country-level data. We will attempt to:
+1. Find a World Bank or related tabular proxy for LBII
+2. Try the Natural State / Biodiversity Habitat Index from World Bank
+3. Fall back to the Biodiversity Intactness Index from PREDICTS via World Bank
+4. If all fail, return inconclusive
+"""
+
+import json
+import os
+import numpy as np
+import pandas as pd
+import requests
+
+from src.utils.stats import (
+    run_bivariate_correlation,
+    run_partial_correlation,
+    determine_verdict,
+    build_result_json,
+    test_functional_form,
+)
+from src.utils.data_utils import load_raw_indicator
+from src.utils.data_fetch import (
+    fetch_world_bank_indicator,
+    search_world_bank,
+    list_local_indicators,
+    LOCAL_CONTROLS,
+)
+
+output_path = "/Users/samkouteili/rose/epi/multi-agent/outputs/SPI/stage2/SPI-H02"
+os.makedirs(output_path, exist_ok=True)
+
+print("=" * 60)
+print("SPI-H02: LBII vs Species Protection Index")
+print("=" * 60)
+
+# -------------------------------------------------------------------
+# 1. Load EPI target data
+# -------------------------------------------------------------------
+print("\n[1] Loading SPI target indicator...")
+target = load_raw_indicator("SPI")
+print(f"    SPI data shape: {target.shape}")
+print(f"    Years: {sorted(target['year'].unique())[:5]} ... {sorted(target['year'].unique())[-5:]}")
+print(f"    Countries: {target['iso'].nunique()}")
+
+# -------------------------------------------------------------------
+# 2. Attempt to acquire LBII proxy data
+# -------------------------------------------------------------------
+print("\n[2] Attempting to acquire LBII proxy data...")
+
+proxy = None
+proxy_notes = []
+
+# --- Attempt A: Try World Bank BII / related indicators ---
+print("    [A] Searching World Bank for Biodiversity Intactness...")
+wb_codes_to_try = [
+    ("ER.LND.BIOM.ZS", "Terrestrial and marine protected areas (% of total territorial area)"),
+    ("EN.BIO.INTIC", "Biodiversity Intactness Index"),
+    ("EN.CLC.MDAT.ZS", "Mean area that is protected in terrestrial sites important to biodiversity (%)"),
+    ("ER.PTD.TOTL.ZS", "Terrestrial protected areas (% of total land area)"),
+]
+
+for code, desc in wb_codes_to_try:
+    print(f"    Trying WB code: {code} ({desc})")
+    try:
+        df_wb = fetch_world_bank_indicator(code)
+        if df_wb is not None and len(df_wb) > 100:
+            proxy = df_wb.rename(columns={"value": "proxy_value"})
+            proxy_notes.append(f"Used World Bank indicator {code} ({desc}) as LBII substitute.")
+            print(f"    SUCCESS: {len(proxy)} records from {code}")
+            break
+        else:
+            print(f"    Insufficient data from {code}")
+    except Exception as e:
+        print(f"    Failed: {e}")
+
+# --- Attempt B: Try to download country-level LBII from known sources ---
+if proxy is None:
+    print("    [B] Trying to download LBII data from UN Biodiversity Lab / NatureMap...")
+    urls_to_try = [
+        "https://raw.githubusercontent.com/PREDICTS-biodiversity/lbii-country-data/main/lbii_country.csv",
+        "https://data.nhm.ac.uk/dataset/lbii/resource/country_lbii.csv",
+    ]
+    for url in urls_to_try:
+        try:
+            resp = requests.get(url, timeout=15)
+            if resp.status_code == 200:
+                from io import StringIO
+                df_lbii = pd.read_csv(StringIO(resp.text))
+                print(f"    SUCCESS: Downloaded from {url}, shape={df_lbii.shape}")
+                print(f"    Columns: {list(df_lbii.columns)}")
+                # Try to standardize
+                proxy = df_lbii
+                proxy_notes.append(f"Downloaded LBII from {url}")
+                break
+        except Exception as e:
+            print(f"    Failed {url}: {e}")
+
+# --- Attempt C: Try Natural Capital Index or Forest landscape integrity ---
+if proxy is None:
+    print("    [C] Trying Forest Landscape Integrity Index as LBII proxy...")
+    try:
+        # Forest landscape integrity (Grantham et al.) is close to intactness
+        df_flii = fetch_world_bank_indicator("EN.BIO.INTIC.ZS")
+        if df_flii is not None and len(df_flii) > 50:
+            proxy = df_flii.rename(columns={"value": "proxy_value"})
+            proxy_notes.append("Used EN.BIO.INTIC.ZS as LBII proxy.")
+            print(f"    SUCCESS: {len(proxy)} records")
+    except Exception as e:
+        print(f"    Failed: {e}")
+
+# --- Attempt D: Use mean area protected in important biodiversity sites (BII-correlated) ---
+if proxy is None:
+    print("    [D] Trying EN.CLC.MDAT.ZS (protected area coverage in important biodiversity sites)...")
+    try:
+        df_d = fetch_world_bank_indicator("EN.CLC.MDAT.ZS")
+        if df_d is not None and len(df_d) > 100:
+            proxy = df_d.rename(columns={"value": "proxy_value"})
+            proxy_notes.append("Used EN.CLC.MDAT.ZS (mean area protected in important bio sites) as closest WB proxy.")
+            print(f"    SUCCESS: {len(proxy)} records")
+    except Exception as e:
+        print(f"    Failed: {e}")
+
+# --- Attempt E: Broader WB search ---
+if proxy is None:
+    print("    [E] Broader search for biodiversity intactness indicators...")
+    try:
+        results = search_world_bank("biodiversity intactness habitat")
+        print(f"    Found {len(results)} results")
+        if len(results) > 0:
+            print(f"    Top results: {results[:5]}")
+    except Exception as e:
+        print(f"    Search failed: {e}")
+
+# --- Attempt F: Try Human Footprint / Land Use Pressure as inverse proxy ---
+if proxy is None:
+    print("    [F] Trying Human Footprint / Land Use Pressure (inverse LBII proxy)...")
+    try:
+        # AG.LND.AGRI.ZS = agricultural land % — inverse of intactness
+        df_agri = fetch_world_bank_indicator("AG.LND.AGRI.ZS")
+        if df_agri is not None and len(df_agri) > 200:
+            df_agri["proxy_value"] = 100 - df_agri["value"]  # invert: less agriculture = more intactness
+            proxy = df_agri[["iso", "year", "proxy_value"]]
+            proxy_notes.append(
+                "LBII data not available as tabular country data. "
+                "Used (100 - agricultural land %) as a rough inverse proxy for land use pressure/intactness. "
+                "Note: This is a very indirect proxy."
+            )
+            print(f"    SUCCESS: {len(proxy)} records (using inverse of agricultural land %)")
+    except Exception as e:
+        print(f"    Failed: {e}")
+
+# -------------------------------------------------------------------
+# 3. Merge and analyze
+# -------------------------------------------------------------------
+if proxy is None:
+    print("\n[!] All proxy data acquisition attempts failed.")
+    print("    Writing INCONCLUSIVE result...")
+    
+    result = {
+        "hypothesis_id": "SPI-H02",
+        "verdict": "inconclusive",
+        "verification_method": "statistical_test",
+        "data_quality_notes": (
+            "LBII (Local Biodiversity Intactness Index) is distributed as a 1km raster/GeoTIFF "
+            "and no tabular country-level version was accessible. "
+            "Attempted: (1) World Bank API for LBII-related indicators, "
+            "(2) Direct URL downloads from NatureMap/PREDICTS repositories, "
+            "(3) Alternative biodiversity indicators. "
+            "None returned sufficient country-level tabular data for correlation analysis."
+        ),
+        "summary": (
+            "Unable to verify SPI-H02 due to data inaccessibility. "
+            "LBII is available only as a global raster product; no country-level aggregated "
+            "version was found via accessible APIs or open data repositories."
+        ),
+    }
+    
+    out_file = f"{output_path}/result.json"
+    with open(out_file, "w") as f:
+        json.dump(result, f, indent=2)
+    print(f"    Saved to {out_file}")
+
+else:
+    print(f"\n[3] Merging proxy ({len(proxy)} records) with SPI target ({len(target)} records)...")
+    
+    # Use most recent available year for each country (or match on year)
+    # Filter SPI to recent years (2015-2024) for best coverage
+    target_recent = target[target["year"] >= 2015].copy()
+    
+    merged = target_recent.merge(proxy, on=["iso", "year"])
+    merged = merged.dropna(subset=["value", "proxy_value"])
+    
+    print(f"    Merged shape: {merged.shape}")
+    print(f"    Countries: {merged['iso'].nunique()}")
+    print(f"    Years: {sorted(merged['year'].unique())}")
+    
+    if len(merged) < 20:
+        print("    Insufficient overlap — trying all years...")
+        merged = target.merge(proxy, on=["iso", "year"])
+        merged = merged.dropna(subset=["value", "proxy_value"])
+        print(f"    All-years merged shape: {merged.shape}")
+    
+    if len(merged) < 10:
+        print("[!] Still insufficient data — writing INCONCLUSIVE")
+        result = {
+            "hypothesis_id": "SPI-H02",
+            "verdict": "inconclusive",
+            "verification_method": "statistical_test",
+            "data_quality_notes": "; ".join(proxy_notes) + f" Only {len(merged)} matched observations.",
+            "summary": "Insufficient matched data for statistical testing.",
+        }
+        out_file = f"{output_path}/result.json"
+        with open(out_file, "w") as f:
+            json.dump(result, f, indent=2)
+        print(f"    Saved to {out_file}")
+    else:
+        # -------------------------------------------------------------------
+        # 4. Bivariate correlation
+        # -------------------------------------------------------------------
+        print("\n[4] Running bivariate correlation...")
+        corr = run_bivariate_correlation(
+            merged["proxy_value"], merged["value"], iso=merged["iso"]
+        )
+        print(f"    Pearson r={corr.pearson_r:.4f}, p={corr.pearson_p:.4e}")
+        print(f"    Spearman rho={corr.spearman_rho:.4f}, p={corr.spearman_p:.4e}")
+        print(f"    N={corr.n_observations}, Countries={corr.n_countries}")
+        
+        # -------------------------------------------------------------------
+        # 5. Partial correlation controlling for log(GDP per capita)
+        # -------------------------------------------------------------------
+        print("\n[5] Running partial correlation controlling for log(GDP per capita)...")
+        gpc = load_raw_indicator("GPC")
+        merged_gpc = merged.merge(
+            gpc[["iso", "year", "value"]].rename(columns={"value": "gpc"}),
+            on=["iso", "year"]
+        )
+        merged_gpc = merged_gpc.dropna(subset=["gpc"])
+        merged_gpc["log_gpc"] = np.log(merged_gpc["gpc"].clip(lower=1))
+        
+        print(f"    N after GPC merge: {len(merged_gpc)}")
+        
+        partial = None
+        if len(merged_gpc) >= 20:
+            partial = run_partial_correlation(merged_gpc, "proxy_value", "value", ["log_gpc"])
+            print(f"    Partial r={partial.partial_r:.4f}, p={partial.partial_p:.4e}")
+        else:
+            print("    Insufficient data for partial correlation")
+        
+        # -------------------------------------------------------------------
+        # 6. Functional form test
+        # -------------------------------------------------------------------
+        print("\n[6] Testing functional form...")
+        form = test_functional_form(merged["proxy_value"], merged["value"])
+        print(f"    Best form: {form.best_form.value}")
+        print(f"    Linear R²={form.linear_r2:.4f}, AIC={form.linear_aic:.2f}")
+        print(f"    Log-linear R²={form.log_linear_r2:.4f}, AIC={form.log_linear_aic:.2f}")
+        print(f"    Quadratic R²={form.quadratic_r2:.4f}, AIC={form.quadratic_aic:.2f}")
+        
+        # -------------------------------------------------------------------
+        # 7. Verdict
+        # -------------------------------------------------------------------
+        print("\n[7] Determining verdict...")
+        verdict = determine_verdict(corr, partial, "positive")
+        print(f"    Verdict: {verdict.value}")
+        
+        # -------------------------------------------------------------------
+        # 8. Build and save result
+        # -------------------------------------------------------------------
+        data_notes = "; ".join(proxy_notes)
+        data_notes += (
+            f" Analysis used {corr.n_observations} observations across {corr.n_countries} countries. "
+            "Note: True LBII (raster product) could not be obtained as country-level tabular data; "
+            "a proxy indicator was substituted (see proxy_notes)."
+        )
+        
+        summary = (
+            f"Using a substitute proxy for LBII, the bivariate correlation with SPI is "
+            f"r={corr.pearson_r:.3f} (p={corr.pearson_p:.3e}, n={corr.n_observations}). "
+        )
+        if partial is not None:
+            summary += (
+                f"After controlling for log(GDP per capita), partial r={partial.partial_r:.3f} "
+                f"(p={partial.partial_p:.3e}). "
+            )
+        summary += (
+            f"Best functional form: {form.best_form.value}. "
+            f"Verdict: {verdict.value}. "
+            "Caution: True LBII data was not available; results reflect the substitute proxy."
+        )
+        
+        result = build_result_json(
+            "SPI-H02",
+            verdict,
+            corr,
+            partial,
+            functional_form=form,
+            data_quality_notes=data_notes,
+            summary=summary,
+        )
+        result["verification_method"] = "statistical_test"
+        
+        out_file = f"{output_path}/result.json"
+        with open(out_file, "w") as f:
+            json.dump(result, f, indent=2)
+        print(f"\n[8] Result saved to {out_file}")
+        print(json.dumps(result, indent=2))
+
+print("\nDone.")
+```
+=== Attempt 1 — stdout ===
+============================================================
+SPI-H02: LBII vs Species Protection Index
+============================================================
+
+[1] Loading SPI target indicator...
+    SPI data shape: (8010, 5)
+    Years: [np.int64(1980), np.int64(1981), np.int64(1982), np.int64(1983), np.int64(1984)] ... [np.int64(2020), np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+    Countries: 178
+
+[2] Attempting to acquire LBII proxy data...
+    [A] Searching World Bank for Biodiversity Intactness...
+    Trying WB code: ER.LND.BIOM.ZS (Terrestrial and marine protected areas (% of total territorial area))
+    Insufficient data from ER.LND.BIOM.ZS
+    Trying WB code: EN.BIO.INTIC (Biodiversity Intactness Index)
+    Insufficient data from EN.BIO.INTIC
+    Trying WB code: EN.CLC.MDAT.ZS (Mean area that is protected in terrestrial sites important to biodiversity (%))
+    SUCCESS: 166 records from EN.CLC.MDAT.ZS
+
+[3] Merging proxy (166 records) with SPI target (8010 records)...
+    Merged shape: (0, 6)
+    Countries: 0
+    Years: []
+    Insufficient overlap — trying all years...
+    All-years merged shape: (158, 6)
+
+[4] Running bivariate correlation...
+    Pearson r=-0.0085, p=9.1560e-01
+    Spearman rho=0.0676, p=3.9858e-01
+    N=158, Countries=158
+
+[5] Running partial correlation controlling for log(GDP per capita)...
+    N after GPC merge: 157
+    Partial r=0.0207, p=7.9775e-01
+
+[6] Testing functional form...
+    Best form: linear
+    Linear R²=0.0001, AIC=1036.86
+
+=== Attempt 1 — stderr ===
+World Bank returned unexpected payload for ER.LND.BIOM.ZS (possibly invalid code)
+World Bank returned unexpected payload for EN.BIO.INTIC (possibly invalid code)
+Traceback (most recent call last):
+  File "/Users/samkouteili/rose/epi/multi-agent/outputs/SPI/stage2/SPI-H02/verify.py", line 261, in <module>
+    print(f"    Log-linear R²={form.log_linear_r2:.4f}, AIC={form.log_linear_aic:.2f}")
+                              ^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: unsupported format string passed to NoneType.__format__
+
+=== Attempt 2 — Claude response ===
+The issue is that `form.log_linear_r2` and `form.log_linear_aic` are `None` when the log-linear fit fails (likely due to negative proxy values). I need to handle this gracefully. Also, the proxy (EN.CLC.MDAT.ZS) doesn't match years with SPI well, so I should use a better strategy. Let me fix both issues.
+
+```python
+"""
+SPI-H02: Verify hypothesis that Local Biodiversity Intactness Index (LBII)
+correlates positively with Species Protection Index (SPI).
+
+The primary LBII data source is a raster/GeoTIFF from GEO BON / UN Biodiversity Lab.
+We attempt multiple fallback proxies for LBII.
+"""
+
+import json
+import os
+import numpy as np
+import pandas as pd
+import requests
+
+from src.utils.stats import (
+    run_bivariate_correlation,
+    run_partial_correlation,
+    determine_verdict,
+    build_result_json,
+    test_functional_form,
+)
+from src.utils.data_utils import load_raw_indicator
+from src.utils.data_fetch import (
+    fetch_world_bank_indicator,
+    search_world_bank,
+)
+
+output_path = "/Users/samkouteili/rose/epi/multi-agent/outputs/SPI/stage2/SPI-H02"
+os.makedirs(output_path, exist_ok=True)
+
+print("=" * 60)
+print("SPI-H02: LBII vs Species Protection Index")
+print("=" * 60)
+
+# -------------------------------------------------------------------
+# 1. Load EPI target data
+# -------------------------------------------------------------------
+print("\n[1] Loading SPI target indicator...")
+target = load_raw_indicator("SPI")
+print(f"    SPI data shape: {target.shape}")
+print(f"    Countries: {target['iso'].nunique()}")
+print(f"    Years available: {sorted(target['year'].unique())}")
+
+# Use most recent year per country to maximize coverage
+target_latest = (
+    target.dropna(subset=["value"])
+    .sort_values("year")
+    .groupby("iso")
+    .last()
+    .reset_index()[["iso", "year", "value"]]
+)
+print(f"    Latest-year SPI: {len(target_latest)} countries")
+
+# -------------------------------------------------------------------
+# 2. Attempt to acquire LBII / biodiversity intactness proxy data
+# -------------------------------------------------------------------
+print("\n[2] Attempting to acquire LBII proxy data...")
+
+proxy = None
+proxy_source_desc = ""
+proxy_notes = []
+
+# --- Attempt A: EN.CLC.MDAT.ZS — mean protected area in important biodiversity sites ---
+print("    [A] Trying EN.CLC.MDAT.ZS (protected area in important biodiversity sites)...")
+try:
+    df_a = fetch_world_bank_indicator("EN.CLC.MDAT.ZS")
+    if df_a is not None and len(df_a) > 50:
+        # Use latest value per country
+        df_a_latest = (
+            df_a.dropna(subset=["value"])
+            .sort_values("year")
+            .groupby("iso")
+            .last()
+            .reset_index()[["iso", "value"]]
+            .rename(columns={"value": "proxy_value"})
+        )
+        if len(df_a_latest) >= 50:
+            proxy = df_a_latest
+            proxy_source_desc = "EN.CLC.MDAT.ZS (mean area protected in terrestrial sites important to biodiversity)"
+            proxy_notes.append(f"Used WB indicator EN.CLC.MDAT.ZS as biodiversity protection proxy (n={len(proxy)}).")
+            print(f"    SUCCESS: {len(proxy)} countries")
+        else:
+            print(f"    Too few countries: {len(df_a_latest)}")
+    else:
+        print(f"    Insufficient data")
+except Exception as e:
+    print(f"    Failed: {e}")
+
+# --- Attempt B: ER.PTD.TOTL.ZS — terrestrial protected areas % ---
+if proxy is None:
+    print("    [B] Trying ER.PTD.TOTL.ZS (terrestrial protected areas %)...")
+    try:
+        df_b = fetch_world_bank_indicator("ER.PTD.TOTL.ZS")
+        if df_b is not None and len(df_b) > 100:
+            df_b_latest = (
+                df_b.dropna(subset=["value"])
+                .sort_values("year")
+                .groupby("iso")
+                .last()
+                .reset_index()[["iso", "value"]]
+                .rename(columns={"value": "proxy_value"})
+            )
+            if len(df_b_latest) >= 50:
+                proxy = df_b_latest
+                proxy_source_desc = "ER.PTD.TOTL.ZS (terrestrial protected areas % of total land area)"
+                proxy_notes.append(f"Used WB ER.PTD.TOTL.ZS as biodiversity proxy (n={len(proxy)}).")
+                print(f"    SUCCESS: {len(proxy)} countries")
+            else:
+                print(f"    Too few countries: {len(df_b_latest)}")
+        else:
+            print(f"    Insufficient data")
+    except Exception as e:
+        print(f"    Failed: {e}")
+
+# --- Attempt C: AG.LND.FRST.ZS — forest area % (positive proxy for intactness) ---
+if proxy is None:
+    print("    [C] Trying AG.LND.FRST.ZS (forest area % as intactness proxy)...")
+    try:
+        df_c = fetch_world_bank_indicator("AG.LND.FRST.ZS")
+        if df_c is not None and len(df_c) > 100:
+            df_c_latest = (
+                df_c.dropna(subset=["value"])
+                .sort_values("year")
+                .groupby("iso")
+                .last()
+                .reset_index()[["iso", "value"]]
+                .rename(columns={"value": "proxy_value"})
+            )
+            if len(df_c_latest) >= 50:
+                proxy = df_c_latest
+                proxy_source_desc = "AG.LND.FRST.ZS (forest area % of land area, positive intactness proxy)"
+                proxy_notes.append(f"Used WB AG.LND.FRST.ZS forest coverage as LBII proxy (n={len(proxy)}).")
+                print(f"    SUCCESS: {len(proxy)} countries")
+            else:
+                print(f"    Too few countries: {len(df_c_latest)}")
+        else:
+            print(f"    Insufficient data")
+    except Exception as e:
+        print(f"    Failed: {e}")
+
+# --- Attempt D: AG.LND.AGRI.ZS — inverse of agricultural land (intactness proxy) ---
+if proxy is None:
+    print("    [D] Trying inverse of AG.LND.AGRI.ZS (100 - agricultural land %)...")
+    try:
+        df_d = fetch_world_bank_indicator("AG.LND.AGRI.ZS")
+        if df_d is not None and len(df_d) > 200:
+            df_d_latest = (
+                df_d.dropna(subset=["value"])
+                .sort_values("year")
+                .groupby("iso")
+                .last()
+                .reset_index()[["iso", "value"]]
+            )
+            df_d_latest["proxy_value"] = 100 - df_d_latest["value"]
+            df_d_latest = df_d_latest[["iso", "proxy_value"]]
+            if len(df_d_latest) >= 50:
+                proxy = df_d_latest
+                proxy_source_desc = "100 - AG.LND.AGRI.ZS (inverse agricultural land, rough intactness proxy)"
+                proxy_notes.append(
+                    f"Used (100 - agricultural land %) as rough inverse proxy for land use pressure (n={len(proxy)})."
+                )
+                print(f"    SUCCESS: {len(proxy)} countries")
+            else:
+                print(f"    Too few countries: {len(df_d_latest)}")
+        else:
+            print(f"    Insufficient data")
+    except Exception as e:
+        print(f"    Failed: {e}")
+
+# -------------------------------------------------------------------
+# 3. Merge proxy with SPI
+# -------------------------------------------------------------------
+if proxy is None:
+    print("\n[!] All proxy acquisition attempts failed — writing INCONCLUSIVE result.")
+    result = {
+        "hypothesis_id": "SPI-H02",
+        "verdict": "inconclusive",
+        "verification_method": "statistical_test",
+        "data_quality_notes": (
+            "LBII (Local Biodiversity Intactness Index) is distributed as a 1km raster/GeoTIFF. "
+            "No tabular country-level version was accessible via World Bank API, direct URL downloads, "
+            "or WHO GHO. All attempts to find substitute indicators also failed."
+        ),
+        "summary": (
+            "Unable to verify SPI-H02. LBII is available only as a global raster product and "
+            "no country-level aggregated version was found via accessible APIs or open data repositories."
+        ),
+    }
+    out_file = f"{output_path}/result.json"
+    with open(out_file, "w") as f:
+        json.dump(result, f, indent=2)
+    print(f"    Saved to {out_file}")
+
+else:
+    print(f"\n[3] Merging proxy with SPI (latest year per country)...")
+    print(f"    Proxy countries: {len(proxy)}")
+    print(f"    SPI latest-year countries: {len(target_latest)}")
+
+    # Merge on iso only (both are latest-value cross-sections)
+    merged = target_latest.merge(proxy, on="iso")
+    merged = merged.dropna(subset=["value", "proxy_value"])
+    print(f"    Merged: {len(merged)} countries")
+    print(f"    SPI range: {merged['value'].min():.2f} – {merged['value'].max():.2f}")
+    print(f"    Proxy range: {merged['proxy_value'].min():.2f} – {merged['proxy_value'].max():.2f}")
+
+    if len(merged) < 10:
+        print("[!] Insufficient merged data — writing INCONCLUSIVE.")
+        result = {
+            "hypothesis_id": "SPI-H02",
+            "verdict": "inconclusive",
+            "verification_method": "statistical_test",
+            "data_quality_notes": "; ".join(proxy_notes) + f" Only {len(merged)} matched observations.",
+            "summary": "Insufficient matched data for statistical testing.",
+        }
+        out_file = f"{output_path}/result.json"
+        with open(out_file, "w") as f:
+            json.dump(result, f, indent=2)
+        print(f"    Saved to {out_file}")
+
+    else:
+        # ---------------------------------------------------------------
+        # 4. Bivariate correlation
+        # ---------------------------------------------------------------
+        print("\n[4] Running bivariate correlation...")
+        corr = run_bivariate_correlation(
+            merged["proxy_value"], merged["value"], iso=merged["iso"]
+        )
+        print(f"    Pearson r={corr.pearson_r:.4f}, p={corr.pearson_p:.4e}")
+        print(f"    Spearman rho={corr.spearman_rho:.4f}, p={corr.spearman_p:.4e}")
+        print(f"    N={corr.n_observations}, Countries={corr.n_countries}")
+
+        # ---------------------------------------------------------------
+        # 5. Partial correlation controlling for log(GDP per capita)
+        # ---------------------------------------------------------------
+        print("\n[5] Running partial correlation controlling for log(GDP per capita)...")
+        gpc = load_raw_indicator("GPC")
+        gpc_latest = (
+            gpc.dropna(subset=["value"])
+            .sort_values("year")
+            .groupby("iso")
+            .last()
+            .reset_index()[["iso", "value"]]
+            .rename(columns={"value": "gpc"})
+        )
+        merged_gpc = merged.merge(gpc_latest, on="iso")
+        merged_gpc = merged_gpc.dropna(subset=["gpc"])
+        merged_gpc["log_gpc"] = np.log(merged_gpc["gpc"].clip(lower=1))
+        print(f"    N after GPC merge: {len(merged_gpc)}")
+
+        partial = None
+        if len(merged_gpc) >= 20:
+            partial = run_partial_correlation(merged_gpc, "proxy_value", "value", ["log_gpc"])
+            print(f"    Partial r={partial.partial_r:.4f}, p={partial.partial_p:.4e}")
+        else:
+            print("    Insufficient data for partial correlation")
+
+        # ---------------------------------------------------------------
+        # 6. Functional form test
+        # ---------------------------------------------------------------
+        print("\n[6] Testing functional form...")
+        form = test_functional_form(merged["proxy_value"], merged["value"])
+        print(f"    Best form: {form.best_form.value}")
+        print(f"    Linear     R²={form.linear_r2:.4f}, AIC={form.linear_aic:.2f}")
+
+        # Guard against None values when log-linear or quadratic fits fail
+        if form.log_linear_r2 is not None and form.log_linear_aic is not None:
+            print(f"    Log-linear R²={form.log_linear_r2:.4f}, AIC={form.log_linear_aic:.2f}")
+        else:
+            print("    Log-linear fit not available (possibly non-positive proxy values)")
+
+        if form.quadratic_r2 is not None and form.quadratic_aic is not None:
+            print(f"    Quadratic  R²={form.quadratic_r2:.4f}, AIC={form.quadratic_aic:.2f}")
+        else:
+            print("    Quadratic fit not available")
+
+        # ---------------------------------------------------------------
+        # 7. Verdict
+        # ---------------------------------------------------------------
+        print("\n[7] Determining verdict...")
+        verdict = determine_verdict(corr, partial, "positive")
+        print(f"    Verdict: {verdict.value}")
+
+        # ---------------------------------------------------------------
+        # 8. Build and save result
+        # ---------------------------------------------------------------
+        data_notes = (
+            f"Proxy used: {proxy_source_desc}. "
+            + "; ".join(proxy_notes)
+            + " True LBII (raster product at 1km resolution) was not accessible as country-level "
+            "tabular data. A World Bank substitute indicator was used instead. "
+            "Taxonomic bias toward vertebrates/plants is noted in PREDICTS; "
+            "this substitute does not fully capture local biodiversity intactness."
+        )
+
+        summary = (
+            f"Using '{proxy_source_desc}' as a substitute for LBII, "
+            f"bivariate correlation with SPI is r={corr.pearson_r:.3f} "
+            f"(p={corr.pearson_p:.3e}, n={corr.n_observations} countries). "
+            f"Spearman rho={corr.spearman_rho:.3f} (p={corr.spearman_p:.3e}). "
+        )
+        if partial is not None:
+            summary += (
+                f"After controlling for log(GDP/capita): partial r={partial.partial_r:.3f} "
+                f"(p={partial.partial_p:.3e}). "
+            )
+        summary += (
+            f"Best functional form: {form.best_form.value}. "
+            f"Verdict: {verdict.value}. "
+            "Note: Results reflect the substitute proxy, not true LBII."
+        )
+
+        result = build_result_json(
+            "SPI-H02",
+            verdict,
+            corr,
+            partial,
+            functional_form=form,
+            data_quality_notes=data_notes,
+            summary=summary,
+        )
+        result["verification_method"] = "statistical_test"
+
+        out_file = f"{output_path}/result.json"
+        with open(out_file, "w") as f:
+            json.dump(result, f, indent=2)
+        print(f"\n[8] Result saved to {out_file}")
+        print(json.dumps(result, indent=2))
+
+print("\nDone.")
+```
+=== Attempt 2 — stdout ===
+============================================================
+SPI-H02: LBII vs Species Protection Index
+============================================================
+
+[1] Loading SPI target indicator...
+    SPI data shape: (8010, 5)
+    Countries: 178
+    Years available: [np.int64(1980), np.int64(1981), np.int64(1982), np.int64(1983), np.int64(1984), np.int64(1985), np.int64(1986), np.int64(1987), np.int64(1988), np.int64(1989), np.int64(1990), np.int64(1991), np.int64(1992), np.int64(1993), np.int64(1994), np.int64(1995), np.int64(1996), np.int64(1997), np.int64(1998), np.int64(1999), np.int64(2000), np.int64(2001), np.int64(2002), np.int64(2003), np.int64(2004), np.int64(2005), np.int64(2006), np.int64(2007), np.int64(2008), np.int64(2009), np.int64(2010), np.int64(2011), np.int64(2012), np.int64(2013), np.int64(2014), np.int64(2015), np.int64(2016), np.int64(2017), np.int64(2018), np.int64(2019), np.int64(2020), np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+    Latest-year SPI: 178 countries
+
+[2] Attempting to acquire LBII proxy data...
+    [A] Trying EN.CLC.MDAT.ZS (protected area in important biodiversity sites)...
+    SUCCESS: 166 countries
+
+[3] Merging proxy with SPI (latest year per country)...
+    Proxy countries: 166
+    SPI latest-year countries: 178
+    Merged: 158 countries
+    SPI range: 0.00 – 100.00
+    Proxy range: 0.00 – 9.23
+
+[4] Running bivariate correlation...
+    Pearson r=-0.1446, p=6.9842e-02
+    Spearman rho=-0.2136, p=7.0347e-03
+    N=158, Countries=158
+
+[5] Running partial correlation controlling for log(GDP per capita)...
+    N after GPC merge: 158
+    Partial r=-0.0725, p=3.6663e-01
+
+[6] Testing functional form...
+    Best form: linear
+    Linear     R²=0.0209, AIC=1052.49
+    Log-linear fit not available (possibly non-positive proxy values)
+    Quadratic  R²=0.0242, AIC=1053.96
+
+[7] Determining verdict...
+    Verdict: rejected
+
+[8] Result saved to /Users/samkouteili/rose/epi/multi-agent/outputs/SPI/stage2/SPI-H02/result.json
+{
+  "hypothesis_id": "SPI-H02",
+  "verdict": "rejected",
+  "verification_method": "statistical_test",
+  "raw_correlation": {
+    "pearson_r": -0.14461848822300974,
+    "pearson_p": 0.06984188783094727,
+    "spearman_rho": -0.21363337017861075,
+    "spearman_p": 0.007034738677324341,
+    "n_observations": 158,
+    "n_countries": 158
+  },
+  "partial_correlation": {
+    "partial_r": -0.07253682246779683,
+    "partial_p": 0.36662632315851196,
+    "control_variables": [
+      "log_gpc"
+    ]
+  },
+  "functional_form": {
+    "best_form": "linear",
+    "linear_r2": 0.02091450713590881,
+    "linear_aic": 1052.494343065706,
+    "log_linear_r2": null,
+    "log_linear_aic": null,
+    "quadratic_r2": 0.024196153295579115,
+    "quadratic_aic": 1053.9638776631116
+  },
+  "data_quality_notes": "Proxy used: EN.CLC.MDAT.ZS (mean area protected in terrestrial sites important to biodiversity). Used WB indicator EN.CLC.MDAT.ZS as biodiversity protection proxy (n=166). True LBII (raster product at 1km resolution) was not accessible as country-level tabular data. A World Bank substitute indicator was used instead. Taxonomic bias toward vertebrates/plants is noted in PREDICTS; this substitute does not fully capture local biodiversity intactness.",
+  "summary": "Using 'EN.CLC.MDAT.ZS (mean area protected in terrestrial sites important to biodiversity)' as a substitute for LBII, bivariate correlation with SPI is r=-0.145 (p=6.984e-02, n=158 countries). Spearman rho=-0.214 (p=7.035e-03). After controlling for log(GDP/capita): partial r=-0.073 (p=3.666e-01). Best functional form: linear. Verdict: rejected. Note: Results reflect the substitute proxy, not true LBII."
+}
+
+Done.
+
+=== Attempt 2 — stderr ===

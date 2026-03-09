@@ -1,0 +1,481 @@
+=== Attempt 1 — Claude response ===
+```python
+import json
+import os
+import pandas as pd
+import numpy as np
+
+from src.utils.stats import (
+    run_bivariate_correlation,
+    run_partial_correlation,
+    determine_verdict,
+    build_result_json,
+    test_functional_form,
+)
+from src.utils.data_utils import load_raw_indicator
+from src.utils.data_fetch import fetch_world_bank_indicator, search_world_bank
+
+output_path = "/Users/samkouteili/rose/epi/multi-agent/outputs/OEB/stage2/OEB-H09"
+os.makedirs(output_path, exist_ok=True)
+
+print("=== OEB-H09: Net Primary Productivity vs OEB ===")
+print()
+
+# 1. Load EPI target data
+print("Loading OEB target indicator...")
+target = load_raw_indicator("OEB")
+print(f"  OEB data: {len(target)} rows, {target['iso'].nunique()} countries")
+
+# 2. Acquire proxy data: Net Primary Productivity
+# MODIS NPP is HDF4 format and not easily accessible via simple APIs.
+# We'll try World Bank alternatives related to vegetation/productivity.
+# Try searching for NPP-related indicators or forest/vegetation indicators.
+
+print("\nSearching World Bank for NPP-related indicators...")
+proxy = None
+data_quality_notes = ""
+
+# Try World Bank "vegetation" or "agricultural land productivity" as NPP proxy
+# A reasonable WB proxy for NPP would be something like agricultural productivity
+# or forest area, but let's try a direct search first.
+
+try:
+    results = search_world_bank("net primary productivity vegetation")
+    print(f"  WB search results: {results}")
+except Exception as e:
+    print(f"  WB search failed: {e}")
+
+# Try the WB indicator for "Annual freshwater withdrawals" or similar ecosystem indicators
+# Actually, a good proxy for NPP is chlorophyll or NDVI-based productivity.
+# WB has AG.LND.FRST.ZS (forest area % of land area) which partially reflects productivity
+# but that's not directly NPP.
+
+# Let's try: AG.YLD.CREL.KG (cereal yield as productivity proxy)
+# or EG.ELC.RNEW.ZS (renewable electricity)
+# Better: SP.RUR.TOTL.ZS or forest cover
+
+# Actually, let's try WB indicator for "terrestrial protected areas" which correlates
+# with ecosystem health but is not NPP.
+
+# Best available WB proxy for NPP: AG.LND.FRST.ZS (Forest area % of land area)
+# reflects standing biomass and ecosystem productivity
+print("\nTrying World Bank forest area as NPP proxy (AG.LND.FRST.ZS)...")
+try:
+    forest = fetch_world_bank_indicator("AG.LND.FRST.ZS")
+    if forest is not None and len(forest) > 100:
+        forest = forest.rename(columns={"value": "proxy_value"})
+        forest = forest[["iso", "year", "proxy_value"]].dropna()
+        print(f"  Forest area data: {len(forest)} rows, {forest['iso'].nunique()} countries")
+        proxy = forest
+        data_quality_notes = (
+            "MODIS NPP (HDF4) not directly accessible via API. "
+            "Used World Bank AG.LND.FRST.ZS (Forest area % of land area) as proxy for "
+            "Net Primary Productivity, as forest cover is a major component of terrestrial NPP. "
+            "This is an imperfect substitute — forest area reflects standing biomass but not "
+            "actual annual carbon flux. MODIS NPP uncertainty is ±20-30%; forest area has its own "
+            "measurement issues. The negative direction (higher forest area → lower ozone exposure) "
+            "is plausible if forested regions have lower anthropogenic ozone sources."
+        )
+    else:
+        print("  Forest area data insufficient.")
+except Exception as e:
+    print(f"  Forest area fetch failed: {e}")
+
+# If forest area didn't work, try agricultural land use or NDVI proxy
+if proxy is None:
+    print("\nTrying cereal yield (AG.YLD.CREL.KG) as productivity proxy...")
+    try:
+        cereal = fetch_world_bank_indicator("AG.YLD.CREL.KG")
+        if cereal is not None and len(cereal) > 100:
+            cereal = cereal.rename(columns={"value": "proxy_value"})
+            cereal = cereal[["iso", "year", "proxy_value"]].dropna()
+            print(f"  Cereal yield data: {len(cereal)} rows, {cereal['iso'].nunique()} countries")
+            proxy = cereal
+            data_quality_notes = (
+                "MODIS NPP (HDF4) not directly accessible via API. "
+                "Used World Bank AG.YLD.CREL.KG (Cereal yield kg/ha) as proxy for productivity, "
+                "reflecting agricultural NPP. This is a partial proxy for total NPP."
+            )
+    except Exception as e:
+        print(f"  Cereal yield fetch failed: {e}")
+
+# 3. Merge and analyze
+if proxy is None or len(proxy) == 0:
+    print("\nNo proxy data available. Writing inconclusive result.")
+    result = {
+        "hypothesis_id": "OEB-H09",
+        "verdict": "inconclusive",
+        "verification_method": "statistical_test",
+        "data_quality_notes": (
+            "MODIS NPP data is in HDF4 format and not accessible via standard APIs. "
+            "World Bank alternative proxies (forest area, cereal yield) could not be retrieved. "
+            "No suitable NPP proxy was available for statistical testing."
+        ),
+        "summary": "Could not acquire NPP proxy data for analysis.",
+    }
+    out_file = f"{output_path}/result.json"
+    with open(out_file, "w") as f:
+        json.dump(result, f, indent=2)
+    print(f"Result written to {out_file}")
+else:
+    print(f"\nMerging proxy with OEB target data...")
+    merged = target.merge(proxy, on=["iso", "year"])
+    print(f"  Merged: {len(merged)} rows, {merged['iso'].nunique()} countries")
+
+    if len(merged) < 20:
+        print("  Insufficient data after merge. Writing inconclusive result.")
+        result = {
+            "hypothesis_id": "OEB-H09",
+            "verdict": "inconclusive",
+            "verification_method": "statistical_test",
+            "data_quality_notes": data_quality_notes + " Insufficient overlap after merging.",
+            "summary": "Insufficient data overlap between proxy and OEB target.",
+        }
+        out_file = f"{output_path}/result.json"
+        with open(out_file, "w") as f:
+            json.dump(result, f, indent=2)
+        print(f"Result written to {out_file}")
+    else:
+        # 4. Bivariate correlation
+        print("\nRunning bivariate correlation...")
+        corr = run_bivariate_correlation(
+            merged["proxy_value"], merged["value"], iso=merged["iso"]
+        )
+        print(f"  Pearson r={corr.pearson_r:.4f}, p={corr.pearson_p:.4e}")
+        print(f"  Spearman rho={corr.spearman_rho:.4f}, p={corr.spearman_p:.4e}")
+        print(f"  n={corr.n_observations}, n_countries={corr.n_countries}")
+
+        # 5. Partial correlation controlling for log(GDP per capita)
+        print("\nLoading GPC for partial correlation...")
+        gpc = load_raw_indicator("GPC")
+        merged_gpc = merged.merge(
+            gpc[["iso", "year", "value"]].rename(columns={"value": "gpc"}),
+            on=["iso", "year"],
+        )
+        merged_gpc = merged_gpc.dropna(subset=["gpc"])
+        merged_gpc["log_gpc"] = np.log(merged_gpc["gpc"].clip(lower=1e-9))
+        print(f"  Merged with GPC: {len(merged_gpc)} rows")
+
+        partial = None
+        if len(merged_gpc) >= 20:
+            print("  Running partial correlation (controlling for log GPC)...")
+            partial = run_partial_correlation(
+                merged_gpc, "proxy_value", "value", ["log_gpc"]
+            )
+            print(f"  Partial r={partial.partial_r:.4f}, p={partial.partial_p:.4e}")
+        else:
+            print("  Insufficient data for partial correlation.")
+
+        # 6. Functional form test
+        print("\nTesting functional forms...")
+        form = test_functional_form(merged["proxy_value"], merged["value"])
+        print(f"  Best form: {form.best_form.value}")
+        print(f"  Linear R²={form.linear_r2:.4f}, AIC={form.linear_aic:.2f}")
+        print(f"  Log-linear R²={form.log_linear_r2:.4f}, AIC={form.log_linear_aic:.2f}")
+        print(f"  Quadratic R²={form.quadratic_r2:.4f}, AIC={form.quadratic_aic:.2f}")
+
+        # 7. Verdict
+        print("\nDetermining verdict...")
+        verdict = determine_verdict(corr, partial, "negative")
+        print(f"  Verdict: {verdict.value}")
+
+        summary = (
+            f"Testing World Bank forest area (% of land) as a proxy for MODIS NPP against OEB "
+            f"(ozone exposure in Key Biodiversity Areas). "
+            f"Pearson r={corr.pearson_r:.3f} (p={corr.pearson_p:.3e}), "
+            f"Spearman rho={corr.spearman_rho:.3f}, "
+            f"n={corr.n_observations} obs across {corr.n_countries} countries. "
+            f"Best functional form: {form.best_form.value}. "
+            f"{'Partial r=' + str(round(partial.partial_r, 3)) + ' (p=' + str(round(partial.partial_p, 4)) + ') controlling for log(GDP/capita).' if partial else 'Partial correlation not computed.'}"
+        )
+
+        result = build_result_json(
+            "OEB-H09",
+            verdict,
+            corr,
+            partial,
+            functional_form=form,
+            data_quality_notes=data_quality_notes,
+            summary=summary,
+        )
+        result["verification_method"] = "statistical_test"
+
+        out_file = f"{output_path}/result.json"
+        with open(out_file, "w") as f:
+            json.dump(result, f, indent=2)
+        print(f"\nResult written to {out_file}")
+        print(f"Final verdict: {verdict.value}")
+```
+=== Attempt 1 — stdout ===
+=== OEB-H09: Net Primary Productivity vs OEB ===
+
+Loading OEB target indicator...
+  OEB data: 4260 rows, 213 countries
+
+Searching World Bank for NPP-related indicators...
+  WB search results: [{'id': '1.0.HCount.1.90usd', 'name': 'Poverty Headcount ($1.90 a day)', 'source': 'LAC Equity Lab'}, {'id': '1.0.HCount.2.5usd', 'name': 'Poverty Headcount ($2.50 a day)', 'source': 'LAC Equity Lab'}, {'id': '1.0.HCount.Mid10to50', 'name': 'Middle Class ($10-50 a day) Headcount', 'source': 'LAC Equity Lab'}, {'id': '1.0.HCount.Ofcl', 'name': 'Official Moderate Poverty Rate-National', 'source': 'LAC Equity Lab'}, {'id': '1.0.HCount.Poor4uds', 'name': 'Poverty Headcount ($4 a day)', 'source': 'LAC Equity Lab'}, {'id': '1.0.HCount.Vul4to10', 'name': 'Vulnerable ($4-10 a day) Headcount', 'source': 'LAC Equity Lab'}, {'id': '1.0.PGap.1.90usd', 'name': 'Poverty Gap ($1.90 a day)', 'source': 'LAC Equity Lab'}, {'id': '1.0.PGap.2.5usd', 'name': 'Poverty Gap ($2.50 a day)', 'source': 'LAC Equity Lab'}, {'id': '1.0.PGap.Poor4uds', 'name': 'Poverty Gap ($4 a day)', 'source': 'LAC Equity Lab'}, {'id': '1.0.PSev.1.90usd', 'name': 'Poverty Severity ($1.90 a day)', 'source': 'LAC Equity Lab'}]
+
+Trying World Bank forest area as NPP proxy (AG.LND.FRST.ZS)...
+  Forest area data: 6813 rows, 206 countries
+
+Merging proxy with OEB target data...
+  Merged: 3980 rows, 201 countries
+
+Running bivariate correlation...
+  Pearson r=-0.4949, p=6.0945e-245
+  Spearman rho=-0.4889, p=2.9231e-238
+  n=3980, n_countries=201
+
+Loading GPC for partial correlation...
+  Merged with GPC: 3749 rows
+  Running partial correlation (controlling for log GPC)...
+  Partial r=-0.5244, p=5.9211e-264
+
+Testing functional forms...
+  Best form: quadratic
+  Linear R²=0.2449, AIC=-31605.52
+
+=== Attempt 1 — stderr ===
+Traceback (most recent call last):
+  File "/Users/samkouteili/rose/epi/multi-agent/outputs/OEB/stage2/OEB-H09/verify.py", line 172, in <module>
+    print(f"  Log-linear R²={form.log_linear_r2:.4f}, AIC={form.log_linear_aic:.2f}")
+                            ^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: unsupported format string passed to NoneType.__format__
+
+=== Attempt 2 — Claude response ===
+The issue is that `form.log_linear_r2` is `None` when the log-linear fit fails (likely due to non-positive proxy values). I need to handle `None` values in the functional form results gracefully.
+
+```python
+import json
+import os
+import pandas as pd
+import numpy as np
+
+from src.utils.stats import (
+    run_bivariate_correlation,
+    run_partial_correlation,
+    determine_verdict,
+    build_result_json,
+    test_functional_form,
+)
+from src.utils.data_utils import load_raw_indicator
+from src.utils.data_fetch import fetch_world_bank_indicator, search_world_bank
+
+output_path = "/Users/samkouteili/rose/epi/multi-agent/outputs/OEB/stage2/OEB-H09"
+os.makedirs(output_path, exist_ok=True)
+
+print("=== OEB-H09: Net Primary Productivity vs OEB ===")
+print()
+
+# 1. Load EPI target data
+print("Loading OEB target indicator...")
+target = load_raw_indicator("OEB")
+print(f"  OEB data: {len(target)} rows, {target['iso'].nunique()} countries")
+
+# 2. Acquire proxy data: Net Primary Productivity
+# MODIS NPP is HDF4 format and not easily accessible via simple APIs.
+# Use World Bank forest area (AG.LND.FRST.ZS) as proxy for NPP,
+# since forest cover is the dominant component of terrestrial NPP.
+
+print("\nTrying World Bank forest area as NPP proxy (AG.LND.FRST.ZS)...")
+proxy = None
+data_quality_notes = ""
+
+try:
+    forest = fetch_world_bank_indicator("AG.LND.FRST.ZS")
+    if forest is not None and len(forest) > 100:
+        forest = forest.rename(columns={"value": "proxy_value"})
+        forest = forest[["iso", "year", "proxy_value"]].dropna()
+        print(f"  Forest area data: {len(forest)} rows, {forest['iso'].nunique()} countries")
+        proxy = forest
+        data_quality_notes = (
+            "MODIS NPP data is in HDF4 format and not accessible via standard APIs. "
+            "Used World Bank AG.LND.FRST.ZS (Forest area % of land area) as proxy for "
+            "Net Primary Productivity, as forest cover is a major component of terrestrial NPP. "
+            "This is an imperfect substitute — forest area reflects standing biomass but not "
+            "actual annual carbon flux. MODIS NPP uncertainty is ±20-30%; forest area has its own "
+            "measurement issues. The negative direction (higher forest area → lower ozone exposure "
+            "in KBAs) is plausible if forested regions have lower anthropogenic ozone sources."
+        )
+    else:
+        print("  Forest area data insufficient.")
+except Exception as e:
+    print(f"  Forest area fetch failed: {e}")
+
+# If forest area didn't work, try cereal yield as productivity proxy
+if proxy is None:
+    print("\nTrying cereal yield (AG.YLD.CREL.KG) as productivity proxy...")
+    try:
+        cereal = fetch_world_bank_indicator("AG.YLD.CREL.KG")
+        if cereal is not None and len(cereal) > 100:
+            cereal = cereal.rename(columns={"value": "proxy_value"})
+            cereal = cereal[["iso", "year", "proxy_value"]].dropna()
+            print(f"  Cereal yield data: {len(cereal)} rows, {cereal['iso'].nunique()} countries")
+            proxy = cereal
+            data_quality_notes = (
+                "MODIS NPP (HDF4) not directly accessible via API. "
+                "Used World Bank AG.YLD.CREL.KG (Cereal yield kg/ha) as proxy for productivity, "
+                "reflecting agricultural NPP. This is a partial proxy for total NPP."
+            )
+    except Exception as e:
+        print(f"  Cereal yield fetch failed: {e}")
+
+# 3. Merge and analyze
+if proxy is None or len(proxy) == 0:
+    print("\nNo proxy data available. Writing inconclusive result.")
+    result = {
+        "hypothesis_id": "OEB-H09",
+        "verdict": "inconclusive",
+        "verification_method": "statistical_test",
+        "data_quality_notes": (
+            "MODIS NPP data is in HDF4 format and not accessible via standard APIs. "
+            "World Bank alternative proxies (forest area, cereal yield) could not be retrieved. "
+            "No suitable NPP proxy was available for statistical testing."
+        ),
+        "summary": "Could not acquire NPP proxy data for analysis.",
+    }
+    out_file = f"{output_path}/result.json"
+    with open(out_file, "w") as f:
+        json.dump(result, f, indent=2)
+    print(f"Result written to {out_file}")
+else:
+    print(f"\nMerging proxy with OEB target data...")
+    merged = target.merge(proxy, on=["iso", "year"])
+    print(f"  Merged: {len(merged)} rows, {merged['iso'].nunique()} countries")
+
+    if len(merged) < 20:
+        print("  Insufficient data after merge. Writing inconclusive result.")
+        result = {
+            "hypothesis_id": "OEB-H09",
+            "verdict": "inconclusive",
+            "verification_method": "statistical_test",
+            "data_quality_notes": data_quality_notes + " Insufficient overlap after merging.",
+            "summary": "Insufficient data overlap between proxy and OEB target.",
+        }
+        out_file = f"{output_path}/result.json"
+        with open(out_file, "w") as f:
+            json.dump(result, f, indent=2)
+        print(f"Result written to {out_file}")
+    else:
+        # 4. Bivariate correlation
+        print("\nRunning bivariate correlation...")
+        corr = run_bivariate_correlation(
+            merged["proxy_value"], merged["value"], iso=merged["iso"]
+        )
+        print(f"  Pearson r={corr.pearson_r:.4f}, p={corr.pearson_p:.4e}")
+        print(f"  Spearman rho={corr.spearman_rho:.4f}, p={corr.spearman_p:.4e}")
+        print(f"  n={corr.n_observations}, n_countries={corr.n_countries}")
+
+        # 5. Partial correlation controlling for log(GDP per capita)
+        print("\nLoading GPC for partial correlation...")
+        gpc = load_raw_indicator("GPC")
+        merged_gpc = merged.merge(
+            gpc[["iso", "year", "value"]].rename(columns={"value": "gpc"}),
+            on=["iso", "year"],
+        )
+        merged_gpc = merged_gpc.dropna(subset=["gpc"])
+        merged_gpc["log_gpc"] = np.log(merged_gpc["gpc"].clip(lower=1e-9))
+        print(f"  Merged with GPC: {len(merged_gpc)} rows")
+
+        partial = None
+        if len(merged_gpc) >= 20:
+            print("  Running partial correlation (controlling for log GPC)...")
+            partial = run_partial_correlation(
+                merged_gpc, "proxy_value", "value", ["log_gpc"]
+            )
+            print(f"  Partial r={partial.partial_r:.4f}, p={partial.partial_p:.4e}")
+        else:
+            print("  Insufficient data for partial correlation.")
+
+        # 6. Functional form test
+        print("\nTesting functional forms...")
+        form = test_functional_form(merged["proxy_value"], merged["value"])
+        print(f"  Best form: {form.best_form.value}")
+
+        # Safely format potentially None values
+        def fmt_r2(val):
+            return f"{val:.4f}" if val is not None else "N/A"
+
+        def fmt_aic(val):
+            return f"{val:.2f}" if val is not None else "N/A"
+
+        print(f"  Linear R²={fmt_r2(form.linear_r2)}, AIC={fmt_aic(form.linear_aic)}")
+        print(f"  Log-linear R²={fmt_r2(form.log_linear_r2)}, AIC={fmt_aic(form.log_linear_aic)}")
+        print(f"  Quadratic R²={fmt_r2(form.quadratic_r2)}, AIC={fmt_aic(form.quadratic_aic)}")
+
+        # 7. Verdict
+        print("\nDetermining verdict...")
+        verdict = determine_verdict(corr, partial, "negative")
+        print(f"  Verdict: {verdict.value}")
+
+        partial_summary = ""
+        if partial is not None:
+            partial_summary = (
+                f"Partial r={partial.partial_r:.3f} (p={partial.partial_p:.4e}) "
+                f"controlling for log(GDP/capita)."
+            )
+        else:
+            partial_summary = "Partial correlation not computed (insufficient data)."
+
+        summary = (
+            f"Testing World Bank forest area (% of land) as a proxy for MODIS NPP against OEB "
+            f"(ozone exposure in Key Biodiversity Areas). "
+            f"Pearson r={corr.pearson_r:.3f} (p={corr.pearson_p:.3e}), "
+            f"Spearman rho={corr.spearman_rho:.3f}, "
+            f"n={corr.n_observations} obs across {corr.n_countries} countries. "
+            f"Best functional form: {form.best_form.value}. "
+            f"{partial_summary}"
+        )
+
+        result = build_result_json(
+            "OEB-H09",
+            verdict,
+            corr,
+            partial,
+            functional_form=form,
+            data_quality_notes=data_quality_notes,
+            summary=summary,
+        )
+        result["verification_method"] = "statistical_test"
+
+        out_file = f"{output_path}/result.json"
+        with open(out_file, "w") as f:
+            json.dump(result, f, indent=2)
+        print(f"\nResult written to {out_file}")
+        print(f"Final verdict: {verdict.value}")
+```
+=== Attempt 2 — stdout ===
+=== OEB-H09: Net Primary Productivity vs OEB ===
+
+Loading OEB target indicator...
+  OEB data: 4260 rows, 213 countries
+
+Trying World Bank forest area as NPP proxy (AG.LND.FRST.ZS)...
+  Forest area data: 6813 rows, 206 countries
+
+Merging proxy with OEB target data...
+  Merged: 3980 rows, 201 countries
+
+Running bivariate correlation...
+  Pearson r=-0.4949, p=6.0945e-245
+  Spearman rho=-0.4889, p=2.9231e-238
+  n=3980, n_countries=201
+
+Loading GPC for partial correlation...
+  Merged with GPC: 3749 rows
+  Running partial correlation (controlling for log GPC)...
+  Partial r=-0.5244, p=5.9211e-264
+
+Testing functional forms...
+  Best form: quadratic
+  Linear R²=0.2449, AIC=-31605.52
+  Log-linear R²=N/A, AIC=N/A
+  Quadratic R²=0.2622, AIC=-31696.14
+
+Determining verdict...
+  Verdict: confirmed
+
+Result written to /Users/samkouteili/rose/epi/multi-agent/outputs/OEB/stage2/OEB-H09/result.json
+Final verdict: confirmed
+
+=== Attempt 2 — stderr ===

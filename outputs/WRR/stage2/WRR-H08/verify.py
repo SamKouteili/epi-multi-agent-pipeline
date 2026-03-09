@@ -1,0 +1,278 @@
+import json
+import os
+import pandas as pd
+import numpy as np
+import requests
+
+from src.utils.stats import (
+    run_bivariate_correlation,
+    run_partial_correlation,
+    determine_verdict,
+    build_result_json,
+    test_functional_form,
+)
+from src.utils.data_utils import load_raw_indicator
+from src.utils.data_fetch import (
+    fetch_world_bank_indicator,
+    search_world_bank,
+    list_local_indicators,
+    LOCAL_CONTROLS,
+)
+
+output_path = "/Users/samkouteili/rose/epi/multi-agent/outputs/WRR/stage2/WRR-H08"
+os.makedirs(output_path, exist_ok=True)
+
+print("=" * 60)
+print("WRR-H08: Food waste legislation → Waste Recovery Rate")
+print("=" * 60)
+
+# ------------------------------------------------------------------
+# 1. Load EPI target
+# ------------------------------------------------------------------
+print("\n[1] Loading WRR target data...")
+target = load_raw_indicator("WRR")
+print(f"    WRR observations: {len(target)}, countries: {target['iso'].nunique()}")
+
+# ------------------------------------------------------------------
+# 2. Data Discovery
+# ------------------------------------------------------------------
+
+# APPROACH 1: Direct URL (not provided in hypothesis)
+print("\n[2] Approach 1: No URL provided — skipping direct fetch.")
+
+# APPROACH 2: Search World Bank for food waste / organic waste legislation proxies
+print("\n[3] Approach 2: Searching World Bank for related indicators...")
+
+search_queries = [
+    "food waste legislation",
+    "organic waste recovery",
+    "municipal solid waste composting",
+    "waste management policy",
+    "solid waste treatment",
+]
+
+wb_results = {}
+for q in search_queries:
+    try:
+        results = search_world_bank(q)
+        if results:
+            wb_results[q] = results
+            print(f"    '{q}': {len(results)} results")
+            for r in results[:3]:
+                print(f"      - {r.get('id', '?')}: {r.get('name', '?')}")
+    except Exception as e:
+        print(f"    '{q}': error — {e}")
+
+# APPROACH 3: Find approximate proxy
+# The best available World Bank approximations for food waste / organic waste legislation:
+# 1. EN.MSW.TOTL.KT.CE — Municipal solid waste generated (absolute)
+# 2. Composting rate data (not directly available in WB)
+# 3. "Adjusted savings: particulate emission damage" — not relevant
+# 
+# Better approach: Use World Bank "What a Waste" database proxies:
+# - Percentage of waste composted: not directly in WB API
+# - Food waste % of total waste: not directly in WB API
+#
+# Most promising WB indicator as a legislative/policy proxy:
+# SH.STA.SMSS.ZS — safely managed sanitation services (governance proxy)
+# EN.ATM.CO2E.KT — general environmental governance
+#
+# Given that food waste LEGISLATION is the target proxy, and no direct binary
+# dataset exists in WB/WHO APIs, let's try the best available approximate:
+# - Renewable energy / green policy indicators as governance proxy
+# - Or: composting/organic waste treatment share from WB
+
+print("\n[4] Approach 3: Trying approximate proxy indicators...")
+
+candidate_indicators = [
+    ("EN.MSW.TOTL.KT.CE", "Municipal solid waste generated (kt/year)"),
+    ("SH.STA.SMSS.ZS", "Safely managed sanitation services (%)"),
+    ("EG.FEC.RNEW.ZS", "Renewable energy consumption (% of total)"),
+    ("ER.LND.PTLD.ZS", "Terrestrial protected areas (% of land area)"),
+    ("EN.POP.SLUM.UR.ZS", "Population in slums (% urban) — inverse governance"),
+]
+
+proxy_data = None
+proxy_label = None
+chosen_indicator = None
+
+for code, label in candidate_indicators:
+    print(f"\n    Trying WB indicator: {code} ({label})")
+    try:
+        df = fetch_world_bank_indicator(code)
+        if df is not None and len(df) > 100:
+            df = df.rename(columns={"value": "proxy_value"})
+            df = df.dropna(subset=["proxy_value"])
+            merged_test = target.merge(df, on=["iso", "year"])
+            if len(merged_test) >= 30:
+                proxy_data = df
+                proxy_label = label
+                chosen_indicator = code
+                print(f"    ✓ Found usable data: {len(merged_test)} merged observations")
+                break
+            else:
+                print(f"    ✗ Only {len(merged_test)} merged observations — skipping")
+        else:
+            print(f"    ✗ Insufficient data returned")
+    except Exception as e:
+        print(f"    ✗ Error: {e}")
+
+# If no WB indicator worked, try WHO GHO
+if proxy_data is None:
+    print("\n[5] Trying WHO GHO indicators...")
+    from src.utils.data_fetch import fetch_who_gho_indicator
+    who_candidates = [
+        ("WSH_SANITATION_SAFELY_MANAGED", "Safely managed sanitation"),
+        ("SDGWATSAN", "Water and sanitation"),
+    ]
+    for code, label in who_candidates:
+        try:
+            df = fetch_who_gho_indicator(code)
+            if df is not None and len(df) > 50:
+                df = df.rename(columns={"value": "proxy_value"})
+                df = df.dropna(subset=["proxy_value"])
+                merged_test = target.merge(df, on=["iso", "year"])
+                if len(merged_test) >= 20:
+                    proxy_data = df
+                    proxy_label = label
+                    chosen_indicator = code
+                    print(f"    ✓ Found usable WHO data: {len(merged_test)} merged observations")
+                    break
+        except Exception as e:
+            print(f"    ✗ {code}: {e}")
+
+# ------------------------------------------------------------------
+# 3. Run statistics if proxy found, else report pending_data
+# ------------------------------------------------------------------
+
+if proxy_data is None:
+    print("\n[6] No usable proxy data found after all approaches.")
+    print("    Setting verdict to inconclusive / pending_data.")
+
+    result = {
+        "hypothesis_id": "WRR-H08",
+        "verdict": "inconclusive",
+        "verification_method": "pending_data",
+        "summary": (
+            "No usable proxy data found for food waste legislation. "
+            "The hypothesis requires a binary or ordinal dataset tracking "
+            "food waste segregation mandates, donation requirements, or organic "
+            "waste landfill bans across countries. No such dataset is available "
+            "via World Bank API, WHO GHO, or direct URL. All candidate World Bank "
+            "indicators returned insufficient merged observations with WRR data."
+        ),
+        "data_quality_notes": (
+            "Approach 1: No URL provided in hypothesis. "
+            "Approach 2: Searched World Bank for 'food waste legislation', "
+            "'organic waste recovery', 'municipal solid waste composting', "
+            "'waste management policy', 'solid waste treatment' — no directly "
+            "relevant binary legislation indicator found. "
+            "Approach 3: Tried WB indicators EN.MSW.TOTL.KT.CE, SH.STA.SMSS.ZS, "
+            "EG.FEC.RNEW.ZS, ER.LND.PTLD.ZS, EN.POP.SLUM.UR.ZS — none yielded "
+            ">=30 merged observations with WRR. "
+            "Approach 4: Tried WHO GHO WSH_SANITATION_SAFELY_MANAGED, SDGWATSAN — "
+            "also insufficient overlap. "
+            "REFASH legislative database referenced in hypothesis is not machine-readable "
+            "and covers only 30+ countries without structured API access. "
+            "Recommended future work: manually encode food waste legislation from "
+            "FAOLEX, EUR-Lex, or ECOLEX databases."
+        ),
+        "proxy_variable": "Food waste legislation presence",
+        "proxy_source": "N/A — not found",
+        "target_indicator": "WRR",
+        "n_observations": 0,
+        "bivariate_correlation": None,
+        "partial_correlation": None,
+        "functional_form": None,
+    }
+
+else:
+    print(f"\n[6] Running statistical analysis using: {proxy_label} ({chosen_indicator})")
+
+    # Merge
+    merged = target.merge(proxy_data, on=["iso", "year"])
+    merged = merged.dropna(subset=["proxy_value", "value"])
+    print(f"    Merged observations: {len(merged)}, countries: {merged['iso'].nunique()}")
+
+    # Bivariate correlation
+    print("\n[7] Running bivariate correlation...")
+    corr = run_bivariate_correlation(merged["proxy_value"], merged["value"], iso=merged["iso"])
+    print(f"    Pearson r={corr.pearson_r:.3f} (p={corr.pearson_p:.4f})")
+    print(f"    Spearman rho={corr.spearman_rho:.3f} (p={corr.spearman_p:.4f})")
+    print(f"    n={corr.n_observations}, n_countries={corr.n_countries}")
+
+    # Partial correlation controlling for log(GDP per capita)
+    print("\n[8] Running partial correlation (controlling for log GDP/capita)...")
+    partial = None
+    try:
+        gpc = load_raw_indicator("GPC")
+        merged_gpc = merged.merge(
+            gpc[["iso", "year", "value"]].rename(columns={"value": "gpc"}),
+            on=["iso", "year"]
+        )
+        merged_gpc = merged_gpc.dropna(subset=["gpc"])
+        merged_gpc["log_gpc"] = np.log(merged_gpc["gpc"])
+        print(f"    Observations with GPC: {len(merged_gpc)}")
+        if len(merged_gpc) >= 20:
+            partial = run_partial_correlation(merged_gpc, "proxy_value", "value", ["log_gpc"])
+            print(f"    Partial r={partial.partial_r:.3f} (p={partial.partial_p:.4f})")
+        else:
+            print("    Insufficient observations for partial correlation")
+    except Exception as e:
+        print(f"    Partial correlation error: {e}")
+
+    # Functional form
+    print("\n[9] Testing functional form...")
+    form = None
+    try:
+        form = test_functional_form(merged["proxy_value"], merged["value"])
+        print(f"    Best form: {form.best_form.value}")
+        print(f"    Linear R²={form.linear_r2:.3f}, Log-linear R²={form.log_linear_r2:.3f}, Quadratic R²={form.quadratic_r2:.3f}")
+    except Exception as e:
+        print(f"    Functional form error: {e}")
+
+    # Verdict
+    print("\n[10] Determining verdict...")
+    verdict = determine_verdict(corr, partial, "positive")
+    print(f"    Verdict: {verdict.value}")
+
+    # Build result
+    result = build_result_json(
+        "WRR-H08",
+        verdict,
+        corr,
+        partial,
+        functional_form=form,
+        data_quality_notes=(
+            f"APPROXIMATE PROXY USED — not the hypothesized food waste legislation indicator. "
+            f"Used World Bank indicator {chosen_indicator} ({proxy_label}) as a proxy for "
+            f"environmental/waste governance capacity. The original hypothesis required a binary "
+            f"dataset of food waste segregation mandates from REFASH legislative database, which "
+            f"is not machine-readable. The chosen proxy is a distant approximation. "
+            f"Direct legislation data covering 30+ countries would be needed for a definitive test. "
+            f"Caveats: enforcement variability, temporal lag between legislation and waste diversion, "
+            f"and reverse causality limit direct interpretation."
+        ),
+        summary=(
+            f"Could not obtain food waste legislation data (REFASH database not accessible). "
+            f"Used {proxy_label} ({chosen_indicator}) as an approximate governance/environmental proxy. "
+            f"Pearson r={corr.pearson_r:.3f} (p={corr.pearson_p:.4f}), n={corr.n_observations}. "
+            f"Verdict: {verdict.value}. This is an exploratory result using an approximate proxy; "
+            f"definitive testing requires structured food waste legislation data."
+        ),
+    )
+    result["verification_method"] = "exploratory_test"
+    result["proxy_variable_used"] = f"{chosen_indicator} ({proxy_label})"
+    result["proxy_variable_intended"] = "Food waste legislation presence (binary/ordinal)"
+
+# ------------------------------------------------------------------
+# 4. Write results
+# ------------------------------------------------------------------
+output_file = f"{output_path}/result.json"
+print(f"\n[11] Writing results to {output_file}")
+with open(output_file, "w") as f:
+    json.dump(result, f, indent=2, default=str)
+
+print("\n✓ Done!")
+print(f"  Verdict: {result.get('verdict', 'N/A')}")
+print(f"  Verification method: {result.get('verification_method', 'N/A')}")

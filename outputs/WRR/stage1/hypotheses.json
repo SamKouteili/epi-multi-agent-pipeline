@@ -1,0 +1,561 @@
+{
+  "indicator_tla": "WRR",
+  "causal_map_summary": "Waste recovery rates are driven by a chain of enabling conditions spanning physical infrastructure (composting facilities, material recovery facilities, waste-to-energy plants), regulatory and economic policy (EPR legislation, deposit return schemes, landfill taxes), technical capacity (automation, workforce training, monitoring systems), and behavioral engagement (household segregation practices, consumer participation). These upstream drivers create measurable downstream consequences including environmental outcomes (landfill volume reduction, methane emissions), economic signals (recycled material trade flows, employment), infrastructure investment, and institutional evolution that can serve as observable proxies.",
+  "hypotheses": [
+    {
+      "id": "WRR-H01",
+      "context": {
+        "geographic_scope": "USA primarily; sparse EU coverage",
+        "time_period": "2013-2023",
+        "subpopulations": null
+      },
+      "target_variable": "WRR",
+      "proxy_variable": "Composting facility capacity",
+      "proxy_description": "Count and total annual processing capacity (tonnes/year) of full-scale food waste and yard waste composting facilities",
+      "relationship": {
+        "direction": "positive",
+        "functional_form": "log-linear",
+        "strength_estimate": "mechanistically clear correlation"
+      },
+      "mechanism": "Composting capacity sets ceiling on possible recovery rates\u2014no country can recover more waste than its infrastructure allows. Between 2013 and 2023, approximately 40 new facilities began operations, coinciding with expansion of state organics waste bans and municipal composting mandates.",
+      "data_source": {
+        "name": "BioCycle Nationwide Survey on Full-Scale Food Waste Composting Infrastructure",
+        "organization": "BioCycle magazine",
+        "url": "https://www.biocycle.net/us-food-waste-composting-infrastructure/",
+        "format": "HTML article + downloadable database",
+        "accessibility": "open",
+        "coverage": "105+ facilities across 44 US states, annual updates"
+      },
+      "confidence": "literature_backed",
+      "evidence_type": "literature_attested",
+      "literature_evidence": "40 new facilities began operations between 2013-2023, coinciding with state organics waste bans and municipal composting mandates (BioCycle 2023)",
+      "caveats": [
+        "Geographic limitation to USA primarily",
+        "Facility capacity does not equal actual processing; utilization rates vary 30-90%",
+        "Cross-national definition variance",
+        "Missing informal sector",
+        "Lag structure of 1-3 years between construction and operation"
+      ],
+      "references": [
+        "https://www.biocycle.net/us-food-waste-composting-infrastructure/"
+      ]
+    },
+    {
+      "id": "WRR-H02",
+      "context": {
+        "geographic_scope": "Global; most complete for OECD countries and China",
+        "time_period": "2000-present",
+        "subpopulations": null
+      },
+      "target_variable": "WRR",
+      "proxy_variable": "Waste-to-Energy plant capacity",
+      "proxy_description": "Number of operational waste-to-combustion facilities with energy recovery capability, measured as count and megawatts of installed electricity generation capacity",
+      "relationship": {
+        "direction": "positive",
+        "functional_form": "linear",
+        "strength_estimate": "direct mechanistic link"
+      },
+      "mechanism": "Each WtE facility that operates diverts mass from landfill. In Denmark, Switzerland, and Belgium, incineration with energy recovery accounts for 50-70% of waste treatment, mechanistically driving elevated WRR. EPA reports 75 operational facilities process ~14% of municipal solid waste in the US.",
+      "data_source": {
+        "name": "Statista Waste-to-Energy Capacity by Country",
+        "organization": "Statista",
+        "url": "https://www.statista.com/statistics/1618720/mea-waste-to-energy-capacity-by-country/",
+        "format": "API subscription or downloadable reports",
+        "accessibility": "paid",
+        "coverage": "190+ countries, annual data 2000-present"
+      },
+      "confidence": "literature_backed",
+      "evidence_type": "literature_attested",
+      "literature_evidence": "75 operational waste combustion facilities process ~14% of municipal solid waste (EPA 2023); incineration accounts for 50-70% of waste treatment in Denmark, Switzerland, Belgium",
+      "caveats": [
+        "Installed capacity \u2260 actual output; capacity factors vary 40-90%",
+        "Energy recovery definition varies across countries",
+        "WtE expansion may displace recycling investment",
+        "Geographic concentration in few countries"
+      ],
+      "references": [
+        "https://www.statista.com/statistics/1618720/mea-waste-to-energy-capacity-by-country/",
+        "https://www.epa.gov/smm/energy-recovery-combustion-municipal-solid-waste-msw"
+      ]
+    },
+    {
+      "id": "WRR-H03",
+      "context": {
+        "geographic_scope": "OECD countries mainly; sparse coverage elsewhere",
+        "time_period": "1970s-present",
+        "subpopulations": null
+      },
+      "target_variable": "WRR",
+      "proxy_variable": "Deposit return scheme participation rates",
+      "proxy_description": "Binary indicator of DRS presence plus continuous measure of reported consumer participation rate (% of eligible containers returned)",
+      "relationship": {
+        "direction": "positive",
+        "functional_form": "nonlinear",
+        "strength_estimate": "strong documented correlation"
+      },
+      "mechanism": "DRS raises economic value of containers from zero to deposit amount, making recovery economically rational. In New York, 57.5% redeem deposits with 14.6% donating, achieving 72% return rate. Germany achieves >95% return rates for glass bottles.",
+      "data_source": {
+        "name": "Reloop Platform Consumer Participation in Deposit Return Systems",
+        "organization": "Reloop Platform",
+        "url": "https://www.reloopplatform.org/wp-content/uploads/2023/05/Consumer-participation-in-DRS-factsheet.pdf",
+        "format": "HTML fact sheet with embedded tables",
+        "accessibility": "open",
+        "coverage": "30+ schemes globally, primarily OECD"
+      },
+      "confidence": "literature_backed",
+      "evidence_type": "literature_attested",
+      "literature_evidence": "57.5% consumer redemption rate with 14.6% donation achieving 72% total return rate in New York; >95% return rates for glass bottles in Germany (Reloop Platform 2023)",
+      "caveats": [
+        "Limited geographic coverage",
+        "Temporal lag of 2-5 years for participation maturity",
+        "Potential substitution effects with curbside recycling",
+        "Scope limited to beverage containers only",
+        "Self-reported participation rates"
+      ],
+      "references": [
+        "https://www.reloopplatform.org/wp-content/uploads/2023/05/Consumer-participation-in-DRS-factsheet.pdf"
+      ]
+    },
+    {
+      "id": "WRR-H04",
+      "context": {
+        "geographic_scope": "OECD countries; strong EU coverage",
+        "time_period": "1990s-present",
+        "subpopulations": null
+      },
+      "target_variable": "WRR",
+      "proxy_variable": "Extended Producer Responsibility implementation",
+      "proxy_description": "Binary indicator of EPR legislation passage for packaging plus continuous measure of program maturity (years since implementation)",
+      "relationship": {
+        "direction": "positive",
+        "functional_form": "threshold",
+        "strength_estimate": "5-15 percentage point increase"
+      },
+      "mechanism": "EPR creates financial responsibility for end-of-life management, incentivizing producers to use recyclable materials and funding collection/sorting infrastructure. Italy's Ronchi Decree raised separate collection from 9% in 1997 to 66.6% in 2023.",
+      "data_source": {
+        "name": "Product Stewardship Institute EPR legislation tracker",
+        "organization": "Product Stewardship Institute",
+        "url": "https://epr.sustainablepackaging.org",
+        "format": "Interactive legislation database",
+        "accessibility": "open",
+        "coverage": "OECD countries, 7 US states as of 2025"
+      },
+      "confidence": "literature_backed",
+      "evidence_type": "literature_attested",
+      "literature_evidence": "Italy's Ronchi Decree raised separate collection rate from 9% in 1997 to 66.6% in 2023; UK transitioned from 79% landfilling in 2000 to <50% via EPR-driven policy",
+      "caveats": [
+        "Implementation delays of 1-3 years common",
+        "Enforcement variability across countries",
+        "Design heterogeneity in program structure",
+        "Confounding with other waste legislation",
+        "Reverse causality concern"
+      ],
+      "references": [
+        "https://epr.sustainablepackaging.org",
+        "https://ecostar.eu.com/municipal-solid-waste-treatment-around-the-world-ecostar/"
+      ]
+    },
+    {
+      "id": "WRR-H05",
+      "context": {
+        "geographic_scope": "Europe, USA, Japan, China primarily",
+        "time_period": "2015-present",
+        "subpopulations": null
+      },
+      "target_variable": "WRR",
+      "proxy_variable": "MRF automation and robotics adoption",
+      "proxy_description": "Proportion of Material Recovery Facilities equipped with AI-based optical sorting, robotic systems, or hyperspectral imaging",
+      "relationship": {
+        "direction": "positive",
+        "functional_form": "linear",
+        "strength_estimate": "5 percentage point improvement"
+      },
+      "mechanism": "Robots reduce sorting errors and contamination, making marginal material streams economically viable to recover. Ecostar HDDS technology achieves 80-95% material purity versus 60-75% for manual sorting, improving recovery rate from 85% to 90%.",
+      "data_source": {
+        "name": "Resource Recycling Cyber-Physical MRF Analysis",
+        "organization": "Resource Recycling",
+        "url": "https://resource-recycling.com/analysis/2026/02/12/the-cyber-physical-mrf-ai-and-robotics-reshape-e-waste-recovery/",
+        "format": "Industry reports",
+        "accessibility": "open",
+        "coverage": "130+ global facilities for Ecostar technology"
+      },
+      "confidence": "literature_backed",
+      "evidence_type": "literature_attested",
+      "literature_evidence": "Robotic MRF integration improves material recovery rate from 85% to 90% (5 percentage point improvement) with payback periods of 3-5 years (Resource Recycling 2026)",
+      "caveats": [
+        "Systematic global data does not exist",
+        "Capital intensity biases toward high-income countries",
+        "Commodity price dependency",
+        "Temporal lag of 2-3 years for construction",
+        "Selection bias toward well-funded facilities"
+      ],
+      "references": [
+        "https://resource-recycling.com/analysis/2026/02/12/the-cyber-physical-mrf-ai-and-robotics-reshape-e-waste-recovery/",
+        "https://ecostar.eu.com/municipal-solid-waste-treatment-around-the-world-ecostar/"
+      ]
+    },
+    {
+      "id": "WRR-H06",
+      "context": {
+        "geographic_scope": "Global",
+        "time_period": "1992-present",
+        "subpopulations": null
+      },
+      "target_variable": "WRR",
+      "proxy_variable": "Recycled material trade flows",
+      "proxy_description": "Annual imports and exports of recycled materials (metals, paper, plastics, glass) measured as proportion of total material consumption",
+      "relationship": {
+        "direction": "positive",
+        "functional_form": "log-linear",
+        "strength_estimate": "strong revealed preference signal"
+      },
+      "mechanism": "Countries exporting large volumes of high-quality recycled materials demonstrate significant domestic collection, sorting, and processing capability. Germany exports 854 million kg of plastic waste annually, indicating highly developed collection and sorting infrastructure.",
+      "data_source": {
+        "name": "UN Commodity Trade Statistics Database (Comtrade)",
+        "organization": "United Nations",
+        "url": "https://comtrade.un.org/",
+        "format": "CSV downloads",
+        "accessibility": "free_account",
+        "coverage": "All countries, monthly updates, 1992-present"
+      },
+      "confidence": "literature_backed",
+      "evidence_type": "programmatic_verify",
+      "literature_evidence": "Germany leads with 854 million kg annual plastic waste exports; USA, Japan, and European countries account for ~80% of traded recycled plastic waste (World Economic Forum 2023)",
+      "caveats": [
+        "Indirect proxy - high trade volumes indicate capacity but not necessarily recovery rates",
+        "China's 2018 import ban caused major disruption",
+        "Price volatility affects exports",
+        "HS codes inconsistently applied",
+        "Confounding with wealth and consumption"
+      ],
+      "references": [
+        "https://www.weforum.org/stories/2023/03/charted-the-flow-of-global-plastic-waste/",
+        "https://www.recycledmaterials.org/recycled-material-exports-snapshot/"
+      ]
+    },
+    {
+      "id": "WRR-H07",
+      "context": {
+        "geographic_scope": "Global",
+        "time_period": "2000-present",
+        "subpopulations": null
+      },
+      "target_variable": "WRR",
+      "proxy_variable": "Wastewater treatment plant capacity",
+      "proxy_description": "Number of municipal wastewater treatment plants and proportion employing anaerobic digestion producing recoverable biosolids",
+      "relationship": {
+        "direction": "positive",
+        "functional_form": "log-linear",
+        "strength_estimate": "moderate (r=0.40-0.50 expected)"
+      },
+      "mechanism": "Wastewater treatment infrastructure overlaps with organic waste recovery pathways. Anaerobic digestion produces biogas and digestate suitable for reuse. Countries with advanced wastewater treatment typically possess parallel capacity for solid waste processing, requiring similar technical expertise.",
+      "data_source": {
+        "name": "UNWATER Progress on Wastewater Treatment",
+        "organization": "UN-Water",
+        "url": "https://www.unwater.org/publications/progress-wastewater-treatment-2024-update",
+        "format": "Annual reports",
+        "accessibility": "open",
+        "coverage": "Global coverage with annual updates"
+      },
+      "confidence": "speculative",
+      "evidence_type": "programmatic_verify",
+      "literature_evidence": null,
+      "caveats": [
+        "WWTP capacity is not identical to waste recovery capacity",
+        "Data quality varies across countries",
+        "Facilities may prioritize disposal over recovery",
+        "Substantial confounding with GDP per capita"
+      ],
+      "references": [
+        "https://www.unwater.org/publications/progress-wastewater-treatment-2024-update"
+      ]
+    },
+    {
+      "id": "WRR-H08",
+      "context": {
+        "geographic_scope": "Global with OECD focus",
+        "time_period": "2000-present",
+        "subpopulations": null
+      },
+      "target_variable": "WRR",
+      "proxy_variable": "Food waste legislation presence",
+      "proxy_description": "Binary indicator of food waste segregation mandate, donation requirements, or organic waste landfill bans with years since implementation",
+      "relationship": {
+        "direction": "positive",
+        "functional_form": "threshold",
+        "strength_estimate": "strong (r=0.45-0.60 expected)"
+      },
+      "mechanism": "Food and garden waste comprise 45-60% of municipal waste stream and are most easily recovered via composting. Countries mandating food waste segregation directly increase WRR by forcing organic waste toward recovery pathways.",
+      "data_source": {
+        "name": "Must-Know Global Laws That Are Tackling Waste",
+        "organization": "REFASH",
+        "url": null,
+        "format": "Legislative databases",
+        "accessibility": "open",
+        "coverage": "30+ countries tracked for food waste policies"
+      },
+      "confidence": "speculative",
+      "evidence_type": "manual_data_needed",
+      "literature_evidence": null,
+      "caveats": [
+        "Enforcement highly variable",
+        "Temporal lag between legislation and waste stream diversion",
+        "Reverse causality possible",
+        "Laws often not meaningfully enforced in low-capacity settings"
+      ],
+      "references": []
+    },
+    {
+      "id": "WRR-H09",
+      "context": {
+        "geographic_scope": "180+ countries",
+        "time_period": "2022-present",
+        "subpopulations": null
+      },
+      "target_variable": "WRR",
+      "proxy_variable": "E-waste recycling rate",
+      "proxy_description": "Proportion of generated e-waste formally collected and recycled, or count of certified e-waste recycling facilities per capita",
+      "relationship": {
+        "direction": "positive",
+        "functional_form": "linear",
+        "strength_estimate": "moderate (r=0.35-0.50 expected)"
+      },
+      "mechanism": "Countries with developed e-waste recycling systems show >70% collection/recycling rates and typically have general waste recovery infrastructure. E-waste infrastructure requires technical sophistication that correlates with general waste management maturity.",
+      "data_source": {
+        "name": "Global E-waste Monitor 2024",
+        "organization": "ITU/UNITAR",
+        "url": "https://ewastemonitor.info/the-global-e-waste-monitor-2024/",
+        "format": "PDF report + downloadable data",
+        "accessibility": "open",
+        "coverage": "180+ countries, biennial updates"
+      },
+      "confidence": "speculative",
+      "evidence_type": "programmatic_verify",
+      "literature_evidence": null,
+      "caveats": [
+        "E-waste is small proportion of total waste stream (~2%)",
+        "Definition variance in 'recycled' e-waste",
+        "Data quality issues in developing countries",
+        "May be zero due to measurement failure rather than absence"
+      ],
+      "references": [
+        "https://ewastemonitor.info/the-global-e-waste-monitor-2024/"
+      ]
+    },
+    {
+      "id": "WRR-H10",
+      "context": {
+        "geographic_scope": "~100 countries",
+        "time_period": "2000-present",
+        "subpopulations": null
+      },
+      "target_variable": "WRR",
+      "proxy_variable": "Landfill gas recovery capacity",
+      "proxy_description": "Number and capacity of landfill gas energy projects measured as count of facilities and megawatts of electricity generation from LFG",
+      "relationship": {
+        "direction": "positive",
+        "functional_form": "nonlinear",
+        "strength_estimate": "moderate (r=0.30-0.45 expected)"
+      },
+      "mechanism": "Countries operating LFG programs demonstrate technical capacity and environmental commitment that correlates with waste management infrastructure. LFG recovery is complementary to material recovery, indicating comprehensive waste management systems.",
+      "data_source": {
+        "name": "EPA Landfill Methane Outreach Program",
+        "organization": "US EPA",
+        "url": "https://www.epa.gov/lmop/benefits-landfill-gas-energy-projects",
+        "format": "Database/reports",
+        "accessibility": "open",
+        "coverage": "USA comprehensive; partial coverage elsewhere"
+      },
+      "confidence": "speculative",
+      "evidence_type": "programmatic_verify",
+      "literature_evidence": null,
+      "caveats": [
+        "Possibly inverse or U-shaped relationship",
+        "Countries with high WRR may have low LFG generation",
+        "Policy-driven and profitable only above certain energy prices",
+        "May not indicate underlying infrastructure capacity"
+      ],
+      "references": [
+        "https://www.epa.gov/lmop/benefits-landfill-gas-energy-projects"
+      ]
+    },
+    {
+      "id": "WRR-H11",
+      "context": {
+        "geographic_scope": "High-income countries primarily",
+        "time_period": "Variable by study",
+        "subpopulations": null
+      },
+      "target_variable": "WRR",
+      "proxy_variable": "Contamination rates in recycling streams",
+      "proxy_description": "Measured contamination rates in curbside or drop-off recycling loads (% contamination by weight)",
+      "relationship": {
+        "direction": "negative",
+        "functional_form": "threshold",
+        "strength_estimate": "strong negative (r=-0.50 to -0.70 expected)"
+      },
+      "mechanism": "Contamination is direct technical barrier to material recovery. Facilities with >10% contamination must halt processing due to safety and economic concerns. Lower contamination allows more waste to be successfully recovered.",
+      "data_source": {
+        "name": "Municipal waste management agency reports",
+        "organization": "Various municipal agencies",
+        "url": null,
+        "format": "Reports and surveys",
+        "accessibility": "open",
+        "coverage": "Most available for high-income countries only"
+      },
+      "confidence": "speculative",
+      "evidence_type": "manual_data_needed",
+      "literature_evidence": null,
+      "caveats": [
+        "Not consistently reported across countries",
+        "Measurement variance in contamination definitions",
+        "Reverse causality possible",
+        "Temporal lag for contamination improvements"
+      ],
+      "references": []
+    },
+    {
+      "id": "WRR-H12",
+      "context": {
+        "geographic_scope": "Variable by survey",
+        "time_period": "Variable by survey",
+        "subpopulations": null
+      },
+      "target_variable": "WRR",
+      "proxy_variable": "Household source segregation practice",
+      "proxy_description": "Proportion of households practicing waste segregation at source, measured from household surveys or behavioral studies",
+      "relationship": {
+        "direction": "positive",
+        "functional_form": "linear",
+        "strength_estimate": "moderate to strong (r=0.40-0.60 expected)"
+      },
+      "mechanism": "Source segregation is behavioral prerequisite for all downstream recovery infrastructure. No material recovery facility can recover materials if they arrive pre-mixed. Countries with high household segregation should show elevated WRR due to cleaner material inputs.",
+      "data_source": {
+        "name": "World Values Survey and Eurobarometer",
+        "organization": "Various survey organizations",
+        "url": null,
+        "format": "Survey data",
+        "accessibility": "open",
+        "coverage": "EU and sample of other countries"
+      },
+      "confidence": "speculative",
+      "evidence_type": "manual_data_needed",
+      "literature_evidence": null,
+      "caveats": [
+        "Survey-based measures subject to social desirability bias",
+        "Temporal lag for behavioral shifts",
+        "Reverse causality",
+        "Cross-national survey comparability limited"
+      ],
+      "references": []
+    },
+    {
+      "id": "WRR-H13",
+      "context": {
+        "geographic_scope": "Global",
+        "time_period": "Variable",
+        "subpopulations": null
+      },
+      "target_variable": "WRR",
+      "proxy_variable": "Government waste management expenditure",
+      "proxy_description": "Annual government budget allocation to waste management as percentage of GDP or per capita, from municipal budget data",
+      "relationship": {
+        "direction": "positive",
+        "functional_form": "log-linear",
+        "strength_estimate": "moderate (r=0.35-0.50 expected)"
+      },
+      "mechanism": "Budget allocation indicates institutional commitment and resource availability. Building waste recovery infrastructure requires capital investment of $50-200 million per facility. Countries allocating high per-capita budgets exhibit sustained political commitment.",
+      "data_source": {
+        "name": "World Bank Trends in Solid Waste Management",
+        "organization": "World Bank",
+        "url": null,
+        "format": "Database/reports",
+        "accessibility": "open",
+        "coverage": "Global coverage by income level"
+      },
+      "confidence": "speculative",
+      "evidence_type": "programmatic_verify",
+      "literature_evidence": null,
+      "caveats": [
+        "Borders on forbidden development indicator territory",
+        "Measurement quality varies across countries",
+        "Accounting practices differ",
+        "Possible reverse causality"
+      ],
+      "references": []
+    },
+    {
+      "id": "WRR-H14",
+      "context": {
+        "geographic_scope": "Global",
+        "time_period": "Annual updates",
+        "subpopulations": null
+      },
+      "target_variable": "WRR",
+      "proxy_variable": "Waste collection coverage rate",
+      "proxy_description": "Proportion of municipal waste collected by formal waste management systems calculated as collected waste divided by total waste generated",
+      "relationship": {
+        "direction": "positive",
+        "functional_form": "linear",
+        "strength_estimate": "strong (r=0.50-0.65 expected)"
+      },
+      "mechanism": "Waste recovery is mechanistically impossible for uncollected waste. Collection coverage is prerequisite for all downstream recovery pathways. High collection rates are necessary though not sufficient for high WRR.",
+      "data_source": {
+        "name": "World Bank What a Waste 2.0 database",
+        "organization": "World Bank",
+        "url": null,
+        "format": "Database",
+        "accessibility": "open",
+        "coverage": "Most countries with standardized definitions"
+      },
+      "confidence": "speculative",
+      "evidence_type": "programmatic_verify",
+      "literature_evidence": null,
+      "caveats": [
+        "Collection is necessary but not sufficient for recovery",
+        "High collection can still lead to landfill",
+        "May be reported differently across countries",
+        "Highly correlated with urbanization and GDP per capita"
+      ],
+      "references": []
+    },
+    {
+      "id": "WRR-H15",
+      "context": {
+        "geographic_scope": "Low- and middle-income countries primarily",
+        "time_period": "Variable",
+        "subpopulations": null
+      },
+      "target_variable": "WRR",
+      "proxy_variable": "Informal waste recycling sector size",
+      "proxy_description": "Estimated number of waste pickers and informal recyclers per million population, measured through ethnographic studies or NGO registries",
+      "relationship": {
+        "direction": "negative",
+        "functional_form": "nonlinear",
+        "strength_estimate": "ambiguous"
+      },
+      "mechanism": "Large informal recycling sectors recover 10-30% of waste streams but indicate poor formal infrastructure. Informal sector size inversely correlates with formal waste management infrastructure, thus predicting low official WRR despite potentially high absolute recovery.",
+      "data_source": {
+        "name": "World Bank Informal Recycling Sector report",
+        "organization": "World Bank",
+        "url": "https://documents.worldbank.org/en/publication/documents-reports/documentdetail/227581468156575228/the-informal-recycling-sector-in-developing-countries-organizing-waste-pickers-to-enhance-their-impact",
+        "format": "Reports and case studies",
+        "accessibility": "open",
+        "coverage": "Highly fragmented, no global database"
+      },
+      "confidence": "speculative",
+      "evidence_type": "manual_data_needed",
+      "literature_evidence": null,
+      "caveats": [
+        "Measurement highly uncertain",
+        "No systematic global data",
+        "Definition variance",
+        "Reverse causality ambiguity",
+        "Very poor data quality"
+      ],
+      "references": [
+        "https://documents.worldbank.org/en/publication/documents-reports/documentdetail/227581468156575228/the-informal-recycling-sector-in-developing-countries-organizing-waste-pickers-to-enhance-their-impact"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "hypothesis_id": "OEB-H04",
+  "verdict": "partially_confirmed",
+  "verification_method": "statistical_test",
+  "raw_correlation": {
+    "pearson_r": 0.08620569592756219,
+    "pearson_p": 8.453999571514113e-08,
+    "spearman_rho": -0.006735947814215386,
+    "spearman_p": 0.6760761018589159,
+    "n_observations": 3850,
+    "n_countries": 200
+  },
+  "partial_correlation": {
+    "partial_r": 0.055889945901040454,
+    "partial_p": 0.0006620284654932685,
+    "control_variables": [
+      "log_gpc"
+    ]
+  },
+  "functional_form": {
+    "best_form": "quadratic",
+    "linear_r2": 0.007431422010355404,
+    "linear_aic": -29663.31598378349,
+    "log_linear_r2": 0.0020525557542671047,
+    "log_linear_aic": -29642.508630051478,
+    "quadratic_r2": 0.018965654149959543,
+    "quadratic_aic": -29706.317233819027
+  },
+  "data_quality_notes": "Used World Bank indicator 'NV.IND.TOTL.ZS' (Industry value added (% of GDP)) as proxy for industrial energy consumption. EDGAR NetCDF data was not directly accessible. Proxy covers 205 countries over years 1990-2024. Note: EDGAR NetCDF data was not directly accessible; World Bank energy/industry data used as proxy instead. Reporting delays of 2-3 years in emissions inventories. Country-level aggregation may obscure spatial heterogeneity.",
+  "summary": "Testing whether industrial energy consumption correlates with ozone exposure in KBAs. Used World Bank industrial energy proxy (n=3850 obs, 200 countries). Pearson r=0.086 (p=0.0000), Spearman rho=-0.007. Verdict: partially_confirmed."
+}

@@ -1,0 +1,31 @@
+{
+  "hypothesis_id": "OEB-H06",
+  "verdict": "confirmed",
+  "verification_method": "exploratory_test",
+  "raw_correlation": {
+    "pearson_r": 0.34952313404202057,
+    "pearson_p": 6.865202347663268e-89,
+    "spearman_rho": 0.2555666493791491,
+    "spearman_p": 5.817386240418358e-47,
+    "n_observations": 3069,
+    "n_countries": 176
+  },
+  "partial_correlation": {
+    "partial_r": 0.23404596838904718,
+    "partial_p": 9.32400099101448e-39,
+    "control_variables": [
+      "log_gpc"
+    ]
+  },
+  "functional_form": {
+    "best_form": "linear",
+    "linear_r2": 0.12216642123055621,
+    "linear_aic": -23654.13494135247,
+    "log_linear_r2": 0.09015399601917251,
+    "log_linear_aic": -23544.208489812776,
+    "quadratic_r2": 0.1221664997430516,
+    "quadratic_aic": -23652.135215840557
+  },
+  "data_quality_notes": "Proxy used: Energy use per capita kg oil equivalent (WB EG.USE.PCAP.KG.OE). Attempted OICA vehicle fleet data (no URL, restricted). World Bank IS.VEH.NVEH.P3 returned 0 records; IS.VEH.MOTO.Q4, EN.CO2.TRAN.ZS, EN.CO2.TRAN.MT all returned invalid/empty payloads. Tried EN.ATM.NOXE.KT.CE (NOx emissions), EG.USE.TRAN.ZS (transport energy %), IS.ROD.GOOD.MT.K6 (road goods), IS.VEH.ROAD.K1, EN.CO2.ETOT.ZS. Settled on 'Energy use per capita kg oil equivalent (WB EG.USE.PCAP.KG.OE)' as best available approximate proxy. Note: OEB measures ozone exposure in Key Biodiversity Areas (not urban areas), which may weaken the expected vehicle emission \u2192 NOx \u2192 ozone link.",
+  "summary": "Used 'Energy use per capita kg oil equivalent (WB EG.USE.PCAP.KG.OE)' as approximate proxy for vehicle fleet size/fuel consumption. Bivariate Pearson r=0.350 (p=0.000), Spearman rho=0.256 (p=0.000), n=3069 observations across 176 countries. Partial r=0.234 (p=0.000) controlling for log(GDP/capita). Best functional form: linear. Verdict: confirmed."
+}

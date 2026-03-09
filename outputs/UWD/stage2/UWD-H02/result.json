@@ -1,0 +1,12 @@
+{
+  "hypothesis_id": "UWD-H02",
+  "verdict": "partially_confirmed",
+  "verification_method": "literature_accepted",
+  "data_quality_notes": "Attempted to acquire cholera case notification data from WHO GHO (codes: CHOLERA_0000000001, WHS3_48), World Bank API, and WHO disease outbreak URLs. All data acquisition attempts failed due to unavailable endpoints or insufficient data coverage. The WHO cholera surveillance dataset was NOT already used by prior hypotheses in this run. Citation quality assessment: Lowe et al. 2017 in Emerging Infectious Diseases (CDC peer-reviewed) is a credible source. The r\u22480.65 at regional level for West Africa is plausible given the established mechanism (cholera as indicator of severe water contamination). Geographic limitation: cholera is endemic in a narrow zone; global correlation would likely be lower. The hypothesis is accepted as partially_confirmed based on literature credibility.",
+  "summary": "Could not acquire cholera case notification data programmatically. Based on citation quality (Lowe et al. 2017, Emerging Infectious Diseases, peer-reviewed), the reported r\u22480.65 between cholera rates and WASH indicators in West Africa is credible. Cholera serves as a strong proxy for acute severe water contamination in endemic regions, aligning with UWD (unsafe water DALYs) in the expected positive direction. Verdict: partially_confirmed (literature_accepted). Caveats: narrow endemic geography, vaccination confounding, outbreak noise, and disease-specificity to Vibrio contamination limit global applicability.",
+  "bivariate_correlation": null,
+  "partial_correlation": null,
+  "functional_form": null,
+  "n_observations": null,
+  "n_countries": null
+}

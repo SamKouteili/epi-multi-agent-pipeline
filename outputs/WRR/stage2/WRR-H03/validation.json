@@ -1,0 +1,17 @@
+{
+  "no_synthetic_data": true,
+  "year_alignment_ok": true,
+  "hypothesis_interpretation_ok": false,
+  "data_source_authentic": false,
+  "country_coverage_adequate": false,
+  "outlier_concerns": false,
+  "mechanistic_explanation": "Deposit return schemes (DRS) create an economic incentive for consumers to return beverage containers by making the deposit amount retrievable, transforming waste recovery from a voluntary public good into a private rational choice. Higher participation in DRS schemes directly increases container return rates and material recovery, thereby raising the waste recovery rate (WRR). The mechanism is economically sound and empirically documented in specific jurisdictions (NY 72%, Germany >95%).",
+  "issues": [
+    "MAJOR: Hypothesis specifies 'Deposit return scheme participation rates' as the proxy, but the script attempted to substitute World Bank recycling rate indicators (EN.MSW.RCYC.ZS, EN.MSW.INCN.ZS, EN.MSW.TOTL.PC.KG) instead. These are materially different variables—recycling rates are aggregate outcomes, not DRS participation measures. This is a substantial conceptual deviation from the hypothesis.",
+    "MAJOR: The Reloop Platform PDF source specified in the hypothesis could not be machine-parsed, and the script fell back to a literature-only verdict without acquiring the actual proxy data from the stated source. The data_source_authentic check flags this: no country-level DRS participation panel data was obtained from Reloop or any alternative structured source.",
+    "MAJOR: Final result contains n_observations=null and n_countries=null with no statistical test performed. The verdict is 'partially_confirmed' based on literature alone, which means the country_coverage_adequate criterion cannot be evaluated. The merged dataset was reported as having insufficient data (< 20 rows), failing the minimum threshold.",
+    "The script's fallback to literature-only verdict is reasonable given data unavailability, but this represents a significant gap between the hypothesis's proxy specification and what was actually tested.",
+    "Data quality notes acknowledge the substitution and the absence of structured DRS participation data, which is transparent but does not resolve the fundamental mismatch between hypothesis proxy (DRS participation rates) and tested proxy (general recycling rates)."
+  ],
+  "overall_assessment": "major_issues"
+}

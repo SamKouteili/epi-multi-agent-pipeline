@@ -1,0 +1,37 @@
+{
+  "hypothesis_id": "SPI-H08",
+  "verdict": "partially_confirmed",
+  "verification_method": "exploratory_test",
+  "raw_correlation": {
+    "pearson_r": 0.1575627504161815,
+    "pearson_p": 4.60638108755843e-34,
+    "spearman_rho": 0.16835701433399838,
+    "spearman_p": 1.0290858653762541e-38,
+    "n_observations": 5892,
+    "n_countries": 177
+  },
+  "partial_correlation": {
+    "partial_r": 0.15911212686346393,
+    "partial_p": 4.915365531444865e-33,
+    "control_variables": [
+      "log_gpc"
+    ]
+  },
+  "functional_form": {
+    "best_form": "quadratic",
+    "linear_r2": 0.02482602031871184,
+    "linear_aic": 38799.016470417904,
+    "log_linear_r2": null,
+    "log_linear_aic": null,
+    "quadratic_r2": 0.05434053774231973,
+    "quadratic_aic": 38619.93546613269
+  },
+  "data_quality_notes": "Exact proxy (area of habitat in patches > minimum viable size) unavailable via standard APIs \u2014 requires GIS raster processing. Substituted with World Bank 'Forest area (% of land area)' (code: AG.LND.FRST.ZS) as an approximate proxy for habitat availability. Forest area % captures broad habitat availability but does NOT capture fragmentation specifically. This is an exploratory test using an imperfect proxy. Approach 1: WRI URL was an article page. Approach 2: No local fragmentation indicators found. Approach 3: World Bank searches did not yield fragmentation metrics; fell back to forest area %.",
+  "summary": "Using 'Forest area (% of land area)' as approximate proxy for habitat availability (not fragmentation per se). Bivariate: Pearson r=0.158 (p=0.0000), Spearman rho=0.168. Partial r=0.159 (p=0.0000) controlling for log(GDP/capita). Best functional form: quadratic. Verdict: partially_confirmed. Note: proxy does not capture habitat fragmentation geometry; only broad forest area coverage.",
+  "proxy_substitution": {
+    "requested": "Area of Habitat Remaining within Fragmented Landscape Patches",
+    "used": "Forest area (% of land area)",
+    "wb_code": "AG.LND.FRST.ZS",
+    "rationale": "Forest area % is the most accessible proxy for habitat availability; does not capture fragmentation geometry"
+  }
+}

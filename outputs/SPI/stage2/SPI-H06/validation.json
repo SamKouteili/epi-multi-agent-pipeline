@@ -1,0 +1,17 @@
+{
+  "no_synthetic_data": true,
+  "year_alignment_ok": true,
+  "hypothesis_interpretation_ok": false,
+  "data_source_authentic": false,
+  "country_coverage_adequate": true,
+  "outlier_concerns": false,
+  "mechanistic_explanation": "The hypothesis proposes that habitat fragmentation (measured by landscape-scale metrics like patch size and edge density) reduces species persistence, particularly for specialist species, leading to lower SPI. However, the script substituted agricultural land percentage as a proxy, which captures land-use pressure rather than the actual landscape configuration metrics specified. Agricultural expansion may correlate with fragmentation, but this is an indirect and materially different variable than the patch-size and edge-density metrics described in the hypothesis.",
+  "issues": [
+    "MAJOR: Proxy substitution is conceptually misaligned. The hypothesis explicitly specifies 'landscape-scale metrics quantifying spatial configuration of habitat patches, including mean patch size, edge density, core area index, perimeter-to-area ratio, and nearest-neighbor distances.' The script uses 'Agricultural land (% of land area)' instead, which measures land-use type, not spatial fragmentation pattern. These are distinct variables.",
+    "MAJOR: Data source not authentic. The hypothesis cites ESA Climate Change Initiative Land Cover and MODIS as sources. The script fetches World Bank indicator AG.LND.AGRI.ZS (agricultural land), which is not from those sources. The substitution was documented in data_quality_notes but represents a fundamentally different data lineage.",
+    "MINOR: Weak correlation magnitude. Pearson r=-0.039 (p=0.0025) and Spearman rho=-0.021 (p=0.111) are extremely weak, even though statistically significant (bivariate). The quadratic fit R²=0.023 explains only ~2.3% of variance. This suggests the proxy may be capturing only a tangential aspect of the actual mechanism.",
+    "MINOR: Spearman p-value is not significant (p=0.111), while Pearson p is marginal (p=0.0025). This discrepancy with large n=5892 suggests the relationship may be driven by distributional properties rather than robust monotonic or linear association.",
+    "CONTEXTUAL: The hypothesis warns that 'metrics are scale-dependent and species-dependent,' yet the script applies a global country-level agricultural land share without any species-specific or scale-specific filtering. The aggregation likely masks the threshold mechanisms proposed."
+  ],
+  "overall_assessment": "major_issues"
+}

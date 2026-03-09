@@ -1,0 +1,31 @@
+{
+  "hypothesis_id": "SPI-H05",
+  "verdict": "confirmed",
+  "verification_method": "statistical_test",
+  "raw_correlation": {
+    "pearson_r": 0.6039432416668155,
+    "pearson_p": 2.417247128523255e-211,
+    "spearman_rho": 0.6318904160043814,
+    "spearman_p": 4.0219723079911784e-237,
+    "n_observations": 2124,
+    "n_countries": 177
+  },
+  "partial_correlation": {
+    "partial_r": 0.5987501019542326,
+    "partial_p": 1.063029043307278e-171,
+    "control_variables": [
+      "log_gpc"
+    ]
+  },
+  "functional_form": {
+    "best_form": "quadratic",
+    "linear_r2": 0.3647474391550215,
+    "linear_aic": 13243.5008905579,
+    "log_linear_r2": null,
+    "log_linear_aic": null,
+    "quadratic_r2": 0.41703965549239075,
+    "quadratic_aic": 13063.041879694118
+  },
+  "data_quality_notes": "Proxy: World Bank ER.LND.PTLD.ZS \u2014 Terrestrial protected areas as % of total land area. Data covers 1992\u20132024. Includes all IUCN protected area categories; designation does not ensure effective management. No marine protected areas included. Note: log-linear functional form fit returned None (likely due to zero values in the proxy \u2014 some countries have 0% protected area). Merged dataset: 2124 obs, 177 countries.",
+  "summary": "Terrestrial protected area percentage shows a positive correlation with SPI (Pearson r=0.604, p=2.417e-211; Spearman rho=0.632). After controlling for log GDP per capita, partial r=0.599 (p=1.063e-171). Best functional form: quadratic. Verdict: confirmed."
+}

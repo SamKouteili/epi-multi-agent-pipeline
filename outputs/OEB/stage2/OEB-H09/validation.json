@@ -1,0 +1,18 @@
+{
+  "no_synthetic_data": true,
+  "year_alignment_ok": true,
+  "hypothesis_interpretation_ok": false,
+  "data_source_authentic": false,
+  "country_coverage_adequate": true,
+  "outlier_concerns": false,
+  "mechanistic_explanation": "The hypothesis proposes that ozone damages photosynthesis and reduces net primary productivity (NPP) in forested regions, leading to lower biomass accumulation and carbon flux. However, the verification script substitutes World Bank forest area (% of land) for MODIS NPP. Forest area is a static measure of land cover, not a dynamic measure of annual carbon flux or photosynthetic productivity—these are conceptually distinct variables that respond differently to ozone stress.",
+  "issues": [
+    "CRITICAL: Proxy variable substitution is materially different from hypothesis specification. Hypothesis calls for MODIS-derived NPP in g C m⁻² day⁻¹ (a flux measure of photosynthetic productivity); script uses World Bank forest area (% of land area), which is a stock measure of land cover. Forest area does not directly measure photosynthetic capacity or annual carbon accumulation.",
+    "CRITICAL: Data source inauthentic. Hypothesis specifies 'MODIS NPP' from NASA; script documents using 'World Bank AG.LND.FRST.ZS (Forest area % of land area)' instead. The data_quality_notes acknowledge MODIS NPP is HDF4 and inaccessible, but this substitution was not pre-authorized and fundamentally changes what is being tested.",
+    "MAJOR: Mechanistic implausibility. The hypothesis mechanism is 'ozone impairs photosynthesis → reduces NPP and biomass.' Testing forest area (a slow-changing stock variable) against OEB (ozone exposure in Key Biodiversity Areas) does not measure photosynthetic damage or carbon flux reduction. A country's forest area is driven primarily by deforestation/afforestation policy, not by ozone-induced productivity loss.",
+    "MODERATE: Temporal mismatch concern. The hypothesis specifies 'monthly' temporal resolution; the actual analysis uses annual country-level data (merged OEB + forest area). This loses the fine-grained temporal information needed to detect acute ozone damage.",
+    "MODERATE: Geographic scope mismatch. Hypothesis specifies 'global forested regions' but analysis is country-level aggregation. MODIS NPP at 1 km resolution could target forested grid cells; World Bank forest area is a country-wide percentage, averaging across regions with very different forest density and ozone exposure.",
+    "MODERATE: The script documents a fallback to cereal yield (AG.YLD.CREL.KG) if forest area fails, which is even further from NPP and would represent agricultural productivity only, not forest ecosystem productivity."
+  ],
+  "overall_assessment": "major_issues"
+}

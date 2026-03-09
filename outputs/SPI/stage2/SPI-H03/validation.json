@@ -1,0 +1,17 @@
+{
+  "no_synthetic_data": true,
+  "year_alignment_ok": true,
+  "hypothesis_interpretation_ok": true,
+  "data_source_authentic": true,
+  "country_coverage_adequate": true,
+  "outlier_concerns": false,
+  "mechanistic_explanation": "The hypothesis proposes that countries with greater intact habitat (high SHI) have more opportunity to achieve high species protection through strategic protected area placement (high SPI). However, the verification reveals a significant negative correlation: countries with larger intact habitat areas tend to have lower proportions of that habitat formally protected. This suggests a disconnect between habitat availability and protection designation rates—large intact areas may exist in countries with weaker protected-area governance or policies.",
+  "issues": [
+    "Hypothesis mechanism appears theoretically flawed based on empirical results: the negative correlation contradicts the assumed positive relationship, suggesting SHI and SPI measure fundamentally different policy outcomes rather than opportunity-constraint pairs.",
+    "The partial correlation controlling for log GDP/capita remains significantly negative (r=-0.146, p<0.001), indicating the relationship is not driven by economic confounding and reflects a genuine inverse pattern.",
+    "Very weak explained variance across all functional forms (best R²=0.026), suggesting SHI is a poor predictor of SPI even where correlation is significant. The quadratic form shows marginally better fit but still explains <3% of variance.",
+    "No investigation of potential reverse causality: countries prioritizing protected areas might reduce habitat outside reserves, or alternatively, countries with vast intact areas may have lower pressure to formalize protection (leakage effect).",
+    "The hypothesis cites a literature expectation of r>0.70 (Jetz et al. 2019), but the observed r=-0.147 is not only below this but opposite in sign. The script does not investigate whether this citation actually supports the positive relationship or if there is a mischaracterization of the literature."
+  ],
+  "overall_assessment": "major_issues"
+}

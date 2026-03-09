@@ -1,0 +1,31 @@
+{
+  "hypothesis_id": "OEB-H07",
+  "verdict": "rejected",
+  "verification_method": "statistical_test",
+  "raw_correlation": {
+    "pearson_r": -0.27620619835071714,
+    "pearson_p": 6.769219365707973e-60,
+    "spearman_rho": -0.5076004249668159,
+    "spearman_p": 1.5029916077163025e-219,
+    "n_observations": 3360,
+    "n_countries": 168
+  },
+  "partial_correlation": {
+    "partial_r": -0.12324259952659977,
+    "partial_p": 1.3821638668719485e-12,
+    "control_variables": [
+      "log_gpc"
+    ]
+  },
+  "functional_form": {
+    "best_form": "quadratic",
+    "linear_r2": 0.07628986400735582,
+    "linear_aic": -25759.388928268632,
+    "log_linear_r2": 0.06723804970254688,
+    "log_linear_aic": -25726.623192323095,
+    "quadratic_r2": 0.24409910215345476,
+    "quadratic_aic": -26431.028731607064
+  },
+  "data_quality_notes": "NASA POWER API was unavailable. World Bank search found no direct solar irradiance indicator. Fell back to latitude-derived geometric solar proxy: SW \u2248 200 + 200*cos(|lat|) W/m\u00b2. This is a deterministic first-order approximation of annual mean surface irradiance. Results reflect the latitude\u2013ozone relationship rather than measured irradiance.",
+  "summary": "Tested solar radiation intensity (latitude-derived geometric proxy) as a proxy for ozone exposure in Key Biodiversity Areas (OEB). Bivariate: Pearson r=-0.276 (p=6.769e-60), Spearman rho=-0.508 (p=1.503e-219). Partial correlation controlling for log(GPC): r=-0.123 (p=1.382e-12). Best functional form: quadratic. Hypothesis predicts positive direction (higher solar \u2192 more photochemical ozone production). N=3360 obs across 168 countries."
+}

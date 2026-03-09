@@ -1,0 +1,25 @@
+{
+  "hypothesis_id": "WRR-H05",
+  "verdict": "confirmed",
+  "verification_method": "statistical_test",
+  "raw_correlation": {
+    "pearson_r": 0.6453259042660612,
+    "pearson_p": 3.9187308918611563e-48,
+    "spearman_rho": 0.6732870768709603,
+    "spearman_p": 9.481325280747689e-54,
+    "n_observations": 397,
+    "n_countries": 113
+  },
+  "partial_correlation": null,
+  "functional_form": {
+    "best_form": "quadratic",
+    "linear_r2": 0.41644552271680935,
+    "linear_aic": -1025.6915337148052,
+    "log_linear_r2": 0.314418308581741,
+    "log_linear_aic": -961.7229824154406,
+    "quadratic_r2": 0.4220303082016107,
+    "quadratic_aic": -1027.5092363203999
+  },
+  "data_quality_notes": "SUBSTITUTED PROXY: The hypothesis specifies 'proportion of MRFs with AI/robotic sorting' which has no systematic global database. Used World Bank NV.MNF.TECH.ZS.UN - Medium/High-tech manufacturing (% manufacturing value added) as a structural proxy for industrial technology and automation capacity. This is a distant proxy \u2014 medium/high-tech manufacturing share reflects a country's industrial sophistication which correlates with capacity to adopt advanced recycling technology. Partial correlation controlling for log(GDP/capita) could not be computed (numerical error). Reference URL checks: URL accessible (HTTP 200): https://resource-recycling.com/analysis/2026/02/12/the-cyber-physical-mrf-ai-and-robotics-reshape-e-waste-recovery/;   - Relevant MRF/recycling/robotics content confirmed; URL accessible (HTTP 200): https://ecostar.eu.com/municipal-solid-waste-treatment-around-the-world-ecostar/;   - Relevant MRF/recycling/robotics content confirmed. The Resource Recycling article describes facility-level improvements (85%\u219290% recovery) based on Ecostar HDDS technology across 130+ facilities \u2014 not a country-level dataset. The bivariate correlation likely reflects GDP-driven industrialization rather than MRF automation specifically.",
+  "summary": "MRF automation adoption (proxied by World Bank NV.MNF.TECH.ZS.UN - Medium/High-tech manufacturing (% manufacturing value added)) tested against WRR. Pearson r=0.645 (p=0.0000), Spearman rho=0.673 (p=0.0000), n=397 obs / 113 countries. Partial correlation unavailable. The specific proxy (% MRFs with AI/robotics) has no global dataset; substitution introduces significant measurement error. Literature evidence from Resource Recycling (2026) is industry-specific, not peer-reviewed, covering 130+ Ecostar facilities \u2014 facility-level, not country-level."
+}

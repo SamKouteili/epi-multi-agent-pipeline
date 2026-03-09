@@ -1,0 +1,18 @@
+{
+  "no_synthetic_data": true,
+  "year_alignment_ok": true,
+  "hypothesis_interpretation_ok": false,
+  "data_source_authentic": false,
+  "country_coverage_adequate": true,
+  "outlier_concerns": false,
+  "mechanistic_explanation": "The hypothesis proposes that eDNA detection diversity in protected areas—a direct measure of species community composition derived from environmental DNA sampling—should correlate positively with the Species Protection Index (SPI), a habitat representativeness measure. The mechanism is that higher species diversity detected through eDNA indicates effective species protection and intact habitat. However, the verification script abandoned this hypothesis entirely and substituted Forest area (% of land) as a proxy, which measures structural habitat availability rather than species diversity detection.",
+  "issues": [
+    "CRITICAL: hypothesis_interpretation_ok = false. The hypothesis specifies 'Environmental DNA (eDNA) Detection Diversity' as the proxy variable—a direct biodiversity observation metric. The script substituted 'Forest area (% of land area)' (AG.LND.FRST.ZS), which is a habitat structural measure, not species diversity detection. This is a materially different variable. Forest cover is a land-use proxy, not a measure of detected species community composition.",
+    "CRITICAL: data_source_authentic = false. The hypothesis specifies the data source as 'Conservation Genetics Labs eDNA programs' from 'U.S. Fish and Wildlife Service, various research institutions.' The script did not fetch from this source (acknowledged as unavailable at country level) and instead used World Bank forest area data without explicitly documenting this as an unauthenticated substitution in the mechanistic narrative. The proxy_substitution field notes it is 'approximate' but the verification_method is 'exploratory_test' (not 'pending_data'), implying a test was completed on fundamentally different data.",
+    "The correlation result (r=0.158, p<0.001, n=5892) is statistically significant but weak, and the verdict 'partially_confirmed' is misleading given that the tested variable (forest cover) is conceptually distant from the hypothesis (eDNA species detection diversity).",
+    "The script correctly notes that eDNA data is unavailable at country scale and coverage is <5% of countries, but then proceeds to test a different hypothesis without clearly bifurcating the verdict: the hypothesis as specified is 'inconclusive due to data unavailability,' while the forest-area proxy test is a separate exploratory exercise.",
+    "Country coverage (177 countries, 5892 observations) is adequate, but those observations are for forest cover, not eDNA diversity. The merge is temporally aligned (iso × year), but the proxy variable is fundamentally misaligned with the hypothesis target.",
+    "The verdict should be 'inconclusive' (due to data unavailability of the specified proxy), not 'partially_confirmed' (which implies the eDNA hypothesis was tested). The agent conflated 'we found a weak correlation with a different variable' with 'the hypothesis is supported.'"
+  ],
+  "overall_assessment": "major_issues"
+}

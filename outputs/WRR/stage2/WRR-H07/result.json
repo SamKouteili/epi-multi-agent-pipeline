@@ -1,0 +1,25 @@
+{
+  "hypothesis_id": "WRR-H07",
+  "verdict": "confirmed",
+  "verification_method": "statistical_test",
+  "raw_correlation": {
+    "pearson_r": 0.6864358626636478,
+    "pearson_p": 1.0145085045740187e-52,
+    "spearman_rho": 0.7376572003299098,
+    "spearman_p": 1.4008062045379186e-64,
+    "n_observations": 369,
+    "n_countries": 105
+  },
+  "partial_correlation": null,
+  "functional_form": {
+    "best_form": "quadratic",
+    "linear_r2": 0.4711941935507863,
+    "linear_aic": -978.711809095252,
+    "log_linear_r2": 0.36328974080770515,
+    "log_linear_aic": -910.1909330337207,
+    "quadratic_r2": 0.53863454573291,
+    "quadratic_aic": -1027.0547733786136
+  },
+  "data_quality_notes": "Proxy source: WB SH.STA.SMSS.ZS: People using safely managed sanitation services (%). Used as proxy for wastewater treatment plant capacity, since direct WWTP capacity data from the UN-Water report was not available as a downloadable structured dataset (only PDF annual reports). Safely managed sanitation services coverage correlates strongly with WWTP infrastructure \u2014 countries with high treatment plant capacity also tend to have high safely managed sanitation coverage. Merged 369 observations across 105 countries (years 2016-2022). GDP control available for 360 observations. Note: EN.H2O.WATR.ZS (wastewater treated %) returned no data (invalid WB code). Caveats: WWTP capacity \u2260 waste recovery capacity; substantial GDP confounding expected.",
+  "summary": "Using WB SH.STA.SMSS.ZS: People using safely managed sanitation services (%) as proxy for wastewater treatment infrastructure. Strong positive bivariate correlation: r=0.686 (p=0.0000), rho=0.738 (p=0.0000), n=369. Partial correlation could not be computed. Best functional form: quadratic. Hypothesis expected positive direction and log-linear form. Strong correlation likely reflects shared GDP confounding with both sanitation infrastructure and waste recovery capacity."
+}

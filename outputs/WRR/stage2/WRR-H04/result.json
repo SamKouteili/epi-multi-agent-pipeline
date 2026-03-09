@@ -1,0 +1,25 @@
+{
+  "hypothesis_id": "WRR-H04",
+  "verdict": "confirmed",
+  "verification_method": "statistical_test",
+  "raw_correlation": {
+    "pearson_r": 0.7177045412585347,
+    "pearson_p": 2.1782256950820875e-46,
+    "spearman_rho": 0.7350149851678833,
+    "spearman_p": 1.1358023851163038e-49,
+    "n_observations": 285,
+    "n_countries": 74
+  },
+  "partial_correlation": null,
+  "functional_form": {
+    "best_form": "quadratic",
+    "linear_r2": 0.5150998085431238,
+    "linear_aic": -781.7669472793517,
+    "log_linear_r2": null,
+    "log_linear_aic": null,
+    "quadratic_r2": 0.5708225043737725,
+    "quadratic_aic": -814.5576105974458
+  },
+  "data_quality_notes": "EPR proxy constructed from documented legislation implementation dates across ~80 countries. Proxy = years since EPR packaging legislation came into force (EPR maturity measure). Sources: OECD EPR database, EU Packaging Directive transposition records, national government sources. PSI interactive database (epr.sustainablepackaging.org) accessible (HTTP 200) but not machine-readable; dates manually compiled from verified sources. EPR design heterogeneity not captured (mandatory vs voluntary, coverage scope). Countries without identified EPR legislation excluded from analysis. EPR maturity = 0 for years prior to implementation; only active-EPR observations used. URL https://epr.sustainablepackaging.org accessible (HTTP 200); URL https://ecostar.eu.com/municipal-solid-waste-treatment-around-the-world-ecostar/ returned HTTP 403",
+  "summary": "Analysis of EPR maturity (years since implementation) vs waste recovery rate across 74 countries. Pearson r=0.718 (p=0.0000), Spearman rho=0.735 (p=0.0000). Partial r controlling for log(GDP/cap)=N/A (not computed). Best functional form: quadratic. Literature evidence (Italy's Ronchi Decree raising recycling from 9% to 66.6%) is credible and corroborated by the positive correlation found. Verdict: confirmed."
+}

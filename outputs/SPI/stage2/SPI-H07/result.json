@@ -1,0 +1,36 @@
+{
+  "hypothesis_id": "SPI-H07",
+  "verdict": "partially_confirmed",
+  "verification_method": "exploratory_test",
+  "raw_correlation": {
+    "pearson_r": 0.0625102667896816,
+    "pearson_p": 3.49619291765642e-05,
+    "spearman_rho": 0.03342539649206063,
+    "spearman_p": 0.02700996858434804,
+    "n_observations": 4377,
+    "n_countries": 177
+  },
+  "partial_correlation": {
+    "partial_r": 0.011166425593540174,
+    "partial_p": 0.47119369777638853,
+    "control_variables": [
+      "log_gpc"
+    ]
+  },
+  "functional_form": {
+    "best_form": "quadratic",
+    "linear_r2": 0.003907533454117096,
+    "linear_aic": 29027.314169511134,
+    "log_linear_r2": null,
+    "log_linear_aic": null,
+    "quadratic_r2": 0.005232080748275414,
+    "quadratic_aic": 29023.490009863068
+  },
+  "data_quality_notes": "PAME (Protected Area Management Effectiveness) data from GD-PAME/BIOPAMA was not directly accessible (tried: https://rris.biopama.org/node/20639, https://www.protectedplanet.net/c/protected-areas-management-effectiveness-pame-data, https://raw.githubusercontent.com/unep-wcmc/GD-PAME/main/data/pame_country_scores.csv). Using APPROXIMATE PROXY: World Bank WGI: Government Effectiveness (GE.EST) as institutional quality substitute for management effectiveness. Government Effectiveness (WGI) measures the quality of public services, policy formulation, and credibility of governmental commitment \u2014 the institutional capacity that underlies effective protected area management. Countries with higher GE scores are more likely to enforce PA regulations, fund ranger programs, and implement management plans (vs. 'paper parks'). This is a broad proxy \u2014 actual METT-4/PAME scores from GD-PAME would be needed for definitive verification. WGI indicators cover all governance dimensions.",
+  "summary": "Hypothesis SPI-H07 tests whether Protected Area Management Effectiveness (PAME) correlates with the Species Protection Index (SPI). Due to inaccessibility of the GD-PAME database (requires BIOPAMA account), this analysis uses Government Effectiveness Score (WGI) as an approximate proxy for institutional management quality. Bivariate correlation: Pearson r=0.063 (p=0.0000), Spearman rho=0.033 (p=0.0270), N=4377 observations across 177 countries. Best functional form: quadratic. Verdict: partially_confirmed. Note: This is an exploratory test with a substitute proxy \u2014 governance effectiveness as a proxy for PA management effectiveness.",
+  "proxy_substitution": {
+    "intended_proxy": "Protected Area Management Effectiveness Score (PAME/METT-4)",
+    "actual_proxy": "World Bank WGI: Government Effectiveness (GE.EST)",
+    "substitution_rationale": "Government Effectiveness (WGI) measures institutional quality, public service delivery, and governance capacity \u2014 the same factors that determine whether protected areas are actively managed vs. remaining 'paper parks'. Countries with stronger governance consistently show better PA outcomes."
+  }
+}

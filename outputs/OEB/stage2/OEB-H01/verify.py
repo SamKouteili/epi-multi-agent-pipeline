@@ -1,0 +1,230 @@
+"""
+OEB-H01: Verify hypothesis that Tropospheric NO₂ Column Density correlates with
+OEB (Mean annual ozone exposure across Key Biodiversity Areas).
+
+Expected direction: positive (NO₂ as ozone precursor)
+"""
+
+import json
+import os
+import numpy as np
+import pandas as pd
+
+from src.utils.stats import (
+    run_bivariate_correlation,
+    run_partial_correlation,
+    determine_verdict,
+    build_result_json,
+    test_functional_form,
+)
+from src.utils.data_utils import load_raw_indicator
+from src.utils.data_fetch import fetch_world_bank_indicator, search_world_bank
+
+# ── Output directory ───────────────────────────────────────────────────────────
+output_path = "/Users/samkouteili/rose/epi/multi-agent/outputs/OEB/stage2/OEB-H01"
+os.makedirs(output_path, exist_ok=True)
+
+print("=" * 60)
+print("OEB-H01: Tropospheric NO₂ → OEB Ozone Exposure Verification")
+print("=" * 60)
+
+# ── 1. Load EPI target data ────────────────────────────────────────────────────
+print("\n[1] Loading OEB target indicator...")
+target = load_raw_indicator("OEB")
+print(f"    OEB rows: {len(target)}, countries: {target['iso'].nunique()}")
+print(f"    Year range: {target['year'].min()} – {target['year'].max()}")
+print(f"    Value stats: mean={target['value'].mean():.4f}, std={target['value'].std():.4f}")
+
+# ── 2. Acquire proxy data ──────────────────────────────────────────────────────
+# The primary source (CAMS NetCDF) requires specialised download tools.
+# We fall back to the World Bank which aggregates satellite-derived NO₂ data
+# from Sentinel-5P / OMI under indicator "EN.ATM.NO2.PC" or similar.
+# We also try "EN.ATM.NOX.KT.CE" (NOx emissions in kt CO₂-equiv).
+
+print("\n[2] Acquiring NO₂ proxy data...")
+proxy = None
+proxy_description = ""
+
+# --- Attempt A: World Bank atmospheric NO₂ satellite indicator ----------------
+wb_candidates = [
+    ("EN.ATM.NO2.PC", "NO2 concentration per capita (WB)"),
+    ("EN.ATM.NOX.KT.CE", "NOx emissions kt CO2-equiv (WB)"),
+    ("EN.CLC.NOXD.MT", "NOx direct emissions (WB)"),
+]
+
+for wb_code, desc in wb_candidates:
+    print(f"    Trying World Bank indicator: {wb_code} ({desc})...")
+    try:
+        df = fetch_world_bank_indicator(wb_code)
+        if df is not None and len(df) > 100:
+            df = df.rename(columns={"value": "proxy_value"})
+            df = df.dropna(subset=["proxy_value"])
+            print(f"    ✓ Got {len(df)} rows from {wb_code}")
+            proxy = df
+            proxy_description = f"World Bank {wb_code}: {desc}"
+            break
+        else:
+            print(f"    ✗ Insufficient data from {wb_code}")
+    except Exception as e:
+        print(f"    ✗ Failed {wb_code}: {e}")
+
+# --- Attempt B: Search World Bank for NO₂ related indicators ------------------
+if proxy is None:
+    print("    Searching World Bank for NO₂ indicators...")
+    try:
+        results = search_world_bank("nitrogen dioxide NO2 air pollution")
+        print(f"    Found {len(results)} results")
+        if results:
+            print(f"    Top candidates: {results[:5]}")
+    except Exception as e:
+        print(f"    Search failed: {e}")
+
+# ── 3. Handle missing proxy data ───────────────────────────────────────────────
+if proxy is None:
+    print("\n[!] Could not acquire NO₂ proxy data from any source.")
+    print("    The primary CAMS data requires NetCDF download infrastructure.")
+    print("    World Bank NO₂ satellite indicators were not available.")
+    
+    verdict_str = "inconclusive"
+    data_quality_notes = (
+        "Primary proxy (CAMS Global Reanalysis tropospheric NO₂) requires "
+        "direct NetCDF download from ECMWF which was not accessible via API. "
+        "Attempted World Bank indicators: EN.ATM.NO2.PC, EN.ATM.NOX.KT.CE, "
+        "EN.CLC.NOXD.MT — none returned sufficient data. "
+        "NOx emissions data (kt CO₂-equiv) may serve as a partial proxy but "
+        "was also unavailable. Verification requires CAMS/Sentinel-5P data access."
+    )
+    
+    result = {
+        "hypothesis_id": "OEB-H01",
+        "verdict": verdict_str,
+        "verification_method": "statistical_test",
+        "data_quality_notes": data_quality_notes,
+        "summary": (
+            "Inconclusive: tropospheric NO₂ column density data from CAMS "
+            "or satellite sources was not accessible through available APIs. "
+            "The hypothesis (NO₂ as ozone precursor → positive correlation with "
+            "OEB ozone exposure in KBAs) is mechanistically sound and "
+            "literature-backed, but statistical verification requires specialised "
+            "geospatial data that must be downloaded separately."
+        ),
+        "bivariate_correlation": None,
+        "partial_correlation": None,
+        "functional_form": None,
+        "n_observations": 0,
+        "n_countries": 0,
+    }
+    
+    out_file = f"{output_path}/result.json"
+    with open(out_file, "w") as f:
+        json.dump(result, f, indent=2)
+    print(f"\n[✓] Result written to {out_file}")
+    print(f"    Verdict: {verdict_str}")
+    import sys; sys.exit(0)
+
+# ── 4. Merge target + proxy ────────────────────────────────────────────────────
+print("\n[3] Merging OEB target with proxy data...")
+merged = target.merge(proxy[["iso", "year", "proxy_value"]], on=["iso", "year"])
+merged = merged.dropna(subset=["value", "proxy_value"])
+print(f"    Merged rows: {len(merged)}, countries: {merged['iso'].nunique()}")
+print(f"    Year range: {merged['year'].min()} – {merged['year'].max()}")
+
+if len(merged) < 20:
+    print(f"[!] Insufficient data after merge (n={len(merged)}), verdict=inconclusive")
+    result = {
+        "hypothesis_id": "OEB-H01",
+        "verdict": "inconclusive",
+        "verification_method": "statistical_test",
+        "data_quality_notes": f"Only {len(merged)} observations after merging OEB with {proxy_description}.",
+        "summary": "Insufficient overlapping data for statistical testing.",
+        "bivariate_correlation": None,
+        "partial_correlation": None,
+        "functional_form": None,
+        "n_observations": len(merged),
+        "n_countries": merged['iso'].nunique(),
+    }
+    out_file = f"{output_path}/result.json"
+    with open(out_file, "w") as f:
+        json.dump(result, f, indent=2)
+    import sys; sys.exit(0)
+
+# ── 5. Bivariate correlation ───────────────────────────────────────────────────
+print("\n[4] Running bivariate correlation...")
+corr = run_bivariate_correlation(
+    merged["proxy_value"], merged["value"], iso=merged["iso"]
+)
+print(f"    Pearson r={corr.pearson_r:.4f} (p={corr.pearson_p:.4f})")
+print(f"    Spearman rho={corr.spearman_rho:.4f} (p={corr.spearman_p:.4f})")
+print(f"    n_observations={corr.n_observations}, n_countries={corr.n_countries}")
+
+# ── 6. Partial correlation controlling for log(GDP per capita) ─────────────────
+print("\n[5] Running partial correlation controlling for log(GPC)...")
+gpc = load_raw_indicator("GPC")
+merged_gpc = merged.merge(
+    gpc[["iso", "year", "value"]].rename(columns={"value": "gpc"}),
+    on=["iso", "year"]
+)
+merged_gpc = merged_gpc.dropna(subset=["gpc"])
+merged_gpc = merged_gpc[merged_gpc["gpc"] > 0]
+merged_gpc["log_gpc"] = np.log(merged_gpc["gpc"])
+print(f"    Rows after GPC merge: {len(merged_gpc)}")
+
+partial = run_partial_correlation(merged_gpc, "proxy_value", "value", ["log_gpc"])
+print(f"    Partial r={partial.partial_r:.4f} (p={partial.partial_p:.4f})")
+print(f"    Controls: {partial.control_variables}")
+
+# ── 7. Functional form test ────────────────────────────────────────────────────
+print("\n[6] Testing functional form...")
+form = test_functional_form(merged["proxy_value"], merged["value"])
+print(f"    Best form: {form.best_form.value}")
+print(f"    Linear R²={form.linear_r2:.4f}, AIC={form.linear_aic:.2f}")
+print(f"    Log-linear R²={form.log_linear_r2:.4f}, AIC={form.log_linear_aic:.2f}")
+print(f"    Quadratic R²={form.quadratic_r2:.4f}, AIC={form.quadratic_aic:.2f}")
+
+# ── 8. Determine verdict ───────────────────────────────────────────────────────
+print("\n[7] Determining verdict...")
+verdict = determine_verdict(corr, partial, "positive")
+print(f"    Verdict: {verdict.value}")
+
+# ── 9. Build and write result ──────────────────────────────────────────────────
+data_quality_notes = (
+    f"Primary proxy (CAMS tropospheric NO₂ column density) was not directly "
+    f"accessible; substituted with {proxy_description}. "
+    f"NOx emissions are a related but different variable than satellite NO₂ column "
+    f"density — they reflect ground-level emissions rather than atmospheric column "
+    f"concentrations. Satellite uncertainty for NO₂ retrievals is ±15-20%. "
+    f"Relationship may vary by NOx vs VOC limitation regime."
+)
+
+summary = (
+    f"Hypothesis OEB-H01 tests whether tropospheric NO₂ column density (ozone "
+    f"precursor) correlates positively with mean annual ozone exposure in KBAs (OEB). "
+    f"Using {proxy_description} as proxy, bivariate correlation: "
+    f"Pearson r={corr.pearson_r:.3f} (p={corr.pearson_p:.4f}), "
+    f"Spearman rho={corr.spearman_rho:.3f} (p={corr.spearman_p:.4f}). "
+    f"Partial correlation controlling for log(GDP/capita): "
+    f"r={partial.partial_r:.3f} (p={partial.partial_p:.4f}). "
+    f"Best functional form: {form.best_form.value}. "
+    f"Verdict: {verdict.value}."
+)
+
+result = build_result_json(
+    "OEB-H01",
+    verdict,
+    corr,
+    partial,
+    functional_form=form,
+    data_quality_notes=data_quality_notes,
+    summary=summary,
+)
+
+# Add verification_method field
+result["verification_method"] = "statistical_test"
+
+out_file = f"{output_path}/result.json"
+with open(out_file, "w") as f:
+    json.dump(result, f, indent=2)
+
+print(f"\n[✓] Result written to: {out_file}")
+print(f"    Final verdict: {verdict.value}")
+print("=" * 60)

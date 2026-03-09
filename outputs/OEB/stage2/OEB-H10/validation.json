@@ -1,0 +1,17 @@
+{
+  "no_synthetic_data": true,
+  "year_alignment_ok": true,
+  "hypothesis_interpretation_ok": false,
+  "data_source_authentic": false,
+  "country_coverage_adequate": true,
+  "outlier_concerns": false,
+  "mechanistic_explanation": "The hypothesis posits that ammonia emissions from livestock react with NOx to form compounds that participate in ozone formation chemistry, thereby increasing ozone exposure in protected areas. However, the script substituted livestock production index (a World Bank indicator) for the specified proxy of ammonia emissions or livestock density. While related to livestock activity, a production index is an economic measure, not a direct measure of ammonia emissions or stocking density, making it a materially different variable that does not directly capture the reactive nitrogen availability mechanism described.",
+  "issues": [
+    "MAJOR: Hypothesis specifies 'Ammonia Emissions and Livestock Density' from EDGAR (0.1° × 0.1° gridded data), but script used World Bank's 'Livestock production index' (AG.PRD.LVSK.XD) — a fundamentally different variable (economic production vs. physical emissions/density).",
+    "MAJOR: Primary data source not authentic. Hypothesis requires EDGAR NetCDF gridded emissions inventory; script substituted World Bank macro-indicator. While documented in data_quality_notes, this is a material deviation from the specified source.",
+    "MODERATE: Correlation is extremely weak (r=0.060, p<0.001 for Pearson; rho=0.070 for Spearman) and disappears when controlling for GDP per capita (partial r=0.020, p=0.236), suggesting confounding by economic development rather than a causal ammonia-ozone mechanism.",
+    "MODERATE: The hypothesis specifies the mechanism operates on 'ozone formation chemistry' where ammonia reacts with NOx, but a livestock production index does not directly capture ammonia flux or the reactive nitrogen availability that drives this chemistry.",
+    "MINOR: The verdict is 'partially_confirmed' despite the partial correlation becoming non-significant (p=0.236) when controlling for log(GPC), which weakens the evidence substantially."
+  ],
+  "overall_assessment": "major_issues"
+}

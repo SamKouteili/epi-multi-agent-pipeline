@@ -1,0 +1,31 @@
+{
+  "hypothesis_id": "SPI-H09",
+  "verdict": "rejected",
+  "verification_method": "statistical_test",
+  "raw_correlation": {
+    "pearson_r": 0.04855050533764781,
+    "pearson_p": 0.5210520403335829,
+    "spearman_rho": 0.07072709409071037,
+    "spearman_p": 0.3495471653458666,
+    "n_observations": 177,
+    "n_countries": 177
+  },
+  "partial_correlation": {
+    "partial_r": -0.00843721458697423,
+    "partial_p": 0.9115079522947511,
+    "control_variables": [
+      "log_gpc"
+    ]
+  },
+  "functional_form": {
+    "best_form": "linear",
+    "linear_r2": 0.002357151568541105,
+    "linear_aic": 1189.22514638898,
+    "log_linear_r2": null,
+    "log_linear_aic": null,
+    "quadratic_r2": 0.0027522264574826316,
+    "quadratic_aic": 1191.1550390302239
+  },
+  "data_quality_notes": "Fertilizer consumption (kg/ha arable land, World Bank AG.CON.FERT.ZS, sourced from FAO). Pesticide-specific data (AG.CON.PEST.ZS) returned empty from World Bank API. Country-level aggregates lack spatial resolution for protected area catchment analysis. Pesticide-specific World Bank indicator (AG.CON.PEST.ZS) returned no data; fertilizer consumption used as sole proxy. Cross-sectional analysis (most recent year per country) used. GPC matched via nearest available year for partial correlation. Spatial mismatch between country-level aggregates and protected area catchments likely attenuates any true relationship.",
+  "summary": "Tested fertilizer consumption intensity (World Bank AG.CON.FERT.ZS, kg/ha arable land) against SPI using 177 country observations. Pearson r=0.049 (p=0.521), Spearman rho=0.071 (p=0.350). Partial r=-0.008 (p=0.912) controlling for log(GPC). Best functional form: linear (linear R\u00b2=0.0024, log-linear R\u00b2=N/A, quadratic R\u00b2=0.0028). Hypothesis expected negative correlation (r=-0.55 to -0.70). Observed r=0.049 is near zero and not significant, failing to confirm the hypothesis. Country-level fertilizer aggregates likely too coarse to capture protected area catchment-specific impacts."
+}

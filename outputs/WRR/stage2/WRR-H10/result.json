@@ -1,0 +1,25 @@
+{
+  "hypothesis_id": "WRR-H10",
+  "verdict": "rejected",
+  "verification_method": "statistical_test",
+  "raw_correlation": {
+    "pearson_r": 0.07382189377519445,
+    "pearson_p": 0.1277434119880845,
+    "spearman_rho": 0.5243242737099074,
+    "spearman_p": 1.5767874995147798e-31,
+    "n_observations": 427,
+    "n_countries": 133
+  },
+  "partial_correlation": null,
+  "functional_form": {
+    "best_form": "log-linear",
+    "linear_r2": 0.0047774578633470455,
+    "linear_aic": -860.7579945809734,
+    "log_linear_r2": 0.20068801839633188,
+    "log_linear_aic": -952.6090954814407,
+    "quadratic_r2": 0.09609084610285734,
+    "quadratic_aic": -899.0815115740849
+  },
+  "data_quality_notes": "Proxy used: World Bank: Renewable electricity capacity excl hydro (MW) (EG.ELC.RNWX.KH). The hypothesis specified EPA LMOP Landfill Gas Recovery Capacity data, which is US-only and not available as a global dataset. As a global substitute we used a World Bank energy/renewables indicator. This is an imperfect proxy for LFG recovery capacity specifically, but captures broader energy infrastructure that correlates with waste management sophistication. Two WB methane indicators (EN.ATM.METH.EG.KT.CE, EN.ATM.METH.PC) returned no valid data (invalid WB codes). Partial correlation was attempted but may have been skipped due to numerical issues (near-zero variance or degenerate pingouin output).",
+  "summary": "Testing whether World Bank: Renewable electricity capacity excl hydro (MW) (EG.ELC.RNWX.KH) correlates with WRR (waste recovery rate). Bivariate: Pearson r=0.074 (p=0.128), Spearman rho=0.524 (p=0.000), n=427 observations, 133 countries. Partial correlation could not be computed. Best functional form: log-linear. Verdict: rejected. Note: proxy is a broad energy indicator, not directly LFG-specific."
+}

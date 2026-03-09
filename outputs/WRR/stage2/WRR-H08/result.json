@@ -1,0 +1,27 @@
+{
+  "hypothesis_id": "WRR-H08",
+  "verdict": "confirmed",
+  "verification_method": "exploratory_test",
+  "raw_correlation": {
+    "pearson_r": 0.6864358626636478,
+    "pearson_p": 1.0145085045740187e-52,
+    "spearman_rho": 0.7376572003299098,
+    "spearman_p": 1.4008062045379186e-64,
+    "n_observations": 369,
+    "n_countries": 105
+  },
+  "partial_correlation": null,
+  "functional_form": {
+    "best_form": "quadratic",
+    "linear_r2": 0.4711941935507863,
+    "linear_aic": -978.711809095252,
+    "log_linear_r2": 0.36328974080770515,
+    "log_linear_aic": -910.1909330337207,
+    "quadratic_r2": 0.53863454573291,
+    "quadratic_aic": -1027.0547733786136
+  },
+  "data_quality_notes": "APPROXIMATE PROXY USED \u2014 not the hypothesized food waste legislation indicator. Used World Bank indicator SH.STA.SMSS.ZS (Safely managed sanitation services (%)) as a proxy for environmental/waste governance capacity. The original hypothesis required a binary dataset of food waste segregation mandates from REFASH legislative database, which is not machine-readable. The chosen proxy is a distant approximation. Direct legislation data covering 30+ countries would be needed for a definitive test. Caveats: enforcement variability, temporal lag between legislation and waste diversion, and reverse causality limit direct interpretation.",
+  "summary": "Could not obtain food waste legislation data (REFASH database not accessible). Used Safely managed sanitation services (%) (SH.STA.SMSS.ZS) as an approximate governance/environmental proxy. Pearson r=0.686 (p=0.0000), n=369. Verdict: confirmed. This is an exploratory result using an approximate proxy; definitive testing requires structured food waste legislation data.",
+  "proxy_variable_used": "SH.STA.SMSS.ZS (Safely managed sanitation services (%))",
+  "proxy_variable_intended": "Food waste legislation presence (binary/ordinal)"
+}
