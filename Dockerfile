@@ -9,7 +9,7 @@ COPY . .
 
 RUN pip install --no-cache-dir . gradio
 
-# v2: 58 indicators + Reports tab + pipeline outputs
+# v3: academic theme migration
 EXPOSE 7860
 
 CMD ["python", "web/app.py"]
