@@ -6,39 +6,47 @@
     <title>EPI Proxy Discovery Pipeline</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Source+Sans+3:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
     <style>
         /* ===========================================
-           CSS CUSTOM PROPERTIES (TERMINAL THEME)
+           CSS CUSTOM PROPERTIES (ACADEMIC THEME)
            =========================================== */
         :root {
-            --bg-primary: #0a0e14;
-            --bg-secondary: #0d1117;
-            --bg-card: #131920;
-            --bg-card-hover: #1a2230;
-            --border: #1e2a3a;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f7f7f5;
+            --bg-card: #ffffff;
+            --bg-card-hover: #f0f0ed;
+            --border: #d4d2cb;
+            --border-light: #e8e6e1;
 
-            --green: #00ff88;
-            --green-dim: #00cc6a;
-            --green-faint: rgba(0, 255, 136, 0.08);
-            --cyan: #00d4ff;
-            --amber: #ffb800;
-            --red: #ff4466;
-            --purple: #b48ead;
-            --text-primary: #c5cdd8;
-            --text-muted: #5c6b7f;
-            --text-bright: #e8edf3;
+            --yale-blue: #00356B;
+            --yale-blue-light: #2b5f9e;
+            --yale-blue-faint: rgba(0, 53, 107, 0.06);
+            --epi-green: #2e7d32;
+            --epi-green-light: #4caf50;
+            --epi-green-faint: rgba(46, 125, 50, 0.08);
+            --accent-amber: #bf6900;
+            --accent-amber-faint: rgba(191, 105, 0, 0.08);
+            --accent-red: #c62828;
+            --accent-red-faint: rgba(198, 40, 40, 0.06);
+            --accent-purple: #6a1b9a;
+            --accent-purple-faint: rgba(106, 27, 154, 0.06);
+            --text-primary: #2c2c2c;
+            --text-secondary: #5a5a5a;
+            --text-muted: #8a8a8a;
 
+            --font-display: 'Cormorant Garamond', Georgia, serif;
+            --font-body: 'Source Sans 3', 'Segoe UI', sans-serif;
             --font-mono: 'JetBrains Mono', monospace;
-            --font-display: 'Space Grotesk', sans-serif;
 
-            --title-size: clamp(1.8rem, 5vw, 3.5rem);
-            --h2-size: clamp(1.3rem, 3.5vw, 2.2rem);
-            --h3-size: clamp(1rem, 2.5vw, 1.4rem);
-            --body-size: clamp(0.7rem, 1.3vw, 1rem);
-            --small-size: clamp(0.6rem, 1vw, 0.85rem);
-            --code-size: clamp(0.6rem, 1.1vw, 0.85rem);
+            --title-size: clamp(2rem, 5.5vw, 4rem);
+            --h2-size: clamp(1.4rem, 3.5vw, 2.4rem);
+            --h3-size: clamp(1.05rem, 2.2vw, 1.4rem);
+            --body-size: clamp(0.85rem, 1.5vw, 1.15rem);
+            --small-size: clamp(0.7rem, 1.1vw, 0.95rem);
+            --code-size: clamp(0.65rem, 1.1vw, 0.85rem);
+            --label-size: clamp(0.6rem, 0.9vw, 0.8rem);
 
             --slide-padding: clamp(1.5rem, 4vw, 4rem);
             --content-gap: clamp(0.75rem, 2vw, 1.5rem);
@@ -58,7 +66,7 @@
         }
 
         body {
-            font-family: var(--font-mono);
+            font-family: var(--font-body);
             background: var(--bg-primary);
             color: var(--text-primary);
             height: 100%;
@@ -67,15 +75,7 @@
             line-height: 1.6;
         }
 
-        /* Scanlines */
-        body::after {
-            content: '';
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            pointer-events: none;
-            z-index: 9999;
-            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
-        }
+        /* Scanlines removed for academic theme */
 
         /* ===========================================
            SLIDE CONTAINER
@@ -105,8 +105,8 @@
            =========================================== */
         .progress-bar {
             position: fixed; top: 0; left: 0; height: 2px;
-            background: var(--green);
-            box-shadow: 0 0 10px var(--green), 0 0 20px rgba(0,255,136,0.3);
+            background: var(--yale-blue);
+            box-shadow: none;
             z-index: 1000; transition: width 0.3s ease;
         }
         .slide-counter {
@@ -117,7 +117,7 @@
             font-size: var(--small-size);
             color: var(--text-muted); z-index: 100;
         }
-        .slide-counter .current { color: var(--green); }
+        .slide-counter .current { color: var(--yale-blue); }
         .nav-dots {
             position: fixed; right: clamp(0.4rem, 1vw, 0.8rem);
             top: 50%; transform: translateY(-50%);
@@ -128,24 +128,24 @@
             background: var(--border); cursor: pointer;
             transition: all 0.3s; border: none; padding: 0;
         }
-        .nav-dot.active { background: var(--green); box-shadow: 0 0 6px var(--green); transform: scale(1.4); }
-        .nav-dot:hover { background: var(--green-dim); }
+        .nav-dot.active { background: var(--yale-blue); box-shadow: none; transform: scale(1.4); }
+        .nav-dot:hover { background: var(--yale-blue-light); }
 
         /* ===========================================
            TYPOGRAPHY
            =========================================== */
-        h1 { font-family: var(--font-display); font-size: var(--title-size); font-weight: 700; color: var(--text-bright); letter-spacing: -0.02em; line-height: 1.1; }
-        h2 { font-family: var(--font-display); font-size: var(--h2-size); font-weight: 600; color: var(--text-bright); line-height: 1.2; margin-bottom: var(--content-gap); }
-        h3 { font-family: var(--font-display); font-size: var(--h3-size); font-weight: 500; color: var(--green); }
+        h1 { font-family: var(--font-display); font-size: var(--title-size); font-weight: 700; color: var(--yale-blue); letter-spacing: -0.02em; line-height: 1.1; }
+        h2 { font-family: var(--font-display); font-size: var(--h2-size); font-weight: 600; color: var(--yale-blue); line-height: 1.2; margin-bottom: var(--content-gap); }
+        h3 { font-family: var(--font-body); font-size: var(--h3-size); font-weight: 600; color: var(--yale-blue); }
 
-        .prompt { color: var(--green); }
+        .prompt { color: var(--yale-blue); }
         .comment { color: var(--text-muted); font-style: italic; }
-        .keyword { color: var(--cyan); }
-        .string { color: var(--amber); }
-        .error { color: var(--red); }
+        .keyword { color: var(--epi-green); }
+        .string { color: var(--accent-amber); }
+        .error { color: var(--accent-red); }
 
-        .section-label { font-family: var(--font-mono); font-size: var(--small-size); color: var(--text-muted); margin-bottom: var(--element-gap); letter-spacing: 0.05em; }
-        .section-label .prompt { color: var(--green); }
+        .section-label { font-family: var(--font-mono); font-size: var(--small-size); color: var(--text-muted); margin-bottom: var(--element-gap); letter-spacing: 0.08em; text-transform: uppercase; }
+        .section-label .prompt { color: var(--yale-blue); }
 
         /* ===========================================
            CODE BLOCKS
@@ -160,7 +160,7 @@
         /* Inline code */
         code {
             background: var(--bg-secondary); padding: 0.1em 0.4em; border-radius: 3px;
-            font-family: var(--font-mono); font-size: 0.9em; color: var(--cyan); border: 1px solid var(--border);
+            font-family: var(--font-mono); font-size: 0.9em; color: var(--epi-green); border: 1px solid var(--border);
         }
 
         /* ===========================================
@@ -170,8 +170,8 @@
             background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px;
             padding: clamp(0.6rem, 1.5vw, 1.2rem); transition: border-color 0.3s, background 0.3s, box-shadow 0.3s;
         }
-        .card:hover { border-color: var(--green-dim); background: var(--bg-card-hover); box-shadow: 0 0 20px rgba(0,255,136,0.05); }
-        .card-title { font-family: var(--font-mono); font-size: var(--body-size); color: var(--green); font-weight: 500; margin-bottom: 0.3em; }
+        .card:hover { border-color: var(--yale-blue-light); background: var(--bg-card-hover); box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+        .card-title { font-family: var(--font-mono); font-size: var(--body-size); color: var(--yale-blue); font-weight: 500; margin-bottom: 0.3em; }
         .card-body { font-size: var(--small-size); color: var(--text-primary); line-height: 1.5; }
 
         .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: clamp(0.5rem, 1.5vw, 1rem); }
@@ -183,14 +183,14 @@
             position: relative;
             display: inline;
             cursor: help;
-            border-bottom: 1px dashed var(--cyan);
-            color: var(--cyan);
+            border-bottom: 1px dashed var(--epi-green);
+            color: var(--epi-green);
             font-family: var(--font-mono);
             font-size: inherit;
         }
         .tref.fn-ref {
-            color: var(--amber);
-            border-bottom-color: var(--amber);
+            color: var(--accent-amber);
+            border-bottom-color: var(--accent-amber);
         }
         .tref .tref-tip {
             display: none;
@@ -199,7 +199,7 @@
             left: 50%;
             transform: translateX(-50%);
             background: var(--bg-secondary);
-            border: 1px solid var(--cyan);
+            border: 1px solid var(--epi-green);
             border-radius: 6px;
             padding: 0.6rem 0.8rem;
             font-size: clamp(0.55rem, 0.85vw, 0.72rem);
@@ -208,27 +208,27 @@
             max-width: min(400px, 80vw);
             z-index: 500;
             white-space: pre-wrap;
-            box-shadow: 0 4px 25px rgba(0,0,0,0.6);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.12);
             line-height: 1.45;
             text-align: left;
             font-family: var(--font-mono);
             pointer-events: none;
         }
-        .tref.fn-ref .tref-tip { border-color: var(--amber); }
+        .tref.fn-ref .tref-tip { border-color: var(--accent-amber); }
         .tref .tref-tip::after {
             content: '';
             position: absolute; top: 100%; left: 50%;
             transform: translateX(-50%);
             border: 5px solid transparent;
-            border-top-color: var(--cyan);
+            border-top-color: var(--epi-green);
         }
-        .tref.fn-ref .tref-tip::after { border-top-color: var(--amber); }
+        .tref.fn-ref .tref-tip::after { border-top-color: var(--accent-amber); }
         .tref:hover .tref-tip { display: block; }
-        .tref .tref-tip .tip-title { color: var(--green); font-weight: 600; margin-bottom: 0.3em; display: block; }
+        .tref .tref-tip .tip-title { color: var(--yale-blue); font-weight: 600; margin-bottom: 0.3em; display: block; }
         .tref .tref-tip .tip-field { color: var(--text-primary); }
-        .tref .tref-tip .tip-field .fname { color: var(--cyan); }
+        .tref .tref-tip .tip-field .fname { color: var(--epi-green); }
         .tref .tref-tip .tip-field .ftype { color: var(--text-muted); }
-        .tref .tref-tip .tip-sig { color: var(--amber); font-weight: 500; margin-bottom: 0.3em; display: block; }
+        .tref .tref-tip .tip-sig { color: var(--accent-amber); font-weight: 500; margin-bottom: 0.3em; display: block; }
         .tref .tref-tip .tip-desc { color: var(--text-muted); font-style: italic; }
 
         /* ===========================================
@@ -265,8 +265,8 @@
             align-items: center;
             gap: clamp(0.2rem, 0.5vw, 0.4rem);
         }
-        .hpipe-stage.s1 { border-color: var(--cyan); }
-        .hpipe-stage.s2 { border-color: var(--amber); }
+        .hpipe-stage.s1 { border-color: var(--yale-blue); }
+        .hpipe-stage.s2 { border-color: var(--epi-green); }
         .hpipe-stage-label {
             position: absolute;
             top: -0.65em; left: 0.8em;
@@ -275,31 +275,31 @@
             font-size: clamp(0.5rem, 0.8vw, 0.7rem);
             font-weight: 600; letter-spacing: 0.05em;
         }
-        .hpipe-stage.s1 .hpipe-stage-label { color: var(--cyan); }
-        .hpipe-stage.s2 .hpipe-stage-label { color: var(--amber); }
+        .hpipe-stage.s1 .hpipe-stage-label { color: var(--yale-blue); }
+        .hpipe-stage.s2 .hpipe-stage-label { color: var(--epi-green); }
 
         .hpipe-node {
             background: var(--bg-card); border: 1px solid var(--border); border-radius: 4px;
             padding: clamp(0.25rem, 0.6vw, 0.4rem) clamp(0.4rem, 0.8vw, 0.6rem);
             text-align: center; cursor: pointer; transition: all 0.3s; position: relative; flex-shrink: 0;
         }
-        .hpipe-node:hover { border-color: var(--green); box-shadow: 0 0 15px rgba(0,255,136,0.1); transform: translateY(-2px); }
-        .hpipe-node .n-label { font-weight: 500; color: var(--text-bright); font-size: var(--small-size); white-space: nowrap; }
+        .hpipe-node:hover { border-color: var(--yale-blue); box-shadow: 0 2px 12px rgba(0,0,0,0.08); transform: translateY(-2px); }
+        .hpipe-node .n-label { font-weight: 500; color: var(--text-primary); font-size: var(--small-size); white-space: nowrap; }
         .hpipe-node .n-sub { font-size: clamp(0.45rem, 0.7vw, 0.6rem); color: var(--text-muted); margin-top: 0.1em; white-space: nowrap; }
         .hpipe-node .n-tip {
             display: none; position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%);
-            background: var(--bg-secondary); border: 1px solid var(--green-dim); border-radius: 6px;
+            background: var(--bg-secondary); border: 1px solid var(--yale-blue-light); border-radius: 6px;
             padding: 0.5rem 0.7rem; font-size: clamp(0.5rem, 0.8vw, 0.68rem); color: var(--text-primary);
             width: max-content; max-width: 260px; z-index: 50; white-space: pre-wrap;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5); line-height: 1.4;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.12); line-height: 1.4;
         }
-        .hpipe-node .n-tip::after { content:''; position:absolute; top:100%; left:50%; transform:translateX(-50%); border:5px solid transparent; border-top-color: var(--green-dim); }
+        .hpipe-node .n-tip::after { content:''; position:absolute; top:100%; left:50%; transform:translateX(-50%); border:5px solid transparent; border-top-color: var(--yale-blue-light); }
         .hpipe-node:hover .n-tip { display: block; }
 
         .hpipe-data {
-            background: var(--green-faint); border: 1px solid rgba(0,255,136,0.2); border-radius: 4px;
+            background: var(--yale-blue-faint); border: 1px solid rgba(0,53,107,0.15); border-radius: 4px;
             padding: clamp(0.1rem, 0.3vw, 0.2rem) clamp(0.3rem, 0.6vw, 0.5rem);
-            font-size: clamp(0.45rem, 0.7vw, 0.6rem); color: var(--green-dim);
+            font-size: clamp(0.45rem, 0.7vw, 0.6rem); color: var(--yale-blue-light);
             font-family: var(--font-mono); white-space: nowrap; text-align: center;
         }
         .hpipe-inner-arrow { color: var(--text-muted); font-size: clamp(0.6rem, 1vw, 0.9rem); flex-shrink: 0; }
@@ -312,45 +312,45 @@
            BADGES
            =========================================== */
         .badge { display: inline-block; padding: 0.15em 0.5em; border-radius: 3px; font-size: var(--small-size); font-family: var(--font-mono); font-weight: 500; }
-        .badge-confirmed { background: rgba(0,255,136,0.15); color: var(--green); border: 1px solid rgba(0,255,136,0.3); }
-        .badge-partial { background: rgba(255,184,0,0.15); color: var(--amber); border: 1px solid rgba(255,184,0,0.3); }
-        .badge-inconclusive { background: rgba(92,107,127,0.2); color: var(--text-muted); border: 1px solid var(--border); }
-        .badge-rejected { background: rgba(255,68,102,0.15); color: var(--red); border: 1px solid rgba(255,68,102,0.3); }
+        .badge-confirmed { background: rgba(46,125,50,0.12); color: var(--epi-green); border: 1px solid rgba(46,125,50,0.3); }
+        .badge-partial { background: var(--accent-amber-faint); color: var(--accent-amber); border: 1px solid rgba(191,105,0,0.3); }
+        .badge-inconclusive { background: rgba(138,138,138,0.12); color: var(--text-muted); border: 1px solid var(--border); }
+        .badge-rejected { background: var(--accent-red-faint); color: var(--accent-red); border: 1px solid rgba(198,40,40,0.3); }
 
         /* ===========================================
            TABLES
            =========================================== */
         .data-table { width: 100%; border-collapse: collapse; font-size: var(--small-size); }
-        .data-table th { text-align: left; padding: clamp(0.2rem,0.5vw,0.4rem) clamp(0.3rem,0.8vw,0.6rem); border-bottom: 1px solid var(--green-dim); color: var(--green); font-weight: 500; white-space: nowrap; }
+        .data-table th { text-align: left; padding: clamp(0.2rem,0.5vw,0.4rem) clamp(0.3rem,0.8vw,0.6rem); border-bottom: 2px solid var(--yale-blue); color: var(--yale-blue); font-weight: 500; white-space: nowrap; }
         .data-table td { padding: clamp(0.2rem,0.5vw,0.4rem) clamp(0.3rem,0.8vw,0.6rem); border-bottom: 1px solid var(--border); color: var(--text-primary); }
-        .data-table tr:hover td { background: var(--green-faint); }
+        .data-table tr:hover td { background: var(--yale-blue-faint); }
 
         /* ===========================================
            BULLET LISTS
            =========================================== */
         .terminal-list { list-style: none; display: flex; flex-direction: column; gap: var(--element-gap); }
         .terminal-list li { font-size: var(--body-size); line-height: 1.5; padding-left: 1.5em; position: relative; }
-        .terminal-list li::before { content: '>'; position: absolute; left: 0; color: var(--green); font-weight: 700; }
+        .terminal-list li::before { content: '\2022'; position: absolute; left: 0; color: var(--yale-blue); font-weight: 700; }
 
         /* ===========================================
            FIX CARDS
            =========================================== */
         .fix-card {
             background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px;
-            padding: clamp(0.6rem, 1.5vw, 1.2rem); border-left: 3px solid var(--red);
+            padding: clamp(0.6rem, 1.5vw, 1.2rem); border-left: 3px solid var(--accent-red);
         }
-        .fix-card.resolved { border-left-color: var(--green); }
-        .fix-card .problem { color: var(--red); font-weight: 500; font-size: var(--body-size); margin-bottom: 0.4em; }
-        .fix-card.resolved .problem { color: var(--green); }
+        .fix-card.resolved { border-left-color: var(--yale-blue); }
+        .fix-card .problem { color: var(--accent-red); font-weight: 500; font-size: var(--body-size); margin-bottom: 0.4em; }
+        .fix-card.resolved .problem { color: var(--yale-blue); }
         .fix-card .fix-detail { font-size: var(--small-size); color: var(--text-primary); line-height: 1.5; }
-        .file-ref { color: var(--cyan); font-family: var(--font-mono); }
+        .file-ref { color: var(--epi-green); font-family: var(--font-mono); }
 
         /* ===========================================
            DECISION TREE
            =========================================== */
         .decision-tree { display: flex; flex-direction: column; gap: clamp(0.2rem,0.5vw,0.4rem); font-size: var(--small-size); font-family: var(--font-mono); }
         .decision-tree .branch { padding-left: 1.5em; border-left: 1px solid var(--border); margin-left: 0.5em; }
-        .decision-tree .condition { color: var(--cyan); }
+        .decision-tree .condition { color: var(--epi-green); }
 
         /* ===========================================
            TWO-COL
@@ -365,16 +365,16 @@
             position: absolute; background: var(--bg-card); border: 1px solid var(--border); border-radius: 50%;
             width: clamp(50px, 8vw, 80px); height: clamp(50px, 8vw, 80px);
             display: flex; align-items: center; justify-content: center;
-            font-size: var(--small-size); font-weight: 600; color: var(--text-bright); text-align: center;
+            font-size: var(--small-size); font-weight: 600; color: var(--text-primary); text-align: center;
             transition: all 0.3s; z-index: 2;
         }
-        .kg-node:hover { border-color: var(--green); box-shadow: 0 0 20px rgba(0,255,136,0.2); }
+        .kg-node:hover { border-color: var(--yale-blue); box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
         .kg-edge-label { position: absolute; font-size: clamp(0.5rem, 0.8vw, 0.7rem); z-index: 3; background: var(--bg-primary); padding: 0 0.3em; }
         .kg-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
         .kg-svg line { stroke: var(--border); stroke-width: 1.5; }
-        .kg-svg line.positive { stroke: var(--green-dim); }
-        .kg-svg line.negative { stroke: var(--red); }
-        .kg-svg line.flagged { stroke: var(--amber); stroke-dasharray: 6 4; }
+        .kg-svg line.positive { stroke: var(--epi-green); }
+        .kg-svg line.negative { stroke: var(--accent-red); }
+        .kg-svg line.flagged { stroke: var(--accent-amber); stroke-dasharray: 6 4; }
 
         /* ===========================================
            FUTURE LIST
@@ -386,9 +386,9 @@
         /* ===========================================
            TITLE ASCII
            =========================================== */
-        .title-ascii { font-family: var(--font-mono); font-size: clamp(0.4rem, 0.7vw, 0.6rem); color: var(--green-dim); line-height: 1.15; white-space: pre; opacity: 0.6; margin-bottom: clamp(0.5rem, 1.5vw, 1.5rem); }
+        .title-ascii { font-family: var(--font-mono); font-size: clamp(0.4rem, 0.7vw, 0.6rem); color: var(--epi-green); line-height: 1.15; white-space: pre; opacity: 0.6; margin-bottom: clamp(0.5rem, 1.5vw, 1.5rem); }
         .title-meta { font-size: var(--small-size); color: var(--text-muted); margin-top: clamp(0.5rem, 1.5vw, 1rem); }
-        .title-meta span { color: var(--green); }
+        .title-meta span { color: var(--yale-blue); }
 
         /* ===========================================
            ANIMATIONS
@@ -403,7 +403,7 @@
         .reveal:nth-child(6) { transition-delay: 0.40s; }
 
         @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0;} }
-        .cursor { display:inline-block; width:0.6em; height:1.1em; background:var(--green); animation:blink 1s step-end infinite; vertical-align:text-bottom; margin-left:2px; }
+        .cursor { display:inline-block; width:0.6em; height:1.1em; background:var(--yale-blue); animation:blink 1s step-end infinite; vertical-align:text-bottom; margin-left:2px; }
         @keyframes glow-pulse { 0%,100%{opacity:0.4;} 50%{opacity:1;} }
         .animated { animation: glow-pulse 2s ease-in-out infinite; }
 
@@ -442,13 +442,6 @@
      ═══════════════════════════════════════════════ -->
 <section class="slide" id="slide-title">
     <div class="slide-content" style="align-items:center; text-align:center;">
-        <div class="title-ascii reveal">
- _____ ____ ___   ____                      ____  _
-| ____|  _ \_ _| |  _ \ _ __ _____  ___   _|  _ \(_)___  ___ _____   _____ _ __ _   _
-|  _| | |_) | |  | |_) | '__/ _ \ \/ / | | | | | | / __|/ __/ _ \ \ / / _ \ '__| | | |
-| |___|  __/| |  |  __/| | | (_) >  <| |_| | |_| | \__ \ (_| (_) \ V /  __/ |  | |_| |
-|_____|_|  |___| |_|   |_|  \___/_/\_\\__, |____/|_|___/\___\___/ \_/ \___|_|   \__, |
-                                       |___/                                      |___/ </div>
         <h1 class="reveal" style="margin-bottom:0.2em;">AI-Driven Data Proxy Discovery</h1>
         <p class="reveal" style="font-size:var(--h3-size); color:var(--text-muted); max-width:700px;">A multi-agent pipeline for finding alternative data sources for the Environmental Performance Index</p>
         <div class="title-meta reveal"><span>$</span> YCELP &times; ROSE Lab &nbsp;|&nbsp; internal walkthrough &nbsp;|&nbsp; 2026</div>
@@ -460,15 +453,15 @@
      ═══════════════════════════════════════════════ -->
 <section class="slide" id="slide-problem">
     <div class="slide-content">
-        <div class="section-label reveal"><span class="prompt">$</span> cat problem.md</div>
+        <div class="section-label reveal">THE PROBLEM</div>
         <h2 class="reveal">The EPI Has a Data Problem</h2>
         <div class="two-col reveal">
             <div>
                 <ul class="terminal-list">
-                    <li>The EPI ranks <span style="color:var(--text-bright)">180 countries</span> across <span style="color:var(--text-bright)">58+ indicators</span> spanning environmental health and ecosystem vitality</li>
-                    <li>Many indicators suffer from <span style="color:var(--amber)">poor country coverage</span>, <span style="color:var(--amber)">infrequent updates</span>, or reliance on <span style="color:var(--amber)">modeled data</span></li>
-                    <li>Example: <strong style="color:var(--text-bright)">WRR</strong> (Waste Recovery Rate) &mdash; 56 of 180 countries imputed via regression with only R&sup2;=0.42</li>
-                    <li>Example: <strong style="color:var(--text-bright)">WWR</strong> (Wastewater Reused) &mdash; data exists for a <span class="error">single year (2015)</span> for most countries</li>
+                    <li>The EPI ranks <span style="color:var(--text-primary)">180 countries</span> across <span style="color:var(--text-primary)">58+ indicators</span> spanning environmental health and ecosystem vitality</li>
+                    <li>Many indicators suffer from <span style="color:var(--accent-amber)">poor country coverage</span>, <span style="color:var(--accent-amber)">infrequent updates</span>, or reliance on <span style="color:var(--accent-amber)">modeled data</span></li>
+                    <li>Example: <strong style="color:var(--text-primary)">WRR</strong> (Waste Recovery Rate) &mdash; 56 of 180 countries imputed via regression with only R&sup2;=0.42</li>
+                    <li>Example: <strong style="color:var(--text-primary)">WWR</strong> (Wastewater Reused) &mdash; data exists for a <span class="error">single year (2015)</span> for most countries</li>
                 </ul>
             </div>
             <div class="code-block" style="font-size:var(--code-size);">
@@ -495,12 +488,12 @@ BER        180/180   0        5 timepoints
      ═══════════════════════════════════════════════ -->
 <section class="slide" id="slide-idea">
     <div class="slide-content">
-        <div class="section-label reveal"><span class="prompt">$</span> cat solution.md</div>
+        <div class="section-label reveal">THE SOLUTION</div>
         <h2 class="reveal">Data Proxies: The Core Idea</h2>
         <div class="two-col reveal">
             <div>
                 <p style="margin-bottom:var(--content-gap); color:var(--text-primary);">
-                    A <span style="color:var(--green)">data proxy</span> is a measurable variable that correlates with a hard-to-measure target. If the correlation is strong and not spurious, the proxy can <span style="color:var(--text-bright)">supplement or validate</span> official statistics.
+                    A <span style="color:var(--yale-blue)">data proxy</span> is a measurable variable that correlates with a hard-to-measure target. If the correlation is strong and not spurious, the proxy can <span style="color:var(--text-primary)">supplement or validate</span> official statistics.
                 </p>
                 <div class="code-block" style="margin-bottom:var(--element-gap);">
 <span class="comment"># Classic example from the proposal:</span>
@@ -542,18 +535,18 @@ anti_diarrheal_sales <span class="keyword">~</span> water_quality_problems
      ═══════════════════════════════════════════════ -->
 <section class="slide" id="slide-pipeline">
     <div class="slide-content">
-        <div class="section-label reveal"><span class="prompt">$</span> ./pipeline --diagram</div>
+        <div class="section-label reveal">ARCHITECTURE</div>
         <h2 class="reveal">Pipeline Architecture</h2>
 
         <div class="hpipe reveal">
             <!-- INPUT column -->
             <div class="hpipe-input">
-                <div class="hpipe-node" style="border-color:var(--green);">
+                <div class="hpipe-node" style="border-color:var(--yale-blue);">
                     <div class="n-label">EPI Indicator</div>
                     <div class="n-sub">e.g. "UWD"</div>
                 </div>
                 <div style="font-size:clamp(0.45rem,0.7vw,0.6rem); text-align:center; color:var(--text-muted);">+</div>
-                <div class="hpipe-node" style="border-color:var(--green);">
+                <div class="hpipe-node" style="border-color:var(--yale-blue);">
                     <div class="n-label">Domain Knowledge</div>
                     <div class="n-sub">Technical Appendix</div>
                 </div>
@@ -564,18 +557,18 @@ anti_diarrheal_sales <span class="keyword">~</span> water_quality_problems
             <!-- STAGE 1 -->
             <div class="hpipe-stage s1">
                 <span class="hpipe-stage-label">STAGE 1: HYPOTHESIS GENERATION</span>
-                <div class="hpipe-node" data-slide="slide-research" style="border-color:var(--cyan);">
-                    <div class="n-label" style="color:var(--cyan);">Deep Researcher</div>
+                <div class="hpipe-node" data-slide="slide-research" style="border-color:var(--epi-green);">
+                    <div class="n-label" style="color:var(--epi-green);">Deep Researcher</div>
                     <div class="n-sub">Perplexity sonar-deep-research</div>
-                    <div class="n-tip"><span style="color:var(--cyan)">Input:</span> indicator metadata + domain context<br><span style="color:var(--cyan)">Output:</span> research_report.md<br><span style="color:var(--cyan)">Sections:</span> causal map, literature proxies, speculative proxies, data availability, confounders, ranked candidates</div>
+                    <div class="n-tip"><span style="color:var(--epi-green)">Input:</span> indicator metadata + domain context<br><span style="color:var(--epi-green)">Output:</span> research_report.md<br><span style="color:var(--epi-green)">Sections:</span> causal map, literature proxies, speculative proxies, data availability, confounders, ranked candidates</div>
                 </div>
                 <div class="hpipe-inner-arrow animated">&rarr;</div>
                 <div class="hpipe-data">report.md</div>
                 <div class="hpipe-inner-arrow animated">&rarr;</div>
-                <div class="hpipe-node" data-slide="slide-parser" style="border-color:var(--cyan);">
-                    <div class="n-label" style="color:var(--cyan);">Parsing Agent</div>
+                <div class="hpipe-node" data-slide="slide-parser" style="border-color:var(--epi-green);">
+                    <div class="n-label" style="color:var(--epi-green);">Parsing Agent</div>
                     <div class="n-sub">Claude claude-sonnet-4-20250514</div>
-                    <div class="n-tip"><span style="color:var(--cyan)">Input:</span> research_report.md<br><span style="color:var(--cyan)">Output:</span> hypotheses.json<br>Extracts structured <span style="color:var(--cyan)">ProxyHypothesis</span> objects. Classifies confidence &amp; evidence_type. Infers direction from mechanism.</div>
+                    <div class="n-tip"><span style="color:var(--epi-green)">Input:</span> research_report.md<br><span style="color:var(--epi-green)">Output:</span> hypotheses.json<br>Extracts structured <span style="color:var(--epi-green)">ProxyHypothesis</span> objects. Classifies confidence &amp; evidence_type. Infers direction from mechanism.</div>
                 </div>
             </div>
 
@@ -587,15 +580,15 @@ anti_diarrheal_sales <span class="keyword">~</span> water_quality_problems
             <div class="hpipe-stage s2">
                 <span class="hpipe-stage-label">STAGE 2: VERIFICATION</span>
                 <div class="hpipe-verifiers">
-                    <div class="hpipe-node" data-slide="slide-verifier1" style="border-color:var(--amber);">
-                        <div class="n-label" style="color:var(--amber); font-size:clamp(0.5rem,0.75vw,0.65rem);">Verifier [H01]</div>
-                        <div class="n-tip"><span style="color:var(--amber)">Claude Code SDK agent</span><br>Tools: Bash, Write, Read, Glob, WebFetch<br>Writes verify.py, fetches proxy data, runs stats, outputs result.json</div>
+                    <div class="hpipe-node" data-slide="slide-verifier1" style="border-color:var(--accent-amber);">
+                        <div class="n-label" style="color:var(--accent-amber); font-size:clamp(0.5rem,0.75vw,0.65rem);">Verifier [H01]</div>
+                        <div class="n-tip"><span style="color:var(--accent-amber)">Claude Code SDK agent</span><br>Tools: Bash, Write, Read, Glob, WebFetch<br>Writes verify.py, fetches proxy data, runs stats, outputs result.json</div>
                     </div>
-                    <div class="hpipe-node" data-slide="slide-verifier1" style="border-color:var(--amber);">
-                        <div class="n-label" style="color:var(--amber); font-size:clamp(0.5rem,0.75vw,0.65rem);">Verifier [H02]</div>
+                    <div class="hpipe-node" data-slide="slide-verifier1" style="border-color:var(--accent-amber);">
+                        <div class="n-label" style="color:var(--accent-amber); font-size:clamp(0.5rem,0.75vw,0.65rem);">Verifier [H02]</div>
                     </div>
-                    <div class="hpipe-node" data-slide="slide-verifier1" style="border-color:var(--amber); opacity:0.5;">
-                        <div class="n-label" style="color:var(--amber); font-size:clamp(0.5rem,0.75vw,0.65rem);">...  [H<em>n</em>]</div>
+                    <div class="hpipe-node" data-slide="slide-verifier1" style="border-color:var(--accent-amber); opacity:0.5;">
+                        <div class="n-label" style="color:var(--accent-amber); font-size:clamp(0.5rem,0.75vw,0.65rem);">...  [H<em>n</em>]</div>
                     </div>
                 </div>
                 <div class="hpipe-inner-arrow animated">&rarr;</div>
@@ -616,11 +609,11 @@ anti_diarrheal_sales <span class="keyword">~</span> water_quality_problems
      ═══════════════════════════════════════════════ -->
 <section class="slide" id="slide-research">
     <div class="slide-content">
-        <div class="section-label reveal"><span class="prompt">$</span> cat src/stage1/prompts.py <span class="comment"># RESEARCH_PROMPT_TEMPLATE</span></div>
+        <div class="section-label reveal">STAGE 1</div>
         <h2 class="reveal">Stage 1: Deep Research Agent</h2>
         <div class="two-col">
             <div class="reveal">
-                <p style="margin-bottom:var(--element-gap);">A <span style="color:var(--cyan)">Perplexity sonar-deep-research</span> model conducts literature review and data discovery. We prompt it with:</p>
+                <p style="margin-bottom:var(--element-gap);">A <span style="color:var(--epi-green)">Perplexity sonar-deep-research</span> model conducts literature review and data discovery. We prompt it with:</p>
                 <ul class="terminal-list" style="margin-bottom:var(--content-gap);">
                     <li>Full indicator metadata (name, units, source, polarity, coverage)</li>
                     <li>Domain knowledge from the EPI Technical Appendix (when available)</li>
@@ -664,11 +657,11 @@ anti_diarrheal_sales <span class="keyword">~</span> water_quality_problems
      ═══════════════════════════════════════════════ -->
 <section class="slide" id="slide-domain">
     <div class="slide-content">
-        <div class="section-label reveal"><span class="prompt">$</span> cat src/domain_knowledge.py</div>
+        <div class="section-label reveal">DOMAIN KNOWLEDGE</div>
         <h2 class="reveal">Domain Knowledge Injection</h2>
         <div class="two-col">
             <div class="reveal">
-                <p style="margin-bottom:var(--element-gap);">We inject <span style="color:var(--green)">curated domain context</span> from the EPI Technical Appendix so the research agent doesn't waste effort rediscovering known facts.</p>
+                <p style="margin-bottom:var(--element-gap);">We inject <span style="color:var(--yale-blue)">curated domain context</span> from the EPI Technical Appendix so the research agent doesn't waste effort rediscovering known facts.</p>
                 <div class="code-block" style="font-size:var(--code-size);">
 <span class="comment"># src/domain_knowledge.py</span>
 DOMAIN_KNOWLEDGE: dict[str, str] = {
@@ -715,11 +708,11 @@ DOMAIN_KNOWLEDGE: dict[str, str] = {
      ═══════════════════════════════════════════════ -->
 <section class="slide" id="slide-parser">
     <div class="slide-content">
-        <div class="section-label reveal"><span class="prompt">$</span> cat src/stage1/parser.py <span class="comment"># PARSE_PROMPT_TEMPLATE</span></div>
+        <div class="section-label reveal">STAGE 1B</div>
         <h2 class="reveal">Stage 1b: Parsing Agent</h2>
         <div class="two-col">
             <div class="reveal">
-                <p style="margin-bottom:var(--element-gap);"><span style="color:var(--cyan)">Claude claude-sonnet-4-20250514</span> extracts structured hypotheses from the research report and classifies each one into a <span class="tref">ProxyHypothesis<span class="tref-tip"><span class="tip-title">class ProxyHypothesis(BaseModel)</span><span class="tip-field"><span class="fname">id</span>: <span class="ftype">str</span>  <span class="comment"># e.g. "UWD-H01"</span>
+                <p style="margin-bottom:var(--element-gap);"><span style="color:var(--epi-green)">Claude claude-sonnet-4-20250514</span> extracts structured hypotheses from the research report and classifies each one into a <span class="tref">ProxyHypothesis<span class="tref-tip"><span class="tip-title">class ProxyHypothesis(BaseModel)</span><span class="tip-field"><span class="fname">id</span>: <span class="ftype">str</span>  <span class="comment"># e.g. "UWD-H01"</span>
 <span class="fname">context</span>: <span class="ftype">Context</span>
 <span class="fname">target_variable</span>: <span class="ftype">str</span>  <span class="comment"># EPI TLA</span>
 <span class="fname">proxy_variable</span>: <span class="ftype">str</span>
@@ -782,11 +775,11 @@ DOMAIN_KNOWLEDGE: dict[str, str] = {
      ═══════════════════════════════════════════════ -->
 <section class="slide" id="slide-verifier1">
     <div class="slide-content">
-        <div class="section-label reveal"><span class="prompt">$</span> cat src/stage2/verifier.py</div>
+        <div class="section-label reveal">STAGE 2</div>
         <h2 class="reveal">Stage 2: Verification Agents</h2>
         <div class="two-col">
             <div class="reveal">
-                <p style="margin-bottom:var(--element-gap);">Each hypothesis gets its own <span style="color:var(--amber)">Claude Code SDK</span> agent. The agent autonomously writes and executes a <code>verify.py</code> script, producing a <span class="tref">VerificationResult<span class="tref-tip"><span class="tip-title">class VerificationResult(BaseModel)</span><span class="tip-field"><span class="fname">hypothesis_id</span>: <span class="ftype">str</span>
+                <p style="margin-bottom:var(--element-gap);">Each hypothesis gets its own <span style="color:var(--accent-amber)">Claude Code SDK</span> agent. The agent autonomously writes and executes a <code>verify.py</code> script, producing a <span class="tref">VerificationResult<span class="tref-tip"><span class="tip-title">class VerificationResult(BaseModel)</span><span class="tip-field"><span class="fname">hypothesis_id</span>: <span class="ftype">str</span>
 <span class="fname">verdict</span>: <span class="ftype">Verdict</span>
 <span class="fname">raw_correlation</span>: <span class="ftype">Optional[CorrelationResult]</span>
 <span class="fname">partial_correlation</span>: <span class="ftype">Optional[PartialCorrelationResult]</span>
@@ -810,11 +803,11 @@ options = <span class="keyword">ClaudeCodeOptions</span>(
             <div class="reveal">
                 <h3 style="font-size:var(--body-size); margin-bottom:0.3em;">Routing by evidence_type:</h3>
                 <div style="display:flex; flex-direction:column; gap:0.4rem;">
-                    <div class="card" style="border-left:3px solid var(--green);">
+                    <div class="card" style="border-left:3px solid var(--yale-blue);">
                         <div class="card-title" style="font-size:var(--small-size);">programmatic_verify</div>
                         <div class="card-body">Agent fetches data, runs full statistical verification</div>
                     </div>
-                    <div class="card" style="border-left:3px solid var(--cyan);">
+                    <div class="card" style="border-left:3px solid var(--epi-green);">
                         <div class="card-title" style="font-size:var(--small-size);">literature_attested</div>
                         <div class="card-body">Agent attempts independent corroboration of cited statistic</div>
                     </div>
@@ -833,7 +826,7 @@ options = <span class="keyword">ClaudeCodeOptions</span>(
      ═══════════════════════════════════════════════ -->
 <section class="slide" id="slide-verifier2">
     <div class="slide-content">
-        <div class="section-label reveal"><span class="prompt">$</span> cat verify.py <span class="comment"># agent-generated script</span></div>
+        <div class="section-label reveal">AGENT OUTPUT</div>
         <h2 class="reveal">What the Agent Writes</h2>
         <div class="two-col">
             <div class="reveal">
@@ -895,7 +888,7 @@ result = <span class="tref fn-ref">build_result_json<span class="tref-tip"><span
      ═══════════════════════════════════════════════ -->
 <section class="slide" id="slide-data-acq">
     <div class="slide-content">
-        <div class="section-label reveal"><span class="prompt">$</span> cat src/stage2/prompts.py <span class="comment"># Data Acquisition Protocol</span></div>
+        <div class="section-label reveal">DATA &amp; VERDICTS</div>
         <h2 class="reveal">Data Acquisition &amp; Verdict Logic</h2>
         <div class="two-col">
             <div class="reveal">
@@ -917,15 +910,15 @@ result = <span class="tref fn-ref">build_result_json<span class="tref-tip"><span
                 <h3 style="font-size:var(--body-size); margin-bottom:0.3em;">Verdict Decision Tree:</h3>
                 <div class="decision-tree">
                     <div><span class="condition">if</span> n &lt; 20 <span style="color:var(--text-muted);">&rarr; inconclusive</span></div>
-                    <div><span class="condition">if</span> direction mismatch <span style="color:var(--red);">&rarr; rejected</span></div>
-                    <div><span class="condition">if</span> p &gt; 0.10 <span style="color:var(--red);">&rarr; rejected</span></div>
+                    <div><span class="condition">if</span> direction mismatch <span style="color:var(--accent-red);">&rarr; rejected</span></div>
+                    <div><span class="condition">if</span> p &gt; 0.10 <span style="color:var(--accent-red);">&rarr; rejected</span></div>
                     <div><span class="condition">if</span> 0.05 &lt; p &le; 0.10 <span style="color:var(--text-muted);">&rarr; inconclusive</span></div>
                     <div><span class="condition">if</span> |r| &gt; 0.3 AND p &lt; 0.05:</div>
                     <div class="branch">
-                        <div><span class="condition">if</span> partial_p &lt; 0.05 <span style="color:var(--green);">&rarr; confirmed</span></div>
-                        <div><span class="condition">else</span> <span style="color:var(--amber);">&rarr; partially_confirmed</span></div>
+                        <div><span class="condition">if</span> partial_p &lt; 0.05 <span style="color:var(--yale-blue);">&rarr; confirmed</span></div>
+                        <div><span class="condition">else</span> <span style="color:var(--accent-amber);">&rarr; partially_confirmed</span></div>
                     </div>
-                    <div><span class="condition">else</span> <span style="color:var(--amber);">&rarr; partially_confirmed</span></div>
+                    <div><span class="condition">else</span> <span style="color:var(--accent-amber);">&rarr; partially_confirmed</span></div>
                 </div>
                 <h3 style="font-size:var(--body-size); margin-top:var(--element-gap); margin-bottom:0.3em;">Thresholds <span style="color:var(--text-muted);">(src/config.py)</span>:</h3>
                 <div class="code-block" style="font-size:var(--code-size);">
@@ -944,7 +937,7 @@ PARTIAL_CORR_MIN_N   = <span class="string">30</span></div>
      ═══════════════════════════════════════════════ -->
 <section class="slide" id="slide-results">
     <div class="slide-content">
-        <div class="section-label reveal"><span class="prompt">$</span> cat outputs/UWD/pipeline_result.json | jq</div>
+        <div class="section-label reveal">RESULTS</div>
         <h2 class="reveal">Example Results: UWD (Unsafe Drinking Water)</h2>
 
         <div class="reveal" style="margin-bottom:var(--content-gap);">
@@ -958,7 +951,7 @@ PARTIAL_CORR_MIN_N   = <span class="string">30</span></div>
                         <td>Healthcare facility handwashing</td>
                         <td>WHO GHO WHS8_110</td>
                         <td><span class="badge badge-confirmed">confirmed</span></td>
-                        <td style="color:var(--green);">-0.653</td>
+                        <td style="color:var(--yale-blue);">-0.653</td>
                         <td>4,249</td>
                     </tr>
                     <tr>
@@ -966,7 +959,7 @@ PARTIAL_CORR_MIN_N   = <span class="string">30</span></div>
                         <td>HIV prevalence</td>
                         <td>WHO GHO HIV_0000000001</td>
                         <td><span class="badge badge-partial">partial</span></td>
-                        <td style="color:var(--amber);">0.212</td>
+                        <td style="color:var(--accent-amber);">0.212</td>
                         <td>3,252</td>
                     </tr>
                     <tr>
@@ -974,7 +967,7 @@ PARTIAL_CORR_MIN_N   = <span class="string">30</span></div>
                         <td>Safely managed drinking water</td>
                         <td>WHO GHO WHS3_41</td>
                         <td><span class="badge badge-rejected">rejected</span></td>
-                        <td style="color:var(--red);">0.072</td>
+                        <td style="color:var(--accent-red);">0.072</td>
                         <td>5,046</td>
                     </tr>
                     <tr>
@@ -992,16 +985,16 @@ PARTIAL_CORR_MIN_N   = <span class="string">30</span></div>
         <div class="two-col reveal">
             <div class="card">
                 <div class="card-title">UWD-H05: Handwashing &rarr; Unsafe Drinking Water</div>
-                <div class="card-body">Strong negative correlation (r=-0.653): countries with better healthcare facility hygiene have fewer waterborne-disease DALYs. Survives partial correlation controlling for GDP &mdash; <span style="color:var(--green)">genuine signal beyond wealth</span>.</div>
+                <div class="card-body">Strong negative correlation (r=-0.653): countries with better healthcare facility hygiene have fewer waterborne-disease DALYs. Survives partial correlation controlling for GDP &mdash; <span style="color:var(--yale-blue)">genuine signal beyond wealth</span>.</div>
             </div>
             <div class="card">
                 <div class="card-title">UWD-H01: Drinking Water Access &rarr; UWD DALYs</div>
-                <div class="card-body">Surprisingly weak (r=0.072). WHO's "safely managed water" metric measures <em>infrastructure coverage</em>, not <em>actual water safety</em>. A country can have piped water that's still contaminated &mdash; <span style="color:var(--red)">metric mismatch</span>.</div>
+                <div class="card-body">Surprisingly weak (r=0.072). WHO's "safely managed water" metric measures <em>infrastructure coverage</em>, not <em>actual water safety</em>. A country can have piped water that's still contaminated &mdash; <span style="color:var(--accent-red)">metric mismatch</span>.</div>
             </div>
         </div>
 
         <p class="reveal" style="font-size:var(--small-size); color:var(--text-muted); margin-top:var(--element-gap);">
-            Of 14 UWD hypotheses: <span style="color:var(--green)">1 confirmed</span>, <span style="color:var(--amber)">1 partial</span>, <span style="color:var(--red)">2 rejected</span>, <span style="color:var(--text-muted)">10 inconclusive</span> (mostly data access failures)
+            Of 14 UWD hypotheses: <span style="color:var(--yale-blue)">1 confirmed</span>, <span style="color:var(--accent-amber)">1 partial</span>, <span style="color:var(--accent-red)">2 rejected</span>, <span style="color:var(--text-muted)">10 inconclusive</span> (mostly data access failures)
         </p>
     </div>
 </section>
@@ -1011,17 +1004,17 @@ PARTIAL_CORR_MIN_N   = <span class="string">30</span></div>
      ═══════════════════════════════════════════════ -->
 <section class="slide" id="slide-fix1">
     <div class="slide-content">
-        <div class="section-label reveal"><span class="prompt">$</span> git log --oneline <span class="comment"># fix 1 of 3</span></div>
+        <div class="section-label reveal">FIX 1 OF 3</div>
         <h2 class="reveal">Fix 1: Centralizing Statistical Analysis</h2>
         <div class="two-col">
             <div class="reveal">
-                <div class="fix-card" style="border-left-color:var(--red); margin-bottom:var(--content-gap);">
-                    <div class="problem" style="color:var(--red);">Problem: LLM generating inconsistent statistical code</div>
+                <div class="fix-card" style="border-left-color:var(--accent-red); margin-bottom:var(--content-gap);">
+                    <div class="problem" style="color:var(--accent-red);">Problem: LLM generating inconsistent statistical code</div>
                     <div class="fix-detail">Each verification agent was writing bespoke regression code &mdash; different imports, different test logic, different output formats. No way to verify correctness or ensure consistency across runs.</div>
                 </div>
                 <div class="fix-card resolved">
                     <div class="problem">Solution: shared stats library</div>
-                    <div class="fix-detail">Created <span class="file-ref">src/utils/stats.py</span> with 5 standardized functions. System prompt mandates: <span style="color:var(--amber)">"Do NOT use scipy.stats directly. Do NOT write your own CSV loading."</span></div>
+                    <div class="fix-detail">Created <span class="file-ref">src/utils/stats.py</span> with 5 standardized functions. System prompt mandates: <span style="color:var(--accent-amber)">"Do NOT use scipy.stats directly. Do NOT write your own CSV loading."</span></div>
                 </div>
             </div>
             <div class="reveal">
@@ -1051,12 +1044,12 @@ PARTIAL_CORR_MIN_N   = <span class="string">30</span></div>
      ═══════════════════════════════════════════════ -->
 <section class="slide" id="slide-fix2">
     <div class="slide-content">
-        <div class="section-label reveal"><span class="prompt">$</span> git log --oneline <span class="comment"># fix 2 of 3</span></div>
+        <div class="section-label reveal">FIX 2 OF 3</div>
         <h2 class="reveal">Fix 2: Preventing Data Fabrication</h2>
         <div class="two-col">
             <div class="reveal">
-                <div class="fix-card" style="border-left-color:var(--red); margin-bottom:var(--content-gap);">
-                    <div class="problem" style="color:var(--red);">Problem: Agent unable to access datasets &rarr; fabricating synthetic data</div>
+                <div class="fix-card" style="border-left-color:var(--accent-red); margin-bottom:var(--content-gap);">
+                    <div class="problem" style="color:var(--accent-red);">Problem: Agent unable to access datasets &rarr; fabricating synthetic data</div>
                     <div class="fix-detail">Many data sources require login or authentication. When blocked, agents would sometimes generate fake data with <code>np.random</code> and report "correlations" against noise &mdash; producing meaningless but confident-looking results.</div>
                 </div>
                 <div class="fix-card resolved">
@@ -1093,12 +1086,12 @@ PARTIAL_CORR_MIN_N   = <span class="string">30</span></div>
      ═══════════════════════════════════════════════ -->
 <section class="slide" id="slide-fix3">
     <div class="slide-content">
-        <div class="section-label reveal"><span class="prompt">$</span> git log --oneline <span class="comment"># fix 3 of 3</span></div>
+        <div class="section-label reveal">FIX 3 OF 3</div>
         <h2 class="reveal">Fix 3: Controlling for Confounders</h2>
         <div class="two-col">
             <div class="reveal">
-                <div class="fix-card" style="border-left-color:var(--red); margin-bottom:var(--content-gap);">
-                    <div class="problem" style="color:var(--red);">Problem: spurious correlations from confounding variables</div>
+                <div class="fix-card" style="border-left-color:var(--accent-red); margin-bottom:var(--content-gap);">
+                    <div class="problem" style="color:var(--accent-red);">Problem: spurious correlations from confounding variables</div>
                     <div class="fix-detail">Many environmental indicators correlate with GDP. Without controlling for it, nearly <em>anything</em> that tracks national wealth will appear to predict waste recovery, water treatment, etc.</div>
                 </div>
                 <div class="fix-card resolved">
@@ -1123,7 +1116,7 @@ LOCAL_CONTROLS: dict[str, str] = {
 <span class="comment"># URB→WRR: r=0.489 (looks good!)</span>
 <span class="comment"># URB→WRR | GPC: partial_r = -0.016</span>
 <span class="comment"># (entirely confounded by GDP)</span></div>
-                <p style="font-size:var(--small-size); color:var(--text-muted);">GDP, HDI, urbanization, and population all strongly predict many environmental indicators. The partial correlation step is what separates <span style="color:var(--green)">confirmed</span> from <span style="color:var(--amber)">partially_confirmed</span>.</p>
+                <p style="font-size:var(--small-size); color:var(--text-muted);">GDP, HDI, urbanization, and population all strongly predict many environmental indicators. The partial correlation step is what separates <span style="color:var(--yale-blue)">confirmed</span> from <span style="color:var(--accent-amber)">partially_confirmed</span>.</p>
             </div>
         </div>
     </div>
@@ -1134,14 +1127,14 @@ LOCAL_CONTROLS: dict[str, str] = {
      ═══════════════════════════════════════════════ -->
 <section class="slide" id="slide-kg">
     <div class="slide-content">
-        <div class="section-label reveal"><span class="prompt">$</span> cat vision/knowledge_graph.md</div>
+        <div class="section-label reveal">KNOWLEDGE GRAPH</div>
         <h2 class="reveal">Why This Design: Toward a Knowledge Graph</h2>
         <div class="two-col">
             <div class="reveal">
-                <p style="margin-bottom:var(--element-gap);">We are building a <span style="color:var(--green)">knowledge graph</span> of data proxies where <span style="color:var(--text-bright)">nodes</span> are data variables and <span style="color:var(--text-bright)">edges</span> are typed, quantified relationships.</p>
+                <p style="margin-bottom:var(--element-gap);">We are building a <span style="color:var(--yale-blue)">knowledge graph</span> of data proxies where <span style="color:var(--text-primary)">nodes</span> are data variables and <span style="color:var(--text-primary)">edges</span> are typed, quantified relationships.</p>
                 <p style="margin-bottom:var(--element-gap);">By constraining edges with direction, strength, and functional form (all fields of <span class="tref">Relationship<span class="tref-tip"><span class="tip-title">class Relationship(BaseModel)</span><span class="tip-field"><span class="fname">direction</span>: <span class="ftype">Direction</span>  <span class="comment"># positive|negative|nonlinear</span>
 <span class="fname">functional_form</span>: <span class="ftype">FunctionalForm</span>  <span class="comment"># linear|log-linear|quadratic|...</span>
-<span class="fname">strength_estimate</span>: <span class="ftype">Optional[str]</span>  <span class="comment"># e.g. "r=0.72"</span></span></span></span>), we can use <span style="color:var(--cyan)">probabilistic model checking</span> to self-validate the graph.</p>
+<span class="fname">strength_estimate</span>: <span class="ftype">Optional[str]</span>  <span class="comment"># e.g. "r=0.72"</span></span></span></span>), we can use <span style="color:var(--epi-green)">probabilistic model checking</span> to self-validate the graph.</p>
                 <h3 style="font-size:var(--body-size); margin-bottom:0.3em;">Sign Consistency Check:</h3>
                 <div class="code-block" style="font-size:var(--code-size);">
 <span class="comment"># Transitive consistency:</span>
@@ -1165,9 +1158,9 @@ GPC <span class="keyword">--[?]--></span> H2O  <span class="comment"># should be
                 <div class="kg-canvas" style="height:min(40vh,280px);">
                     <svg class="kg-svg" viewBox="0 0 500 300" preserveAspectRatio="xMidYMid meet">
                         <defs>
-                            <marker id="aG" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--green-dim)"/></marker>
-                            <marker id="aR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--red)"/></marker>
-                            <marker id="aA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--amber)"/></marker>
+                            <marker id="aG" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--epi-green)"/></marker>
+                            <marker id="aR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--accent-red)"/></marker>
+                            <marker id="aA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--accent-amber)"/></marker>
                         </defs>
                         <line x1="80" y1="60" x2="250" y2="60" class="positive" marker-end="url(#aG)"/>
                         <line x1="250" y1="60" x2="420" y2="60" class="positive" marker-end="url(#aG)"/>
@@ -1176,22 +1169,22 @@ GPC <span class="keyword">--[?]--></span> H2O  <span class="comment"># should be
                         <line x1="80" y1="60" x2="80" y2="240" class="positive" marker-end="url(#aG)"/>
                         <line x1="80" y1="240" x2="250" y2="180" class="flagged" marker-end="url(#aA)"/>
                     </svg>
-                    <div class="kg-node" style="left:4%;top:8%;width:60px;height:60px;font-size:0.7rem;border-color:var(--green-dim);">GPC</div>
-                    <div class="kg-node" style="left:42%;top:8%;width:60px;height:60px;font-size:0.7rem;border-color:var(--green-dim);">WWT</div>
-                    <div class="kg-node" style="left:78%;top:8%;width:60px;height:60px;font-size:0.7rem;border-color:var(--green-dim);">UWD</div>
-                    <div class="kg-node" style="left:42%;top:48%;width:60px;height:60px;font-size:0.7rem;border-color:var(--amber);">URB</div>
+                    <div class="kg-node" style="left:4%;top:8%;width:60px;height:60px;font-size:0.7rem;border-color:var(--epi-green);">GPC</div>
+                    <div class="kg-node" style="left:42%;top:8%;width:60px;height:60px;font-size:0.7rem;border-color:var(--epi-green);">WWT</div>
+                    <div class="kg-node" style="left:78%;top:8%;width:60px;height:60px;font-size:0.7rem;border-color:var(--epi-green);">UWD</div>
+                    <div class="kg-node" style="left:42%;top:48%;width:60px;height:60px;font-size:0.7rem;border-color:var(--accent-amber);">URB</div>
                     <div class="kg-node" style="left:4%;top:65%;width:60px;height:60px;font-size:0.7rem;border-color:var(--text-muted);">POP</div>
-                    <div class="kg-edge-label" style="left:18%;top:3%;color:var(--green-dim);">+</div>
-                    <div class="kg-edge-label" style="left:62%;top:3%;color:var(--green-dim);">+</div>
-                    <div class="kg-edge-label" style="left:21%;top:32%;color:var(--green-dim);">+</div>
-                    <div class="kg-edge-label" style="left:64%;top:32%;color:var(--red);">&minus;</div>
-                    <div class="kg-edge-label" style="left:1%;top:42%;color:var(--green-dim);">+</div>
-                    <div class="kg-edge-label" style="left:18%;top:62%;color:var(--amber);">?</div>
+                    <div class="kg-edge-label" style="left:18%;top:3%;color:var(--epi-green);">+</div>
+                    <div class="kg-edge-label" style="left:62%;top:3%;color:var(--epi-green);">+</div>
+                    <div class="kg-edge-label" style="left:21%;top:32%;color:var(--epi-green);">+</div>
+                    <div class="kg-edge-label" style="left:64%;top:32%;color:var(--accent-red);">&minus;</div>
+                    <div class="kg-edge-label" style="left:1%;top:42%;color:var(--epi-green);">+</div>
+                    <div class="kg-edge-label" style="left:18%;top:62%;color:var(--accent-amber);">?</div>
                 </div>
                 <p style="font-size:clamp(0.55rem,0.9vw,0.75rem); color:var(--text-muted); margin-top:0.3rem;">
-                    <span style="color:var(--green-dim)">green</span> = verified positive &nbsp;
-                    <span style="color:var(--red)">red</span> = verified negative &nbsp;
-                    <span style="color:var(--amber)">amber dashed</span> = flagged for review
+                    <span style="color:var(--epi-green)">green</span> = verified positive &nbsp;
+                    <span style="color:var(--accent-red)">red</span> = verified negative &nbsp;
+                    <span style="color:var(--accent-amber)">amber dashed</span> = flagged for review
                 </p>
             </div>
         </div>
@@ -1203,13 +1196,13 @@ GPC <span class="keyword">--[?]--></span> H2O  <span class="comment"># should be
      ═══════════════════════════════════════════════ -->
 <section class="slide" id="slide-kg2">
     <div class="slide-content">
-        <div class="section-label reveal"><span class="prompt">$</span> cat vision/model_checking.md</div>
+        <div class="section-label reveal">SELF-VALIDATION</div>
         <h2 class="reveal">Self-Validation via Constraint Checking</h2>
         <div class="two-col">
             <div class="reveal">
                 <p style="margin-bottom:var(--element-gap);">With edges typed by <span class="tref">Relationship<span class="tref-tip"><span class="tip-title">class Relationship(BaseModel)</span><span class="tip-field"><span class="fname">direction</span>: <span class="ftype">Direction</span>
 <span class="fname">functional_form</span>: <span class="ftype">FunctionalForm</span>
-<span class="fname">strength_estimate</span>: <span class="ftype">Optional[str]</span></span></span></span> fields, we can define <span style="color:var(--cyan)">consistency constraints</span> and automatically flag violations:</p>
+<span class="fname">strength_estimate</span>: <span class="ftype">Optional[str]</span></span></span></span> fields, we can define <span style="color:var(--epi-green)">consistency constraints</span> and automatically flag violations:</p>
                 <div class="code-block" style="font-size:var(--code-size); margin-bottom:var(--element-gap);">
 <span class="comment"># Constraint 1: Sign Transitivity</span>
 <span class="keyword">for</span> path <span class="keyword">in</span> graph.all_paths(A, C):
@@ -1268,26 +1261,26 @@ GPC <span class="keyword">--[?]--></span> H2O  <span class="comment"># should be
      ═══════════════════════════════════════════════ -->
 <section class="slide" id="slide-future1">
     <div class="slide-content">
-        <div class="section-label reveal"><span class="prompt">$</span> cat TODO.md</div>
+        <div class="section-label reveal">FUTURE WORK</div>
         <h2 class="reveal">Future Considerations</h2>
         <div class="two-col">
             <ol class="future-list reveal">
-                <li><span style="color:var(--text-bright)">Prompt ablation</span> &mdash; Current prompts are verbose. Which sections matter? Should we drop Confounder Analysis and Ranked Candidates from the research prompt?</li>
-                <li><span style="color:var(--text-bright)">Data validation</span> &mdash; Ensure coding agents properly validate and align data, especially from non-WB/WHO sources. Country name mismatches remain a risk.</li>
-                <li><span style="color:var(--text-bright)">Richer statistical tests</span> &mdash; Current <span class="tref fn-ref">test_functional_form<span class="tref-tip"><span class="tip-sig">(x: Series, y: Series, min_n=20) -&gt; Optional[FunctionalFormResult]</span><span class="tip-desc">Currently tests log(X) but NOT log(Y). Misses ln(WRR) ~ GPC form. Need log-Y, polynomial, threshold models.</span></span></span> tests log(X) but not log(Y). Need to add log-Y, polynomial, threshold models.</li>
+                <li><span style="color:var(--text-primary)">Prompt ablation</span> &mdash; Current prompts are verbose. Which sections matter? Should we drop Confounder Analysis and Ranked Candidates from the research prompt?</li>
+                <li><span style="color:var(--text-primary)">Data validation</span> &mdash; Ensure coding agents properly validate and align data, especially from non-WB/WHO sources. Country name mismatches remain a risk.</li>
+                <li><span style="color:var(--text-primary)">Richer statistical tests</span> &mdash; Current <span class="tref fn-ref">test_functional_form<span class="tref-tip"><span class="tip-sig">(x: Series, y: Series, min_n=20) -&gt; Optional[FunctionalFormResult]</span><span class="tip-desc">Currently tests log(X) but NOT log(Y). Misses ln(WRR) ~ GPC form. Need log-Y, polynomial, threshold models.</span></span></span> tests log(X) but not log(Y). Need to add log-Y, polynomial, threshold models.</li>
             </ol>
             <ol class="future-list reveal" start="4">
-                <li><span style="color:var(--text-bright)">Output verification agent</span> &mdash; A final agent that reviews all <span class="tref">VerificationResult<span class="tref-tip"><span class="tip-title">class VerificationResult(BaseModel)</span><span class="tip-field"><span class="fname">hypothesis_id</span>: <span class="ftype">str</span>
+                <li><span style="color:var(--text-primary)">Output verification agent</span> &mdash; A final agent that reviews all <span class="tref">VerificationResult<span class="tref-tip"><span class="tip-title">class VerificationResult(BaseModel)</span><span class="tip-field"><span class="fname">hypothesis_id</span>: <span class="ftype">str</span>
 <span class="fname">verdict</span>: <span class="ftype">Verdict</span>
 <span class="fname">raw_correlation</span>: <span class="ftype">Optional[CorrelationResult]</span>
 <span class="fname">partial_correlation</span>: <span class="ftype">Optional[PartialCorrelationResult]</span>
 <span class="fname">functional_form</span>: <span class="ftype">Optional[FunctionalFormResult]</span>
 <span class="fname">data_quality_notes</span>: <span class="ftype">str</span>
 <span class="fname">summary</span>: <span class="ftype">str</span></span></span></span> files for consistency and flags suspect data.</li>
-                <li><span style="color:var(--text-bright)">Context scope</span> &mdash; Do we want only global relationships? Or also local ones (e.g. "in MENA countries, X correlates with Y") with properly bounded <span class="tref">Context<span class="tref-tip"><span class="tip-title">class Context(BaseModel)</span><span class="tip-field"><span class="fname">geographic_scope</span>: <span class="ftype">str</span>
+                <li><span style="color:var(--text-primary)">Context scope</span> &mdash; Do we want only global relationships? Or also local ones (e.g. "in MENA countries, X correlates with Y") with properly bounded <span class="tref">Context<span class="tref-tip"><span class="tip-title">class Context(BaseModel)</span><span class="tip-field"><span class="fname">geographic_scope</span>: <span class="ftype">str</span>
 <span class="fname">time_period</span>: <span class="ftype">str</span>
 <span class="fname">subpopulations</span>: <span class="ftype">Optional[str]</span></span></span></span>?</li>
-                <li><span style="color:var(--text-bright)">Knowledge graph structure</span> &mdash; What is the schema? How do we store nodes, edges, constraints? How do we query and visualize the evolving graph?</li>
+                <li><span style="color:var(--text-primary)">Knowledge graph structure</span> &mdash; What is the schema? How do we store nodes, edges, constraints? How do we query and visualize the evolving graph?</li>
             </ol>
         </div>
     </div>
@@ -1298,31 +1291,31 @@ GPC <span class="keyword">--[?]--></span> H2O  <span class="comment"># should be
      ═══════════════════════════════════════════════ -->
 <section class="slide" id="slide-datasources">
     <div class="slide-content">
-        <div class="section-label reveal"><span class="prompt">$</span> cat TODO.md <span class="comment"># tuning data source discovery</span></div>
+        <div class="section-label reveal">DATA SOURCES</div>
         <h2 class="reveal">Exploring Unconventional Proxy Sources</h2>
         <div class="two-col">
             <div class="reveal">
-                <p style="margin-bottom:var(--element-gap);">The deep researcher currently finds proxies from <span style="color:var(--text-bright)">academic literature and statistical databases</span> (World Bank, WHO). We should tune the prompt to explicitly consider less conventional but increasingly available data modalities:</p>
+                <p style="margin-bottom:var(--element-gap);">The deep researcher currently finds proxies from <span style="color:var(--text-primary)">academic literature and statistical databases</span> (World Bank, WHO). We should tune the prompt to explicitly consider less conventional but increasingly available data modalities:</p>
 
-                <div class="card" style="border-left:3px solid var(--cyan); margin-bottom:0.4rem;">
+                <div class="card" style="border-left:3px solid var(--epi-green); margin-bottom:0.4rem;">
                     <div class="card-title" style="font-size:var(--small-size);">Satellite &amp; Remote Sensing</div>
                     <div class="card-body">Satellite imagery of waste facilities, truck traffic at landfills, nighttime light intensity (VIIRS/DMSP) as economic proxy, TROPOMI atmospheric NO&#8322;/SO&#8322; columns, land use change detection for deforestation (Sentinel-2), ocean colour for coastal water quality</div>
                 </div>
-                <div class="card" style="border-left:3px solid var(--amber); margin-bottom:0.4rem;">
+                <div class="card" style="border-left:3px solid var(--accent-amber); margin-bottom:0.4rem;">
                     <div class="card-title" style="font-size:var(--small-size);">Maritime &amp; Logistics Tracking</div>
                     <div class="card-body">AIS vessel tracking for illegal fishing and waste dumping at sea, port throughput and freight manifests, import/export records for recycling equipment and hazardous waste shipments</div>
                 </div>
-                <div class="card" style="border-left:3px solid var(--green); margin-bottom:0.4rem;">
+                <div class="card" style="border-left:3px solid var(--yale-blue); margin-bottom:0.4rem;">
                     <div class="card-title" style="font-size:var(--small-size);">Consumer &amp; Pharmaceutical Data</div>
                     <div class="card-body">ORS (oral rehydration salts) and water purification tablet sales as water quality proxy, respiratory medication sales for air quality, pesticide import volumes for agricultural pollution</div>
                 </div>
             </div>
             <div class="reveal">
-                <div class="card" style="border-left:3px solid var(--purple); margin-bottom:0.4rem;">
+                <div class="card" style="border-left:3px solid var(--accent-purple); margin-bottom:0.4rem;">
                     <div class="card-title" style="font-size:var(--small-size);">Crowdsourced &amp; Citizen Science</div>
                     <div class="card-body">iNaturalist/eBird observation density for biodiversity, PurpleAir/OpenAQ sensor networks for air quality, OpenStreetMap infrastructure completeness (water/waste facilities), acoustic monitoring for ecosystem health</div>
                 </div>
-                <div class="card" style="border-left:3px solid var(--red); margin-bottom:0.4rem;">
+                <div class="card" style="border-left:3px solid var(--accent-red); margin-bottom:0.4rem;">
                     <div class="card-title" style="font-size:var(--small-size);">Digital Footprint &amp; Search Data</div>
                     <div class="card-body">Google Trends for "water filter", "boil water advisory", "air pollution" by country, news corpus frequency of environmental incident reporting, e-commerce data for environmental products</div>
                 </div>
@@ -1350,24 +1343,11 @@ GPC <span class="keyword">--[?]--></span> H2O  <span class="comment"># should be
      ═══════════════════════════════════════════════ -->
 <section class="slide" id="slide-end">
     <div class="slide-content" style="align-items:center; text-align:center;">
-        <div class="reveal" style="font-family:var(--font-mono); font-size:clamp(0.4rem,0.7vw,0.6rem); color:var(--green-dim); line-height:1.2; white-space:pre; opacity:0.5; margin-bottom:var(--content-gap);">
-+--------------------------------------------------+
-|                                                  |
-|   ╔═══════════════════════════════════════════╗   |
-|   ║                                           ║   |
-|   ║   $ echo "questions?"                     ║   |
-|   ║   questions?                              ║   |
-|   ║   $ _                                     ║   |
-|   ║                                           ║   |
-|   ╚═══════════════════════════════════════════╝   |
-|                                                  |
-+--------------------------------------------------+</div>
-        <h1 class="reveal" style="font-size:var(--h2-size);"><span class="prompt">$</span> ./pipeline <span class="keyword">--help</span></h1>
+        <h1 class="reveal" style="font-size:var(--h2-size);">Questions?</h1>
         <p class="reveal" style="color:var(--text-muted); font-size:var(--body-size); margin-top:var(--element-gap); max-width:600px;">
             YCELP &times; ROSE Lab<br>
-            <span style="color:var(--text-primary)">python -m src --indicator {TLA} --stage both</span>
+            <span style="color:var(--text-primary)">epi-proxy-discovery.yale.edu</span>
         </p>
-        <div class="reveal" style="margin-top:var(--content-gap);"><span class="cursor"></span></div>
     </div>
 </section>
 

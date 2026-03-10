@@ -121,12 +121,12 @@ def _verdict_color(verdict: str) -> tuple[str, str, str]:
     """Return (background, text, border) colors for a verdict string."""
     v = verdict.lower().replace(" ", "_")
     colors = {
-        "confirmed": ("#002a1a", "#00ff88", "#00ff8844"),
-        "partially_confirmed": ("#2a2000", "#ffb800", "#ffb80044"),
-        "inconclusive": ("#1a1a1a", "#5c6b7f", "#5c6b7f44"),
-        "rejected": ("#2a0010", "#ff4466", "#ff446644"),
+        "confirmed": ("#e8f5e9", "#2e7d32", "#2e7d3240"),
+        "partially_confirmed": ("#fff3e0", "#bf6900", "#bf690040"),
+        "inconclusive": ("#f5f5f5", "#8a8a8a", "#8a8a8a40"),
+        "rejected": ("#ffebee", "#c62828", "#c6282840"),
     }
-    return colors.get(v, ("#1a1a1a", "#5c6b7f", "#5c6b7f44"))
+    return colors.get(v, ("#f5f5f5", "#8a8a8a", "#8a8a8a40"))
 
 
 def _source_tag(stage: str) -> str:
@@ -154,92 +154,96 @@ def _validation_status(annotation: Optional[ValidationAnnotation]) -> tuple[str,
 
 def _build_css() -> str:
     return """
+@import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;500;600;700&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{
-  background:#0a0e14;color:#c5cdd8;
-  font-family:'SF Mono','Consolas','Fira Code',monospace;
-  font-size:13px;line-height:1.5;padding:24px;
+  background:#ffffff;color:#2c2c2c;
+  font-family:'Source Sans 3','Segoe UI',system-ui,sans-serif;
+  font-size:14px;line-height:1.6;padding:28px;
+  -webkit-font-smoothing:antialiased;
 }
 .header{
-  max-width:1100px;margin:0 auto 24px;
+  max-width:1100px;margin:0 auto 28px;
 }
 .tla-badge{
   display:inline-block;font-size:32px;font-weight:700;
-  color:#00ff88;letter-spacing:2px;margin-bottom:8px;
+  color:#00356B;letter-spacing:2px;margin-bottom:8px;
 }
-.subtitle{color:#5c6b7f;font-size:14px;margin-bottom:12px;}
+.subtitle{color:#5a5a5a;font-size:14px;margin-bottom:12px;}
 .chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;}
 .chip{
   display:inline-flex;align-items:center;gap:4px;
-  padding:3px 10px;border-radius:4px;font-size:12px;font-weight:600;
+  padding:4px 12px;border-radius:5px;font-size:12px;font-weight:600;
   border:1px solid;
 }
 .container{max-width:1100px;margin:0 auto;}
 table{width:100%;border-collapse:collapse;}
 thead th{
   text-align:left;padding:10px 12px;
-  color:#5c6b7f;font-size:11px;text-transform:uppercase;letter-spacing:1px;
-  border-bottom:1px solid #1e2a3a;
+  color:#00356B;font-size:11px;text-transform:uppercase;letter-spacing:1px;
+  border-bottom:2px solid #00356B;
+  font-weight:600;
 }
 .summary-row{cursor:pointer;transition:background .15s;}
-.summary-row:hover{background:#131920;}
+.summary-row:hover{background:rgba(0,53,107,0.04);}
 .summary-row td{
-  padding:10px 12px;border-bottom:1px solid #1e2a3a22;
+  padding:10px 12px;border-bottom:1px solid #e8e6e1;
   white-space:nowrap;
 }
 .summary-row td.proxy-col{white-space:normal;max-width:300px;}
 .verdict-badge{
-  display:inline-block;padding:2px 8px;border-radius:3px;
+  display:inline-block;padding:3px 10px;border-radius:4px;
   font-size:11px;font-weight:700;letter-spacing:.5px;
   border:1px solid;
 }
 .detail-row{display:none;}
 .detail-row.open{display:table-row;}
 .detail-row td{
-  padding:0;border-bottom:1px solid #1e2a3a;
+  padding:0;border-bottom:1px solid #e8e6e1;
 }
 .detail-panel{
-  background:#131920;padding:16px 20px;
-  border-left:3px solid #1e2a3a;
+  background:#f7f7f5;padding:18px 22px;
+  border-left:3px solid #00356B;
 }
 .detail-panel h4{
-  color:#5c6b7f;font-size:11px;text-transform:uppercase;
-  letter-spacing:1px;margin:12px 0 6px;
+  color:#00356B;font-size:11px;text-transform:uppercase;
+  letter-spacing:1px;margin:14px 0 6px;
+  font-weight:600;
 }
 .detail-panel h4:first-child{margin-top:0;}
 .detail-panel p,.detail-panel li{
-  color:#c5cdd8;font-size:12px;line-height:1.6;
+  color:#2c2c2c;font-size:13px;line-height:1.65;
 }
 .detail-panel ul{list-style:none;padding:0;}
-.detail-panel ul li::before{content:"› ";color:#5c6b7f;}
+.detail-panel ul li::before{content:"\203A ";color:#8a8a8a;}
 .detail-grid{
   display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
-  gap:8px 16px;
+  gap:10px 18px;
 }
 .detail-stat{display:flex;flex-direction:column;}
-.detail-stat .label{color:#5c6b7f;font-size:10px;text-transform:uppercase;letter-spacing:.5px;}
-.detail-stat .value{color:#c5cdd8;font-size:13px;}
-.flag-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;}
+.detail-stat .label{color:#8a8a8a;font-size:10px;text-transform:uppercase;letter-spacing:.5px;font-weight:600;}
+.detail-stat .value{color:#2c2c2c;font-size:14px;}
+.flag-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
 .flag-chip{
-  display:inline-block;padding:1px 6px;border-radius:2px;
+  display:inline-block;padding:2px 8px;border-radius:3px;
   font-size:10px;font-weight:600;letter-spacing:.3px;
 }
-.flag-pass{background:#002a1a;color:#00ff88;border:1px solid #00ff8833;}
-.flag-fail{background:#2a0010;color:#ff4466;border:1px solid #ff446633;}
+.flag-pass{background:#e8f5e9;color:#2e7d32;border:1px solid #2e7d3230;}
+.flag-fail{background:#ffebee;color:#c62828;border:1px solid #c6282830;}
 .not-verified{opacity:0.4;}
 .not-verified td{font-style:italic;}
 .source-tag{
   display:inline-block;font-size:9px;font-weight:600;
   letter-spacing:.5px;text-transform:uppercase;
-  padding:1px 5px;border-radius:2px;margin-left:6px;
+  padding:2px 6px;border-radius:3px;margin-left:6px;
   vertical-align:middle;position:relative;top:-1px;
 }
-.source-s1{background:#1a1a2e;color:#7b8cde;border:1px solid #7b8cde33;}
-.source-s2v{background:#1a2a1a;color:#88cc88;border:1px solid #88cc8833;}
-.source-s2val{background:#2a1a2a;color:#cc88cc;border:1px solid #cc88cc33;}
+.source-s1{background:#e8eaf6;color:#3949ab;border:1px solid #3949ab30;}
+.source-s2v{background:#e8f5e9;color:#2e7d32;border:1px solid #2e7d3230;}
+.source-s2val{background:#f3e5f5;color:#7b1fa2;border:1px solid #7b1fa230;}
 thead .col-source{
   font-size:9px;font-weight:400;text-transform:none;
-  letter-spacing:0;color:#3d4a5c;padding-top:0;
+  letter-spacing:0;color:#8a8a8a;padding-top:0;
 }
 """
 
@@ -295,7 +299,7 @@ def _build_header(result: PipelineResult) -> str:
         )
     if n_unverified:
         chips_html.append(
-            '<span class="chip" style="background:#1a1a1a;color:#5c6b7f;border-color:#5c6b7f44">'
+            '<span class="chip" style="background:#f5f5f5;color:#8a8a8a;border-color:#8a8a8a40">'
             f"{n_unverified} not verified</span>"
         )
 
@@ -434,7 +438,7 @@ def _build_row(
             f'<tr class="summary-row not-verified" data-id="{row_id}">'
             f"<td>{row_id}</td>"
             f'<td class="proxy-col">{proxy_name}</td>'
-            f'<td><span class="verdict-badge" style="background:#1a1a1a;color:#5c6b7f;border-color:#5c6b7f44">not verified</span></td>'
+            f'<td><span class="verdict-badge" style="background:#f5f5f5;color:#8a8a8a;border-color:#8a8a8a40">not verified</span></td>'
             f"<td>—</td><td>—</td><td>—</td><td>—</td>"
             f"</tr>\n"
         )

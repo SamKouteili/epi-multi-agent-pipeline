@@ -130,6 +130,7 @@ def export_results(tla: str) -> str | None:
 # ── Presentation tab ───────────────────────────────────────────────────────
 
 PRESENTATION_PATH = PROJECT_ROOT / "presentation.html"
+PRESENTATION2_PATH = PROJECT_ROOT / "presentation2.html"
 
 
 def _load_presentation() -> str:
@@ -137,6 +138,13 @@ def _load_presentation() -> str:
         content = PRESENTATION_PATH.read_text(encoding="utf-8")
         return _wrap_in_iframe(content)
     return "<p>presentation.html not found in project root.</p>"
+
+
+def _load_presentation2() -> str:
+    if PRESENTATION2_PATH.exists():
+        content = PRESENTATION2_PATH.read_text(encoding="utf-8")
+        return _wrap_in_iframe(content)
+    return "<p>presentation2.html not found in project root.</p>"
 
 
 # ── Gradio app ──────────────────────────────────────────────────────────────
@@ -147,13 +155,13 @@ _CUSTOM_CSS = """
 .app-header {
     text-align: center;
     padding: 2rem 1rem 1rem;
-    border-bottom: 1px solid #1e2a3a;
+    border-bottom: 1px solid #d4d2cb;
     margin-bottom: 1rem;
 }
 .app-header .tla-badge {
     display: inline-block;
-    background: #00ff88;
-    color: #0a0e14;
+    background: #00356B;
+    color: #ffffff;
     font-weight: 700;
     font-size: 0.75rem;
     padding: 0.25rem 0.6rem;
@@ -162,39 +170,40 @@ _CUSTOM_CSS = """
     margin-bottom: 0.5rem;
 }
 .app-header h1 {
+    font-family: 'Cormorant Garamond', Georgia, serif;
     font-size: 1.6rem;
     font-weight: 700;
-    color: #fff !important;
+    color: #00356B !important;
     margin: 0.5rem 0 0.25rem;
 }
 .app-header p {
-    color: #5c6b7f;
+    color: #8a8a8a;
     font-size: 0.85rem;
     margin: 0;
 }
 
-/* Neon glow on primary buttons */
+/* Subtle lift on primary buttons */
 button.primary:hover {
-    box-shadow: 0 0 20px rgba(0, 255, 136, 0.3) !important;
+    box-shadow: 0 2px 8px rgba(0, 53, 107, 0.2) !important;
 }
 
-/* Green accent on active tab */
+/* Yale blue accent on active tab */
 button[role="tab"][aria-selected="true"] {
-    color: #00ff88 !important;
-    border-color: #00ff88 !important;
+    color: #00356B !important;
+    border-color: #00356B !important;
 }
 
-/* Green focus ring on inputs */
+/* Blue focus ring on inputs */
 textarea:focus, input:focus {
-    border-color: #00ff88 !important;
-    box-shadow: 0 0 0 2px rgba(0, 255, 136, 0.15) !important;
+    border-color: #00356B !important;
+    box-shadow: 0 0 0 2px rgba(0, 53, 107, 0.12) !important;
 }
 
 /* Thin scrollbar */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: #0a0e14; }
-::-webkit-scrollbar-thumb { background: #1e2a3a; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #5c6b7f; }
+::-webkit-scrollbar-track { background: #f7f7f5; }
+::-webkit-scrollbar-thumb { background: #d4d2cb; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #8a8a8a; }
 
 /* Report hypothesis table */
 .report-table td, .report-table th {
@@ -205,73 +214,73 @@ textarea:focus, input:focus {
 _CUSTOM_HEAD = (
     '<link rel="preconnect" href="https://fonts.googleapis.com">'
     '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
-    '<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">'
+    '<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Source+Sans+3:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">'
 )
 
-# ── Build dark terminal theme via Gradio's theme API ─────────────────────────
+# ── Academic theme ─────────────────────────────────────────────────────────────
 
 _THEME = gr.themes.Base(
     primary_hue=gr.themes.Color(
-        c50="#e6fff3", c100="#b3ffdb", c200="#80ffc4",
-        c300="#4dffac", c400="#1aff95", c500="#00ff88",
-        c600="#00cc6a", c700="#00994f", c800="#006635", c900="#00331a", c950="#001a0d",
+        c50="#e8eef6", c100="#c4d4e8", c200="#9db8d9",
+        c300="#7199c9", c400="#4a7dba", c500="#00356B",
+        c600="#002d5c", c700="#00244a", c800="#001b38", c900="#001226", c950="#000a16",
     ),
     neutral_hue=gr.themes.Color(
-        c50="#c5cdd8", c100="#a3adb8", c200="#8192a3",
-        c300="#5c6b7f", c400="#3d4f63", c500="#2a3a4e",
-        c600="#1e2a3a", c700="#131920", c800="#0d1117", c900="#0a0e14", c950="#070a0f",
+        c50="#fafaf9", c100="#f7f7f5", c200="#eeede9",
+        c300="#e8e6e1", c400="#d4d2cb", c500="#b8b5ad",
+        c600="#8a8a8a", c700="#5a5a5a", c800="#2c2c2c", c900="#1a1a1a", c950="#0d0d0d",
     ),
-    font=gr.themes.GoogleFont("JetBrains Mono"),
-    font_mono=gr.themes.GoogleFont("JetBrains Mono"),
+    font=[gr.themes.GoogleFont("Source Sans 3"), "system-ui", "sans-serif"],
+    font_mono=[gr.themes.GoogleFont("JetBrains Mono"), "monospace"],
 ).set(
     # Body
-    body_background_fill="#0a0e14",
-    body_background_fill_dark="#0a0e14",
-    body_text_color="#c5cdd8",
-    body_text_color_dark="#c5cdd8",
-    body_text_color_subdued="#5c6b7f",
-    body_text_color_subdued_dark="#5c6b7f",
+    body_background_fill="#ffffff",
+    body_background_fill_dark="#ffffff",
+    body_text_color="#2c2c2c",
+    body_text_color_dark="#2c2c2c",
+    body_text_color_subdued="#8a8a8a",
+    body_text_color_subdued_dark="#8a8a8a",
     # Blocks
-    background_fill_primary="#0a0e14",
-    background_fill_primary_dark="#0a0e14",
-    background_fill_secondary="#131920",
-    background_fill_secondary_dark="#131920",
-    block_background_fill="#0d1117",
-    block_background_fill_dark="#0d1117",
-    block_border_color="#1e2a3a",
-    block_border_color_dark="#1e2a3a",
-    block_label_background_fill="#0a0e14",
-    block_label_background_fill_dark="#0a0e14",
-    block_label_border_color="#1e2a3a",
-    block_label_border_color_dark="#1e2a3a",
-    block_label_text_color="#5c6b7f",
-    block_label_text_color_dark="#5c6b7f",
-    block_title_text_color="#5c6b7f",
-    block_title_text_color_dark="#5c6b7f",
+    background_fill_primary="#ffffff",
+    background_fill_primary_dark="#ffffff",
+    background_fill_secondary="#f7f7f5",
+    background_fill_secondary_dark="#f7f7f5",
+    block_background_fill="#ffffff",
+    block_background_fill_dark="#ffffff",
+    block_border_color="#d4d2cb",
+    block_border_color_dark="#d4d2cb",
+    block_label_background_fill="#f7f7f5",
+    block_label_background_fill_dark="#f7f7f5",
+    block_label_border_color="#d4d2cb",
+    block_label_border_color_dark="#d4d2cb",
+    block_label_text_color="#5a5a5a",
+    block_label_text_color_dark="#5a5a5a",
+    block_title_text_color="#5a5a5a",
+    block_title_text_color_dark="#5a5a5a",
     # Borders
-    border_color_primary="#1e2a3a",
-    border_color_primary_dark="#1e2a3a",
-    border_color_accent="#00ff88",
-    border_color_accent_dark="#00ff88",
+    border_color_primary="#d4d2cb",
+    border_color_primary_dark="#d4d2cb",
+    border_color_accent="#00356B",
+    border_color_accent_dark="#00356B",
     # Inputs
-    input_background_fill="#131920",
-    input_background_fill_dark="#131920",
+    input_background_fill="#f7f7f5",
+    input_background_fill_dark="#f7f7f5",
     # Primary button
-    button_primary_background_fill="#00ff88",
-    button_primary_background_fill_dark="#00ff88",
-    button_primary_background_fill_hover="#00cc6a",
-    button_primary_background_fill_hover_dark="#00cc6a",
-    button_primary_text_color="#0a0e14",
-    button_primary_text_color_dark="#0a0e14",
-    button_primary_border_color="#00ff88",
-    button_primary_border_color_dark="#00ff88",
+    button_primary_background_fill="#00356B",
+    button_primary_background_fill_dark="#00356B",
+    button_primary_background_fill_hover="#2b5f9e",
+    button_primary_background_fill_hover_dark="#2b5f9e",
+    button_primary_text_color="#ffffff",
+    button_primary_text_color_dark="#ffffff",
+    button_primary_border_color="#00356B",
+    button_primary_border_color_dark="#00356B",
     # Secondary button
     button_secondary_background_fill="transparent",
     button_secondary_background_fill_dark="transparent",
-    button_secondary_text_color="#c5cdd8",
-    button_secondary_text_color_dark="#c5cdd8",
-    button_secondary_border_color="#1e2a3a",
-    button_secondary_border_color_dark="#1e2a3a",
+    button_secondary_text_color="#2c2c2c",
+    button_secondary_text_color_dark="#2c2c2c",
+    button_secondary_border_color="#d4d2cb",
+    button_secondary_border_color_dark="#d4d2cb",
 )
 
 
@@ -353,8 +362,11 @@ def build_app() -> gr.Blocks:
             )
 
         # ── Tab 3: Presentation ───────────────────────────────────────────
-        with gr.Tab("Presentation"):
+        with gr.Tab("Presentation [Technical]"):
             gr.HTML(_load_presentation())
+
+        with gr.Tab("Presentation [EPI]"):
+            gr.HTML(_load_presentation2())
 
     return app
 
