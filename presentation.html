@@ -6,9 +6,41 @@
     <title>EPI Proxy Discovery Pipeline</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Source+Sans+3:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
     <style>
+        /* ===========================================
+           YALE NEW TYPEFACE (@font-face)
+           =========================================== */
+        @font-face {
+            font-family: 'YaleNew';
+            src: url('https://yaleux.github.io/yaleui/assets/fonts/yalenew-roman-webfont.woff2') format('woff2');
+            font-weight: 400;
+            font-style: normal;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'YaleNew';
+            src: url('https://yaleux.github.io/yaleui/assets/fonts/yalenew-bold-webfont.woff2') format('woff2');
+            font-weight: 700;
+            font-style: normal;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'YaleNew';
+            src: url('https://yaleux.github.io/yaleui/assets/fonts/yalenew-italic-webfont.woff2') format('woff2');
+            font-weight: 400;
+            font-style: italic;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'YaleNew';
+            src: url('https://yaleux.github.io/yaleui/assets/fonts/yalenew-bolditalic-webfont.woff2') format('woff2');
+            font-weight: 700;
+            font-style: italic;
+            font-display: swap;
+        }
+
         /* ===========================================
            CSS CUSTOM PROPERTIES (ACADEMIC THEME)
            =========================================== */
@@ -36,7 +68,7 @@
             --text-secondary: #5a5a5a;
             --text-muted: #8a8a8a;
 
-            --font-display: 'Cormorant Garamond', Georgia, serif;
+            --font-display: 'YaleNew', Georgia, serif;
             --font-body: 'Source Sans 3', 'Segoe UI', sans-serif;
             --font-mono: 'JetBrains Mono', monospace;
 
@@ -408,6 +440,50 @@
         .animated { animation: glow-pulse 2s ease-in-out infinite; }
 
         /* ===========================================
+           MINI PIPELINE SCHEMATIC
+           =========================================== */
+        .mini-pipeline {
+            position: fixed;
+            top: 12px;
+            right: 24px;
+            z-index: 900;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            background: rgba(255,255,255,0.92);
+            border: 1px solid var(--border-light);
+            border-radius: 6px;
+            padding: 5px 10px;
+            opacity: 0.55;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        .mini-pipeline:hover { opacity: 1; pointer-events: auto; }
+        .mini-pipeline.hidden { display: none; }
+        .mini-node {
+            font-family: var(--font-mono);
+            font-size: 0.55rem;
+            padding: 2px 5px;
+            border-radius: 3px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            white-space: nowrap;
+            transition: all 0.3s;
+        }
+        .mini-node.mini-active {
+            background: var(--yale-blue);
+            border-color: var(--yale-blue);
+            color: #fff;
+            opacity: 1;
+        }
+        .mini-arrow {
+            font-size: 0.5rem;
+            color: var(--border);
+            flex-shrink: 0;
+        }
+
+        /* ===========================================
            RESPONSIVE
            =========================================== */
         @media (max-height: 700px) {
@@ -424,6 +500,7 @@
             .grid-2, .two-col { grid-template-columns: 1fr; }
             .hpipe { flex-direction: column; align-items: center; }
             .hpipe-arrow { transform: rotate(90deg); }
+            .mini-pipeline { display: none; }
         }
         @media (prefers-reduced-motion: reduce) {
             *,*::before,*::after { animation-duration: 0.01ms !important; transition-duration: 0.2s !important; }
@@ -436,6 +513,19 @@
 <div class="progress-bar" id="progressBar"></div>
 <nav class="nav-dots" id="navDots"></nav>
 <div class="slide-counter"><span class="current" id="currentSlide">01</span><span>/</span><span id="totalSlides">19</span></div>
+
+<!-- Mini Pipeline Schematic (fixed position, top-right) -->
+<div class="mini-pipeline hidden" id="miniPipeline">
+    <div class="mini-node" data-mini="dk">Indicator+DK</div>
+    <div class="mini-arrow">&rarr;</div>
+    <div class="mini-node" data-mini="research">Research</div>
+    <div class="mini-arrow">&rarr;</div>
+    <div class="mini-node" data-mini="parser">Parser</div>
+    <div class="mini-arrow">&rarr;</div>
+    <div class="mini-node" data-mini="verifiers">Verifiers</div>
+    <div class="mini-arrow">&rarr;</div>
+    <div class="mini-node" data-mini="verdict">Verdict</div>
+</div>
 
 <!-- ═══════════════════════════════════════════════
      SLIDE 1: TITLE
@@ -559,7 +649,7 @@ anti_diarrheal_sales <span class="keyword">~</span> water_quality_problems
                 <span class="hpipe-stage-label">STAGE 1: HYPOTHESIS GENERATION</span>
                 <div class="hpipe-node" data-slide="slide-research" style="border-color:var(--epi-green);">
                     <div class="n-label" style="color:var(--epi-green);">Deep Researcher</div>
-                    <div class="n-sub">Perplexity sonar-deep-research</div>
+                    <div class="n-sub">Gemini deep-research-pro</div>
                     <div class="n-tip"><span style="color:var(--epi-green)">Input:</span> indicator metadata + domain context<br><span style="color:var(--epi-green)">Output:</span> research_report.md<br><span style="color:var(--epi-green)">Sections:</span> causal map, literature proxies, speculative proxies, data availability, confounders, ranked candidates</div>
                 </div>
                 <div class="hpipe-inner-arrow animated">&rarr;</div>
@@ -605,7 +695,58 @@ anti_diarrheal_sales <span class="keyword">~</span> water_quality_problems
 </section>
 
 <!-- ═══════════════════════════════════════════════
-     SLIDE 5: STAGE 1 — DEEP RESEARCH AGENT
+     SLIDE 5: DOMAIN KNOWLEDGE (moved before research)
+     ═══════════════════════════════════════════════ -->
+<section class="slide" id="slide-domain">
+    <div class="slide-content">
+        <div class="section-label reveal">DOMAIN KNOWLEDGE</div>
+        <h2 class="reveal">Domain Knowledge Injection</h2>
+        <div class="two-col">
+            <div class="reveal">
+                <p style="margin-bottom:var(--element-gap);">Before sending an indicator to the deep research agent, we inject <span style="color:var(--yale-blue)">curated domain context</span> from the EPI Technical Appendix. This ensures the researcher starts from what we already know, rather than wasting effort rediscovering known facts.</p>
+                <div class="code-block" style="font-size:var(--code-size);">
+<span class="comment"># src/domain_knowledge.py</span>
+DOMAIN_KNOWLEDGE: dict[str, str] = {
+  <span class="string">"UWD"</span>: <span class="string">"""
+  UWD measures age-standardized DALYs
+  lost per 100k due to unsafe drinking
+  water. Source: IHME GBD, 1990-2021.
+
+  Key confounders: GDP per capita,
+  urbanization, healthcare access.
+
+  Siblings: USD, HFD (same IHME method)
+  Related: WWT/WWC/WWG (different sources)
+  """</span>,
+  <span class="string">"WRR"</span>: <span class="string">"..."</span>,  <span class="comment"># 8 entries total</span>
+  <span class="string">"SMW"</span>: <span class="string">"..."</span>,  <span class="comment"># all Tier 1</span>
+  ...
+}</div>
+            </div>
+            <div class="reveal">
+                <h3 style="font-size:var(--body-size); margin-bottom:0.3em;">What each entry contains:</h3>
+                <ul class="terminal-list" style="margin-bottom:var(--content-gap);">
+                    <li>Indicator definition and formula</li>
+                    <li>Imputation model (if any) with R&sup2;</li>
+                    <li>Known confounders to control against</li>
+                    <li>Data quality issues &amp; caveats</li>
+                    <li>Sibling indicator relationships</li>
+                </ul>
+                <div class="code-block" style="font-size:var(--code-size);">
+<span class="comment"># Injected into research prompt as:</span>
+<span class="keyword">## Domain Context</span>
+<span class="comment">"The following is known about this</span>
+<span class="comment"> indicator from the EPI team's own</span>
+<span class="comment"> analysis. Use this as a starting</span>
+<span class="comment"> point -- do NOT spend effort</span>
+<span class="comment"> rediscovering these facts."</span></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     SLIDE 6: STAGE 1 — DEEP RESEARCH AGENT
      ═══════════════════════════════════════════════ -->
 <section class="slide" id="slide-research">
     <div class="slide-content">
@@ -613,7 +754,7 @@ anti_diarrheal_sales <span class="keyword">~</span> water_quality_problems
         <h2 class="reveal">Stage 1: Deep Research Agent</h2>
         <div class="two-col">
             <div class="reveal">
-                <p style="margin-bottom:var(--element-gap);">A <span style="color:var(--epi-green)">Perplexity sonar-deep-research</span> model conducts literature review and data discovery. We prompt it with:</p>
+                <p style="margin-bottom:var(--element-gap);">The indicator metadata and domain knowledge are fed to a <span style="color:var(--epi-green)">Gemini Deep Research</span> agent, which conducts literature review and data discovery. We prompt it with:</p>
                 <ul class="terminal-list" style="margin-bottom:var(--content-gap);">
                     <li>Full indicator metadata (name, units, source, polarity, coverage)</li>
                     <li>Domain knowledge from the EPI Technical Appendix (when available)</li>
@@ -647,57 +788,6 @@ anti_diarrheal_sales <span class="keyword">~</span> water_quality_problems
   <span class="comment"># WHO GHO: WHS8_110</span>
   <span class="comment"># later verified: r = -0.653 !</span></div>
                 <p style="font-size:var(--small-size); color:var(--text-muted); margin-top:var(--element-gap);">The output is a ~2000-word markdown report with citations. Saved to <span class="file-ref">outputs/{TLA}/stage1/research_report.md</span></p>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- ═══════════════════════════════════════════════
-     SLIDE 6: DOMAIN KNOWLEDGE
-     ═══════════════════════════════════════════════ -->
-<section class="slide" id="slide-domain">
-    <div class="slide-content">
-        <div class="section-label reveal">DOMAIN KNOWLEDGE</div>
-        <h2 class="reveal">Domain Knowledge Injection</h2>
-        <div class="two-col">
-            <div class="reveal">
-                <p style="margin-bottom:var(--element-gap);">We inject <span style="color:var(--yale-blue)">curated domain context</span> from the EPI Technical Appendix so the research agent doesn't waste effort rediscovering known facts.</p>
-                <div class="code-block" style="font-size:var(--code-size);">
-<span class="comment"># src/domain_knowledge.py</span>
-DOMAIN_KNOWLEDGE: dict[str, str] = {
-  <span class="string">"UWD"</span>: <span class="string">"""
-  UWD measures age-standardized DALYs
-  lost per 100k due to unsafe drinking
-  water. Source: IHME GBD, 1990-2021.
-
-  Key confounders: GDP per capita,
-  urbanization, healthcare access.
-
-  Siblings: USD, HFD (same IHME method)
-  Related: WWT/WWC/WWG (different sources)
-  """</span>,
-  <span class="string">"WRR"</span>: <span class="string">"..."</span>,  <span class="comment"># 8 entries total</span>
-  <span class="string">"SMW"</span>: <span class="string">"..."</span>,  <span class="comment"># all Tier 1</span>
-  ...
-}</div>
-            </div>
-            <div class="reveal">
-                <h3 style="font-size:var(--body-size); margin-bottom:0.3em;">What each entry contains:</h3>
-                <ul class="terminal-list" style="margin-bottom:var(--content-gap);">
-                    <li>Indicator definition and formula</li>
-                    <li>Imputation model (if any) with R&sup2;</li>
-                    <li>Known confounders to control against</li>
-                    <li>Data quality issues &amp; caveats</li>
-                    <li>Sibling indicator relationships</li>
-                </ul>
-                <div class="code-block" style="font-size:var(--code-size);">
-<span class="comment"># Injected into Perplexity prompt as:</span>
-<span class="keyword">## Domain Context</span>
-<span class="comment">"The following is known about this</span>
-<span class="comment"> indicator from the EPI team's own</span>
-<span class="comment"> analysis. Use this as a starting</span>
-<span class="comment"> point -- do NOT spend effort</span>
-<span class="comment"> rediscovering these facts."</span></div>
             </div>
         </div>
     </div>
@@ -1356,17 +1446,43 @@ GPC <span class="keyword">--[?]--></span> H2O  <span class="comment"># should be
      JAVASCRIPT
      ═══════════════════════════════════════════════ -->
 <script>
+// Mini-pipeline highlight mapping: slide id -> which mini-node to highlight
+const MINI_HIGHLIGHT_MAP = {
+    'slide-title': null,       // hidden on title
+    'slide-problem': '',       // no highlight
+    'slide-idea': '',          // no highlight
+    'slide-pipeline': '',      // no highlight (this IS the pipeline slide)
+    'slide-domain': 'dk',
+    'slide-research': 'research',
+    'slide-parser': 'parser',
+    'slide-verifier1': 'verifiers',
+    'slide-verifier2': 'verifiers',
+    'slide-data-acq': 'verdict',
+    'slide-results': 'verdict',
+    'slide-fix1': '',
+    'slide-fix2': '',
+    'slide-fix3': '',
+    'slide-kg': '',
+    'slide-kg2': '',
+    'slide-future1': '',
+    'slide-datasources': '',
+    'slide-end': '',
+};
+
 class SlidePresentation {
     constructor() {
         this.slides = document.querySelectorAll('.slide');
         this.totalSlides = this.slides.length;
         this.currentIndex = 0;
         document.getElementById('totalSlides').textContent = String(this.totalSlides).padStart(2, '0');
+        this.miniPipeline = document.getElementById('miniPipeline');
+        this.miniNodes = this.miniPipeline.querySelectorAll('.mini-node');
         this.createNavDots();
         this.setupIntersectionObserver();
         this.setupKeyboardNav();
         this.setupClickNav();
         this.updateProgress();
+        this.updateMiniPipeline();
     }
 
     createNavDots() {
@@ -1390,6 +1506,7 @@ class SlidePresentation {
                     this.currentIndex = index;
                     this.updateProgress();
                     this.updateDots();
+                    this.updateMiniPipeline();
                 }
             });
         }, { threshold: 0.5 });
@@ -1426,6 +1543,25 @@ class SlidePresentation {
     }
 
     updateDots() { this.dots.forEach((d, i) => d.classList.toggle('active', i === this.currentIndex)); }
+
+    updateMiniPipeline() {
+        const currentSlide = this.slides[this.currentIndex];
+        const slideId = currentSlide ? currentSlide.id : '';
+        const highlightKey = MINI_HIGHLIGHT_MAP[slideId];
+
+        // Hide on title slide
+        if (highlightKey === null) {
+            this.miniPipeline.classList.add('hidden');
+            return;
+        }
+        this.miniPipeline.classList.remove('hidden');
+
+        // Update active node
+        this.miniNodes.forEach(node => {
+            const nodeKey = node.getAttribute('data-mini');
+            node.classList.toggle('mini-active', nodeKey === highlightKey);
+        });
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => new SlidePresentation());

@@ -1,10 +1,17 @@
-"""Stage 1: Deep research via Perplexity Sonar Deep Research API."""
+"""Stage 1: Deep research via Gemini Deep Research API."""
 
 import logging
+import time
 
-from openai import OpenAI
+from google import genai
 
-from src.config import PERPLEXITY_API_KEY, PERPLEXITY_MODEL, PERPLEXITY_TIMEOUT, OUTPUTS_DIR
+from src.config import (
+    GEMINI_API_KEY,
+    GEMINI_DEEP_RESEARCH_AGENT,
+    DEEP_RESEARCH_POLL_INTERVAL,
+    DEEP_RESEARCH_MAX_WAIT,
+    OUTPUTS_DIR,
+)
 from src.domain_knowledge import DOMAIN_KNOWLEDGE
 from src.stage1.prompts import RESEARCH_PROMPT_TEMPLATE
 
@@ -12,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 def run_deep_research(tla: str, metadata: dict) -> tuple[str, list[str]]:
-    """Run Perplexity deep research for a given EPI indicator.
+    """Run Gemini deep research for a given EPI indicator.
 
     Args:
         tla: Three-letter abbreviation of the EPI indicator.
@@ -21,10 +28,7 @@ def run_deep_research(tla: str, metadata: dict) -> tuple[str, list[str]]:
     Returns:
         Tuple of (markdown report, list of citation strings).
     """
-    client = OpenAI(
-        api_key=PERPLEXITY_API_KEY,
-        base_url="https://api.perplexity.ai",
-    )
+    client = genai.Client(api_key=GEMINI_API_KEY)
 
     # Build the research prompt
     polarity = metadata.get("RawPolarity", "unknown")
@@ -62,28 +66,58 @@ def run_deep_research(tla: str, metadata: dict) -> tuple[str, list[str]]:
         domain_knowledge_section=domain_knowledge_section,
     )
 
-    logger.info("Sending deep research request to Perplexity for %s...", tla)
+    logger.info("Sending deep research request to Gemini for %s...", tla)
 
-    response = client.chat.completions.create(
-        model=PERPLEXITY_MODEL,
-        messages=[
-            {
-                "role": "system",
-                "content": (
-                    "You are a research assistant specializing in environmental data, "
-                    "public health statistics, and cross-country empirical analysis. "
-                    "Be thorough, cite specific datasets and papers, and include URLs."
-                ),
-            },
-            {"role": "user", "content": prompt},
-        ],
-        timeout=PERPLEXITY_TIMEOUT,
+    # Launch the deep research task (runs asynchronously)
+    interaction = client.interactions.create(
+        input=prompt,
+        agent=GEMINI_DEEP_RESEARCH_AGENT,
+        background=True,
     )
 
-    markdown = response.choices[0].message.content or ""
+    logger.info("Deep research task started (id=%s), polling for completion...", interaction.id)
+
+    # Poll until complete
+    elapsed = 0
+    while elapsed < DEEP_RESEARCH_MAX_WAIT:
+        time.sleep(DEEP_RESEARCH_POLL_INTERVAL)
+        elapsed += DEEP_RESEARCH_POLL_INTERVAL
+        interaction = client.interactions.get(interaction.id)
+
+        if interaction.status == "completed":
+            logger.info("Deep research completed after ~%ds", elapsed)
+            break
+        elif interaction.status == "failed":
+            error_msg = getattr(interaction, "error", "unknown error")
+            raise RuntimeError(f"Gemini deep research failed for {tla}: {error_msg}")
+
+        if elapsed % 60 < DEEP_RESEARCH_POLL_INTERVAL:
+            logger.info("Still researching %s... (%ds elapsed)", tla, elapsed)
+    else:
+        raise TimeoutError(
+            f"Gemini deep research timed out after {DEEP_RESEARCH_MAX_WAIT}s for {tla}"
+        )
+
+    # Extract the final report text from the last output
+    markdown = ""
+    if interaction.outputs:
+        markdown = interaction.outputs[-1].text or ""
+
+    # Gemini deep research includes inline citations; extract source URLs if available
     citations = []
-    if hasattr(response, "citations") and response.citations:
-        citations = list(response.citations)
+    if hasattr(interaction, "citations") and interaction.citations:
+        citations = list(interaction.citations)
+    # Also check outputs for grounding metadata
+    if interaction.outputs:
+        last_output = interaction.outputs[-1]
+        if hasattr(last_output, "grounding_metadata") and last_output.grounding_metadata:
+            gm = last_output.grounding_metadata
+            if hasattr(gm, "grounding_chunks") and gm.grounding_chunks:
+                for chunk in gm.grounding_chunks:
+                    if hasattr(chunk, "web") and chunk.web:
+                        url = getattr(chunk.web, "uri", None)
+                        if url and url not in citations:
+                            citations.append(url)
 
     # Save raw report with citation legend appended
     output_dir = OUTPUTS_DIR / tla / "stage1"

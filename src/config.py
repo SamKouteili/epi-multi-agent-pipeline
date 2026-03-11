@@ -20,11 +20,11 @@ COUNTRY_DICTIONARY = INPUTS_DIR / "cdictionary_expanded.csv"
 ATTRIBUTES_FILE = INPUTS_DIR / "Attributes.csv"
 
 # ── API Keys ───────────────────────────────────────────────────────────────────
-PERPLEXITY_API_KEY = os.getenv("PERPLEXITY_API_KEY", "")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 
 # ── Model Names ────────────────────────────────────────────────────────────────
-PERPLEXITY_MODEL = "sonar-deep-research"
+GEMINI_DEEP_RESEARCH_AGENT = "deep-research-pro-preview-12-2025"
 CLAUDE_PARSING_MODEL = "claude-sonnet-4-20250514"
 CLAUDE_VERIFICATION_MODEL = "claude-sonnet-4-6"
 CLAUDE_VALIDATION_MODEL = "claude-haiku-4-5-20251001"
@@ -45,6 +45,7 @@ VERDICT_P_STRICT = 0.01            # p threshold for confirmed without partial c
 
 # ── Pipeline Defaults ──────────────────────────────────────────────────────────
 MAX_HYPOTHESES = 10
-PERPLEXITY_TIMEOUT = 300
+DEEP_RESEARCH_POLL_INTERVAL = 10  # seconds between status checks
+DEEP_RESEARCH_MAX_WAIT = 3600     # max seconds to wait (60 min)
 API_RETRY_ATTEMPTS = 3
 API_RETRY_BACKOFF = 2.0

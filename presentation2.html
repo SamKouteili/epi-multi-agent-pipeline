@@ -6,11 +6,43 @@
     <title>EPI Proxy Discovery Pipeline</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Source+Sans+3:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <!-- Cytoscape.js for knowledge graph -->
     <script src="https://unpkg.com/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
 
     <style>
+        /* ===========================================
+           YALE NEW TYPEFACE (@font-face)
+           =========================================== */
+        @font-face {
+            font-family: 'YaleNew';
+            src: url('https://yaleux.github.io/yaleui/assets/fonts/yalenew-roman-webfont.woff2') format('woff2');
+            font-weight: 400;
+            font-style: normal;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'YaleNew';
+            src: url('https://yaleux.github.io/yaleui/assets/fonts/yalenew-bold-webfont.woff2') format('woff2');
+            font-weight: 700;
+            font-style: normal;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'YaleNew';
+            src: url('https://yaleux.github.io/yaleui/assets/fonts/yalenew-italic-webfont.woff2') format('woff2');
+            font-weight: 400;
+            font-style: italic;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'YaleNew';
+            src: url('https://yaleux.github.io/yaleui/assets/fonts/yalenew-bolditalic-webfont.woff2') format('woff2');
+            font-weight: 700;
+            font-style: italic;
+            font-display: swap;
+        }
+
         /* ===========================================
            CSS CUSTOM PROPERTIES (YALE / EPI ACADEMIC THEME)
            =========================================== */
@@ -38,8 +70,9 @@
             --text-secondary: #5a5a5a;
             --text-muted: #8a8a8a;
 
-            --font-display: 'Cormorant Garamond', Georgia, serif;
+            --font-display: 'YaleNew', Georgia, serif;
             --font-body: 'Source Sans 3', 'Segoe UI', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
 
             --title-size: clamp(2rem, 5.5vw, 4rem);
             --h2-size: clamp(1.4rem, 3.5vw, 2.4rem);
@@ -278,6 +311,17 @@
             margin-top: 0.15em;
         }
         .pipe-block.active .pb-title { color: var(--yale-blue); }
+        .pipe-input {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.2rem;
+        }
+        .pipe-join {
+            font-size: var(--label-size);
+            font-weight: 700;
+            color: var(--text-muted);
+        }
         .pipe-arrow {
             color: var(--text-muted);
             font-size: clamp(1rem, 2vw, 1.6rem);
@@ -306,6 +350,72 @@
         }
         .pipe-stage.s1 .pipe-stage-label { color: var(--yale-blue); }
         .pipe-stage.s2 .pipe-stage-label { color: var(--epi-green); }
+        .pipe-group {
+            display: flex;
+            align-items: center;
+            gap: clamp(0.2rem, 0.5vw, 0.4rem);
+            padding: 0.35rem 0.45rem;
+            border-radius: 10px;
+            border: 2px dashed var(--border);
+            background: rgba(255, 255, 255, 0.7);
+        }
+        .pipe-group.research { border-color: var(--yale-blue-light); }
+        .pipe-group.verifiers { border-color: var(--epi-green); }
+
+        /* ===========================================
+           MINI PIPELINE SCHEMATIC
+           =========================================== */
+        .mini-pipeline {
+            position: fixed;
+            top: 12px;
+            right: 24px;
+            z-index: 900;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            background: rgba(255,255,255,0.92);
+            border: 1px solid var(--border-light);
+            border-radius: 6px;
+            padding: 5px 10px;
+            opacity: 0.55;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        .mini-pipeline:hover { opacity: 1; pointer-events: auto; }
+        .mini-pipeline.hidden { display: none; }
+        .mini-node {
+            font-family: var(--font-mono);
+            font-size: 0.55rem;
+            padding: 2px 5px;
+            border-radius: 3px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            white-space: nowrap;
+            transition: all 0.3s;
+        }
+        .mini-node.mini-active {
+            background: var(--yale-blue);
+            border-color: var(--yale-blue);
+            color: #fff;
+            opacity: 1;
+        }
+        .mini-arrow {
+            font-size: 0.5rem;
+            color: var(--border);
+            flex-shrink: 0;
+        }
+        .mini-group {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            padding: 3px 5px;
+            border: 1px dashed var(--border);
+            border-radius: 5px;
+            background: rgba(255,255,255,0.7);
+        }
+        .mini-group.stage1 { border-color: var(--yale-blue-light); }
+        .mini-group.stage2 { border-color: var(--epi-green); }
 
         /* ===========================================
            EXAMPLE BOX
@@ -532,6 +642,14 @@
         .reveal:nth-child(4) { transition-delay: 0.35s; }
         .reveal:nth-child(5) { transition-delay: 0.45s; }
         .reveal:nth-child(6) { transition-delay: 0.55s; }
+        .step {
+            opacity: 0;
+            transform: translateY(16px);
+            transition: opacity var(--duration) var(--ease-out-expo),
+                        transform var(--duration) var(--ease-out-expo);
+            pointer-events: none;
+        }
+        .step.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
 
         /* ===========================================
            RESPONSIVE
@@ -566,6 +684,7 @@
             .pipeline { flex-direction: column; }
             .pipe-arrow { transform: rotate(90deg); }
             .extract-visual { flex-direction: column; }
+            .mini-pipeline { display: none; }
         }
         @media (prefers-reduced-motion: reduce) {
             *,*::before,*::after { animation-duration: 0.01ms !important; transition-duration: 0.2s !important; }
@@ -578,6 +697,25 @@
 <div class="progress-bar" id="progressBar"></div>
 <nav class="nav-dots" id="navDots"></nav>
 <div class="slide-counter"><span class="current" id="currentSlide">01</span> / <span id="totalSlides">14</span></div>
+
+<!-- Mini Pipeline Schematic (fixed position, top-right) -->
+<div class="mini-pipeline hidden" id="miniPipeline">
+    <div class="mini-node" data-mini="dk">Indicator+DK</div>
+    <div class="mini-arrow">&rarr;</div>
+    <div class="mini-group stage1">
+        <div class="mini-node" data-mini="research">Research</div>
+        <div class="mini-arrow">&rarr;</div>
+        <div class="mini-node" data-mini="parser">Parser</div>
+    </div>
+    <div class="mini-arrow">&rarr;</div>
+    <div class="mini-group stage2">
+        <div class="mini-node" data-mini="explore">Explore</div>
+        <div class="mini-arrow">&rarr;</div>
+        <div class="mini-node" data-mini="validate">Validate</div>
+    </div>
+    <div class="mini-arrow">&rarr;</div>
+    <div class="mini-node" data-mini="verdict">Verdict</div>
+</div>
 
 <!-- ═══════════════════════════════════════════════
      SLIDE 1: TITLE
@@ -604,12 +742,12 @@
         <div class="two-col">
             <div class="reveal">
                 <p style="margin-bottom:var(--content-gap);">
-                    A <strong>data proxy</strong> is a measurable variable that tracks something we can't easily measure directly. When two phenomena are causally linked, measuring one tells us about the other.
+                    A <strong>data proxy</strong> is a variable that tracks something we can't easily measure directly. When two phenomena are causally linked, measuring one tells us about the other.
                 </p>
                 <p style="margin-bottom:var(--content-gap);">
                     We are primarily interested in <strong>mechanistic causal explanations</strong>, where we have a reason <em>why</em> two variables move together.
                 </p>
-                <div class="highlight-box">
+                <div class="highlight-box step">
                     <h3 style="font-size:var(--body-size); color:var(--epi-green); margin-bottom:0.3em;">For the EPI</h3>
                     <p style="font-size:var(--small-size); color:var(--text-secondary);">
                         Many of the 58 EPI indicators suffer from poor country coverage, infrequent updates, or reliance on modeled data. Validated proxies can fill these gaps with real, observed data.
@@ -662,7 +800,7 @@
                 <p style="margin-bottom:var(--content-gap);">
                     <strong>The goal:</strong> find alternative, more accessible data sources that correlate with these hard-to-measure indicators and could supplement or validate the official statistics.
                 </p>
-                <div class="highlight-box">
+                <div class="highlight-box step">
                     <h3 style="font-size:var(--body-size); color:var(--epi-green); margin-bottom:0.3em;">The Opportunity</h3>
                     <p style="font-size:var(--small-size); color:var(--text-secondary);">
                         Modern AI can systematically search scientific literature, identify causal mechanisms, and test hypothesized proxy relationships against real data &mdash; scaling up a process that would take researchers months to do manually.
@@ -681,38 +819,49 @@
         <div class="section-label reveal">Overview</div>
         <h2 class="reveal">A Two-Stage Discovery Pipeline</h2>
         <p class="reveal" style="color:var(--text-secondary); margin-bottom:var(--content-gap); max-width:800px;">
-            We give the system an EPI indicator, and it automatically researches potential proxies, formalizes them as testable hypotheses, and then statistically verifies each one.
+            We give the system an EPI indicator plus curated domain knowledge, and it automatically researches potential proxies, formalizes them as testable hypotheses, and then statistically verifies each one.
         </p>
 
         <div class="pipeline reveal" id="pipelineDiagram">
-            <div class="pipe-block" id="pb-input">
-                <div class="pb-title">EPI Indicator</div>
-                <div class="pb-sub">e.g. "UWD"</div>
+            <div class="pipe-input">
+                <div class="pipe-block" id="pb-input">
+                    <div class="pb-title">EPI Indicator</div>
+                    <div class="pb-sub">e.g. "UWD"</div>
+                </div>
+                <div class="pipe-join">+</div>
+                <div class="pipe-block" id="pb-domain">
+                    <div class="pb-title">Domain Knowledge</div>
+                    <div class="pb-sub">Technical Appendix</div>
+                </div>
             </div>
             <div class="pipe-arrow">&rarr;</div>
             <div class="pipe-stage s1">
                 <span class="pipe-stage-label">Stage 1: Research</span>
-                <div class="pipe-block" id="pb-research">
-                    <div class="pb-title">Deep Research</div>
-                    <div class="pb-sub">Literature &amp; data review</div>
-                </div>
-                <div class="pipe-arrow" style="font-size:var(--small-size);">&rarr;</div>
-                <div class="pipe-block" id="pb-parse">
-                    <div class="pb-title">Hypothesis Extraction</div>
-                    <div class="pb-sub">Structured output</div>
+                <div class="pipe-group research">
+                    <div class="pipe-block" id="pb-research">
+                        <div class="pb-title">Deep Research</div>
+                        <div class="pb-sub">Literature &amp; data review</div>
+                    </div>
+                    <div class="pipe-arrow" style="font-size:var(--small-size);">&rarr;</div>
+                    <div class="pipe-block" id="pb-parse">
+                        <div class="pb-title">Hypothesis Extraction</div>
+                        <div class="pb-sub">Structured output</div>
+                    </div>
                 </div>
             </div>
             <div class="pipe-arrow">&rarr;</div>
             <div class="pipe-stage s2">
                 <span class="pipe-stage-label">Stage 2: Exploration</span>
-                <div class="pipe-block" id="pb-explore">
-                    <div class="pb-title">Exploration Agent</div>
-                    <div class="pb-sub">Data &amp; statistics</div>
-                </div>
-                <div class="pipe-arrow" style="font-size:var(--small-size);">&rarr;</div>
-                <div class="pipe-block" id="pb-validate">
-                    <div class="pb-title">Validation Agent</div>
-                    <div class="pb-sub">Quality assurance</div>
+                <div class="pipe-group verifiers">
+                    <div class="pipe-block" id="pb-explore">
+                        <div class="pb-title">Exploration Agent</div>
+                        <div class="pb-sub">Data &amp; statistics</div>
+                    </div>
+                    <div class="pipe-arrow" style="font-size:var(--small-size);">&rarr;</div>
+                    <div class="pipe-block" id="pb-validate">
+                        <div class="pb-title">Validation Agent</div>
+                        <div class="pb-sub">Quality assurance</div>
+                    </div>
                 </div>
             </div>
             <div class="pipe-arrow">&rarr;</div>
@@ -741,7 +890,7 @@
         <div class="two-col">
             <div class="reveal">
                 <p style="margin-bottom:var(--content-gap);">
-                    We have no ground truth to verify our proxy discoveries against &mdash; but we can use the relationships we uncover to <strong>validate claims against one another</strong>. Each verified hypothesis becomes an <strong>edge</strong> in a growing knowledge graph. Nodes are data variables; edges carry direction, strength, and functional form.
+		We have no ground truth to verify our proxy discoveries against, but we can use the relationships we find to <strong>validate claims against one another</strong>. Each verified hypothesis becomes an edge in a growing <strong>knowledge graph</strong>. Nodes are data variables; edges carry direction, strength, and functional form.
                 </p>
                 <ul class="clean-list">
                     <li><strong>Sign consistency</strong> &mdash; If A&rarr;B is positive and B&rarr;C is positive, then A&rarr;C should be positive too</li>
@@ -763,45 +912,7 @@
 </section>
 
 <!-- ═══════════════════════════════════════════════
-     SLIDE 6: STAGE 1 — DEEP RESEARCH
-     ═══════════════════════════════════════════════ -->
-<section class="slide" id="slide-research">
-    <div class="slide-content">
-        <div class="section-label reveal">Stage 1</div>
-        <h2 class="reveal">Deep Research Agent</h2>
-        <div class="two-col">
-            <div class="reveal">
-                <p style="margin-bottom:var(--content-gap);">
-                    An AI research agent conducts a thorough literature review and data discovery for the target indicator. It maps causal pathways, finds published proxy relationships, and brainstorms novel candidates.
-                </p>
-                <h3 style="font-size:var(--body-size); margin-bottom:0.4em;">What the agent investigates:</h3>
-                <ul class="clean-list">
-                    <li><strong>Causal pathways</strong> &mdash; What drives this indicator up or down?</li>
-                    <li><strong>Published proxies</strong> &mdash; Has anyone studied alternative measurements?</li>
-                    <li><strong>Novel candidates</strong> &mdash; What related data exists in public databases?</li>
-                    <li><strong>Data availability</strong> &mdash; How many countries? How recent?</li>
-                    <li><strong>Confounders</strong> &mdash; What might create spurious correlations?</li>
-                </ul>
-            </div>
-            <div class="reveal">
-                <div class="example-box">
-                    <div class="ex-label">UWD Research Output</div>
-                    <p style="margin-bottom:0.5em;">The agent produced a 2,000-word report identifying <strong>14 candidate proxies</strong> for Unsafe Drinking Water, including:</p>
-                    <ul class="clean-list" style="font-size:var(--small-size);">
-                        <li>Healthcare facility handwashing rates (WHO)</li>
-                        <li>Basic sanitation service coverage (JMP)</li>
-                        <li>Under-5 mortality from diarrheal disease (IHME)</li>
-                        <li>Water stress levels (FAO AQUASTAT)</li>
-                        <li>Environmental governance scores (WGI)</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- ═══════════════════════════════════════════════
-     SLIDE 7: DOMAIN CONTEXT
+     SLIDE 6: DOMAIN CONTEXT
      ═══════════════════════════════════════════════ -->
 <section class="slide" id="slide-domain">
     <div class="slide-content">
@@ -810,7 +921,7 @@
         <div class="two-col">
             <div class="reveal">
                 <p style="margin-bottom:var(--content-gap);">
-                    Before the research agent begins, we provide it with <strong>expert knowledge</strong> from the EPI Technical Appendix &mdash; so it doesn't waste effort rediscovering what the team already knows.
+                    Before the research agent begins, we provide it with expert knowledge from the <strong>EPI Technical Appendix</strong>, so it doesn't rediscover what the team knows.
                 </p>
                 <h3 style="font-size:var(--body-size); margin-bottom:0.4em;">What each context entry includes:</h3>
                 <ul class="clean-list">
@@ -822,17 +933,55 @@
                 </ul>
             </div>
             <div class="reveal">
-                <div class="example-box" style="margin-bottom:var(--content-gap);">
+                <div class="example-box step" style="margin-bottom:var(--content-gap);">
                     <div class="ex-label">UWD Context Provided</div>
                     <p style="font-size:var(--small-size);">
                         <em>"UWD measures age-standardized DALYs lost per 100k due to unsafe drinking water. Source: IHME Global Burden of Disease, 1990&ndash;2021. Key confounders: GDP per capita, urbanization, healthcare access. Sibling indicators: USD, HFD (same IHME method)."</em>
                     </p>
                 </div>
-                <div class="highlight-box">
+                <div class="highlight-box step">
                     <h3 style="font-size:var(--body-size); color:var(--epi-green); margin-bottom:0.3em;">Why this matters</h3>
                     <p style="font-size:var(--small-size); color:var(--text-secondary);">
                         Without this context, the AI might propose GDP as a "novel proxy" &mdash; wasting a verification cycle on a known confounder. Domain context steers the research toward genuinely useful discoveries.
                     </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     SLIDE 7: STAGE 1 — DEEP RESEARCH
+     ═══════════════════════════════════════════════ -->
+<section class="slide" id="slide-research">
+    <div class="slide-content">
+        <div class="section-label reveal">Stage 1</div>
+        <h2 class="reveal">Deep Research Agent</h2>
+        <div class="two-col">
+            <div class="reveal">
+                <p style="margin-bottom:var(--content-gap);">
+                    Building on the injected domain context, an AI research agent conducts a thorough literature review and data discovery for the target indicator. It maps causal pathways, finds published proxy relationships, and brainstorms novel candidates.
+                </p>
+                <h3 style="font-size:var(--body-size); margin-bottom:0.4em;">What the agent investigates:</h3>
+                <ul class="clean-list">
+                    <li><strong>Causal pathways</strong> &mdash; What drives this indicator up or down?</li>
+                    <li><strong>Published proxies</strong> &mdash; Has anyone studied alternative measurements?</li>
+                    <li><strong>Novel candidates</strong> &mdash; What related data exists in public databases?</li>
+                    <li><strong>Data availability</strong> &mdash; How many countries? How recent?</li>
+                    <li><strong>Confounders</strong> &mdash; What might create spurious correlations?</li>
+                </ul>
+            </div>
+            <div class="reveal">
+                <div class="example-box step">
+                    <div class="ex-label">UWD Research Output</div>
+                    <p style="margin-bottom:0.5em;">The agent produced a 2,000-word report identifying <strong>14 candidate proxies</strong> for Unsafe Drinking Water, including:</p>
+                    <ul class="clean-list" style="font-size:var(--small-size);">
+                        <li>Healthcare facility handwashing rates (WHO)</li>
+                        <li>Basic sanitation service coverage (JMP)</li>
+                        <li>Under-5 mortality from diarrheal disease (IHME)</li>
+                        <li>Water stress levels (FAO AQUASTAT)</li>
+                        <li>Environmental governance scores (WGI)</li>
+                    </ul>
                 </div>
             </div>
         </div>
@@ -927,7 +1076,7 @@
                 <line x1="170" y1="150" x2="240" y2="150" stroke="#d4d2cb" stroke-width="2" marker-end="url(#arrowGrey)"/>
 
                 <!-- Agent circle -->
-                <circle cx="300" cy="150" r="50" fill="#00356B" opacity="0.08" stroke="#00356B" stroke-width="2"/>
+                <circle cx="300" cy="150" r="50" fill="rgba(0,53,107,0.08)" stroke="#00356B" stroke-width="2"/>
                 <text x="300" y="144" text-anchor="middle" font-size="13" font-weight="700" fill="#00356B">Exploration</text>
                 <text x="300" y="160" text-anchor="middle" font-size="13" font-weight="700" fill="#00356B">Agent</text>
 
@@ -966,63 +1115,7 @@
 </section>
 
 <!-- ═══════════════════════════════════════════════
-     SLIDE 10: EXPLORATION TOOLKIT & GUARDRAILS
-     ═══════════════════════════════════════════════ -->
-<section class="slide" id="slide-exploration-detail">
-    <div class="slide-content">
-        <div class="section-label reveal">Stage 2 &mdash; Toolkit</div>
-        <h2 class="reveal">Agent Toolkit &amp; Guardrails</h2>
-        <div class="two-col">
-            <div class="reveal">
-                <p style="margin-bottom:var(--content-gap);">
-                    The agent has access to a curated set of tools. It composes a verification script from these building blocks and executes it:
-                </p>
-                <div class="grid-2" style="gap:0.6rem;">
-                    <div class="card">
-                        <div class="card-title" style="font-size:var(--small-size);">Database Access</div>
-                        <div class="card-body">World Bank (20k+ indicators), WHO Global Health Observatory, 312 local EPI datasets</div>
-                    </div>
-                    <div class="card">
-                        <div class="card-title" style="font-size:var(--small-size);">Statistical Models</div>
-                        <div class="card-body">Bivariate correlation, partial correlation (controlling for GDP, HDI), functional form testing</div>
-                    </div>
-                    <div class="card">
-                        <div class="card-title" style="font-size:var(--small-size);">Data Operations</div>
-                        <div class="card-body">Country name alignment, temporal matching, sentinel value handling, merging datasets</div>
-                    </div>
-                    <div class="card">
-                        <div class="card-title" style="font-size:var(--small-size);">Verdict Logic</div>
-                        <div class="card-body">Standardized decision rules for confirmed, partially confirmed, rejected, or inconclusive</div>
-                    </div>
-                </div>
-            </div>
-            <div class="reveal">
-                <h3 style="font-size:var(--body-size); margin-bottom:0.5em;">Key Guardrails</h3>
-                <div class="highlight-box" style="margin-bottom:var(--element-gap);">
-                    <h3 style="font-size:var(--body-size); color:var(--epi-green); margin-bottom:0.3em;">No data fabrication</h3>
-                    <p style="font-size:var(--small-size); color:var(--text-secondary);">
-                        The agent is <strong>never allowed to generate synthetic data</strong>. If it cannot access a dataset, the hypothesis is marked inconclusive.
-                    </p>
-                </div>
-                <div class="highlight-box" style="margin-bottom:var(--element-gap);">
-                    <h3 style="font-size:var(--body-size); color:var(--epi-green); margin-bottom:0.3em;">Mandatory confounder controls</h3>
-                    <p style="font-size:var(--small-size); color:var(--text-secondary);">
-                        Every correlation is tested with partial correlation, controlling for GDP, HDI, urbanization, and population.
-                    </p>
-                </div>
-                <div class="highlight-box">
-                    <h3 style="font-size:var(--body-size); color:var(--epi-green); margin-bottom:0.3em;">Consistent output format</h3>
-                    <p style="font-size:var(--small-size); color:var(--text-secondary);">
-                        All agents use a shared statistical library, ensuring identical methods and output formats across all hypotheses.
-                    </p>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- ═══════════════════════════════════════════════
-     SLIDE 11: VALIDATION AGENT — SCHEMATIC
+     SLIDE 10: VALIDATION AGENT — SCHEMATIC
      ═══════════════════════════════════════════════ -->
 <section class="slide" id="slide-validation">
     <div class="slide-content">
@@ -1111,6 +1204,63 @@
     </div>
 </section>
 
+
+<!-- ═══════════════════════════════════════════════
+     SLIDE 11: EXPLORATION TOOLKIT & GUARDRAILS
+     ═══════════════════════════════════════════════ -->
+<section class="slide" id="slide-exploration-detail">
+    <div class="slide-content">
+        <div class="section-label reveal">Stage 2 &mdash; Toolkit</div>
+        <h2 class="reveal">Agent Toolkit &amp; Guardrails</h2>
+        <div class="two-col">
+            <div class="reveal">
+                <p style="margin-bottom:var(--content-gap);">
+		The agent has access to a curated set of <strong>tools</strong>. It composes a verification script from these building blocks and executes it:
+                </p>
+                <div class="grid-2" style="gap:0.6rem;">
+                    <div class="card step">
+                        <div class="card-title" style="font-size:var(--small-size);">Database Access</div>
+                        <div class="card-body">World Bank (20k+ indicators), WHO Global Health Observatory, 312 local EPI datasets</div>
+                    </div>
+                    <div class="card step">
+                        <div class="card-title" style="font-size:var(--small-size);">Statistical Models</div>
+                        <div class="card-body">Bivariate correlation, partial correlation (controlling for GDP, HDI), functional form testing</div>
+                    </div>
+                    <div class="card step">
+                        <div class="card-title" style="font-size:var(--small-size);">Data Operations</div>
+                        <div class="card-body">Country name alignment, temporal matching, sentinel value handling, merging datasets</div>
+                    </div>
+                    <div class="card step">
+                        <div class="card-title" style="font-size:var(--small-size);">Verdict Logic</div>
+                        <div class="card-body">Standardized decision rules for confirmed, partially confirmed, rejected, or inconclusive</div>
+                    </div>
+                </div>
+            </div>
+            <div class="reveal">
+                <h3 style="font-size:var(--body-size); margin-bottom:0.5em;">Key Guardrails</h3>
+                <div class="highlight-box step" style="margin-bottom:var(--element-gap);">
+                    <h3 style="font-size:var(--body-size); color:var(--epi-green); margin-bottom:0.3em;">No data fabrication</h3>
+                    <p style="font-size:var(--small-size); color:var(--text-secondary);">
+                        The agent is <strong>never allowed to generate synthetic data</strong>. If it cannot access a dataset, the hypothesis is marked inconclusive.
+                    </p>
+                </div>
+                <div class="highlight-box step" style="margin-bottom:var(--element-gap);">
+                    <h3 style="font-size:var(--body-size); color:var(--epi-green); margin-bottom:0.3em;">Mandatory confounder controls</h3>
+                    <p style="font-size:var(--small-size); color:var(--text-secondary);">
+                        Every correlation is tested with partial correlation, controlling for GDP, HDI, urbanization, and population.
+                    </p>
+                </div>
+                <div class="highlight-box step">
+                    <h3 style="font-size:var(--body-size); color:var(--epi-green); margin-bottom:0.3em;">Consistent output format</h3>
+                    <p style="font-size:var(--small-size); color:var(--text-secondary);">
+                        All agents use a shared statistical library, ensuring identical methods and output formats across all hypotheses.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
 <!-- ═══════════════════════════════════════════════
      SLIDE 12: EXAMPLE REPORT
      ═══════════════════════════════════════════════ -->
@@ -1120,7 +1270,7 @@
         <h2 class="reveal" style="margin-bottom:0.3em;">Example Output: UWD Discovery Report</h2>
         <p class="reveal" style="font-size:var(--small-size); color:var(--text-muted); margin-bottom:0.3em;">Interactive dashboard generated automatically by the pipeline. Click any row to expand details.</p>
         <div class="report-frame reveal" style="flex:1; min-height:0;">
-            <iframe src="outputs/UWD/dashboard.html" title="UWD Proxy Discovery Dashboard"></iframe>
+            <iframe id="reportIframe" src="outputs/UWD/dashboard.html" title="UWD Proxy Discovery Dashboard"></iframe>
         </div>
     </div>
 </section>
@@ -1182,6 +1332,24 @@
      JAVASCRIPT
      ═══════════════════════════════════════════════ -->
 <script>
+// Mini-pipeline highlight mapping: slide id -> which mini-node to highlight
+const MINI_HIGHLIGHT_MAP = {
+    'slide-title': null,
+    'slide-proxy-intro': '',
+    'slide-gap': '',
+    'slide-pipeline': '',
+    'slide-kg': '',
+    'slide-domain': 'dk',
+    'slide-research': 'research',
+    'slide-extraction': 'parser',
+    'slide-exploration-schema': 'explore',
+    'slide-validation': 'validate',
+    'slide-exploration-detail': ['explore', 'validate'],
+    'slide-report': 'verdict',
+    'slide-next': '',
+    'slide-end': '',
+};
+
 /* ===========================================
    SLIDE PRESENTATION CONTROLLER
    =========================================== */
@@ -1190,11 +1358,16 @@ class SlidePresentation {
         this.slides = document.querySelectorAll('.slide');
         this.totalSlides = this.slides.length;
         this.currentIndex = 0;
+        this.stepState = {};
         document.getElementById('totalSlides').textContent = String(this.totalSlides).padStart(2, '0');
+        this.miniPipeline = document.getElementById('miniPipeline');
+        this.miniNodes = this.miniPipeline.querySelectorAll('.mini-node');
         this.createNavDots();
         this.setupIntersectionObserver();
         this.setupKeyboardNav();
         this.updateProgress();
+        this.updateMiniPipeline();
+        this.syncSteps();
     }
 
     createNavDots() {
@@ -1218,6 +1391,8 @@ class SlidePresentation {
                     this.currentIndex = index;
                     this.updateProgress();
                     this.updateDots();
+                    this.updateMiniPipeline();
+                    this.syncSteps();
                 }
             });
         }, { threshold: 0.5 });
@@ -1228,7 +1403,9 @@ class SlidePresentation {
         document.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === ' ') {
                 e.preventDefault();
-                this.goToSlide(Math.min(this.currentIndex + 1, this.totalSlides - 1));
+                if (!this.advanceStep()) {
+                    this.goToSlide(Math.min(this.currentIndex + 1, this.totalSlides - 1));
+                }
             } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
                 e.preventDefault();
                 this.goToSlide(Math.max(this.currentIndex - 1, 0));
@@ -1248,6 +1425,51 @@ class SlidePresentation {
 
     updateDots() {
         this.dots.forEach((d, i) => d.classList.toggle('active', i === this.currentIndex));
+    }
+
+    updateMiniPipeline() {
+        const currentSlide = this.slides[this.currentIndex];
+        const slideId = currentSlide ? currentSlide.id : '';
+        const highlightKey = MINI_HIGHLIGHT_MAP[slideId];
+
+        if (highlightKey === null) {
+            this.miniPipeline.classList.add('hidden');
+            return;
+        }
+        this.miniPipeline.classList.remove('hidden');
+
+        const keys = Array.isArray(highlightKey) ? highlightKey : [highlightKey];
+        this.miniNodes.forEach(node => {
+            const nodeKey = node.getAttribute('data-mini');
+            node.classList.toggle('mini-active', keys.includes(nodeKey));
+        });
+    }
+
+    getSteps(slide) {
+        return Array.from(slide.querySelectorAll('.step'));
+    }
+
+    syncSteps() {
+        const slide = this.slides[this.currentIndex];
+        if (!slide) return;
+        const slideId = slide.id || String(this.currentIndex);
+        const steps = this.getSteps(slide);
+        const count = this.stepState[slideId] || 0;
+        steps.forEach((el, i) => el.classList.toggle('visible', i < count));
+    }
+
+    advanceStep() {
+        const slide = this.slides[this.currentIndex];
+        if (!slide) return false;
+        const slideId = slide.id || String(this.currentIndex);
+        const steps = this.getSteps(slide);
+        const count = this.stepState[slideId] || 0;
+        if (count < steps.length) {
+            steps[count].classList.add('visible');
+            this.stepState[slideId] = count + 1;
+            return true;
+        }
+        return false;
     }
 }
 
@@ -1384,6 +1606,17 @@ document.addEventListener('DOMContentLoaded', () => {
     new SlidePresentation();
     // Delay graph init until slide is likely visible or lib loaded
     setTimeout(initKnowledgeGraph, 500);
+
+    // Fix report iframe src when served via Gradio's /file= route
+    const reportIframe = document.getElementById('reportIframe');
+    if (reportIframe) {
+        const loc = window.location.pathname;
+        if (loc.startsWith('/file=')) {
+            // Extract the directory of the presentation file
+            const presDir = loc.substring(6, loc.lastIndexOf('/'));
+            reportIframe.src = '/file=' + presDir + '/outputs/UWD/dashboard.html';
+        }
+    }
 });
 </script>
 
