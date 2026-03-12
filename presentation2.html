@@ -1607,16 +1607,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Delay graph init until slide is likely visible or lib loaded
     setTimeout(initKnowledgeGraph, 500);
 
-    // Fix report iframe src when served via Gradio's /file= route
-    const reportIframe = document.getElementById('reportIframe');
-    if (reportIframe) {
-        const loc = window.location.pathname;
-        if (loc.startsWith('/file=')) {
-            // Extract the directory of the presentation file
-            const presDir = loc.substring(6, loc.lastIndexOf('/'));
-            reportIframe.src = '/file=' + presDir + '/outputs/UWD/dashboard.html';
-        }
-    }
 });
 </script>
 

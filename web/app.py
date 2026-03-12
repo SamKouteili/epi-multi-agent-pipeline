@@ -133,25 +133,28 @@ PRESENTATION_PATH = PROJECT_ROOT / "presentation.html"
 PRESENTATION2_PATH = PROJECT_ROOT / "presentation2.html"
 
 
-def _wrap_file_iframe(file_path: str, height: str = "80vh") -> str:
-    """Wrap a local file in an iframe served via Gradio's /file= route."""
-    return (
-        f'<iframe src="/file={file_path}" '
-        f'style="width:100%;height:{height};border:none;border-radius:8px;" '
-        'sandbox="allow-scripts allow-same-origin">'
-        '</iframe>'
-    )
-
-
 def _load_presentation() -> str:
     if PRESENTATION_PATH.exists():
-        return _wrap_file_iframe(str(PRESENTATION_PATH))
+        content = PRESENTATION_PATH.read_text(encoding="utf-8")
+        return _wrap_in_iframe(content)
     return "<p>presentation.html not found in project root.</p>"
 
 
 def _load_presentation2() -> str:
     if PRESENTATION2_PATH.exists():
-        return _wrap_file_iframe(str(PRESENTATION2_PATH))
+        content = PRESENTATION2_PATH.read_text(encoding="utf-8")
+        # Inject the UWD dashboard inline so it works inside srcdoc
+        dashboard_path = OUTPUTS_DIR / "UWD" / "dashboard.html"
+        if dashboard_path.exists():
+            import html as html_mod
+            dash_html = dashboard_path.read_text(encoding="utf-8")
+            escaped_dash = html_mod.escape(dash_html)
+            # Replace the iframe src with srcdoc
+            content = content.replace(
+                '<iframe id="reportIframe" src="outputs/UWD/dashboard.html" title="UWD Proxy Discovery Dashboard"></iframe>',
+                f'<iframe id="reportIframe" srcdoc="{escaped_dash}" title="UWD Proxy Discovery Dashboard" style="width:100%;height:100%;border:none;"></iframe>',
+            )
+        return _wrap_in_iframe(content)
     return "<p>presentation2.html not found in project root.</p>"
 
 
@@ -387,5 +390,4 @@ if __name__ == "__main__":
         theme=_THEME,
         css=_CUSTOM_CSS,
         head=_CUSTOM_HEAD,
-        allowed_paths=[str(PROJECT_ROOT)],
     )
